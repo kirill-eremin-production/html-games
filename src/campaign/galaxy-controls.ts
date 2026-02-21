@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { camera } from '../scene/setup';
+import { isTouchDevice } from '../ui/touch-controls';
 import { STAR_SYSTEMS, getFuelCost, getSystem } from './data';
 import {
   getStarMeshes,
@@ -30,6 +31,16 @@ let dragStartY = 0;
 let lastMouseX = 0;
 let lastMouseY = 0;
 
+// Touch state
+let touchDragId: number | null = null;
+let touchStartX = 0;
+let touchStartY = 0;
+let lastTouchX = 0;
+let lastTouchY = 0;
+let pinchStartDist = 0;
+let pinchStartRadius = 0;
+let isPinching = false;
+
 // Travel animation
 let traveling = false;
 let travelFromPos = new THREE.Vector3();
@@ -56,8 +67,9 @@ function ensureUI(): void {
   if (!galaxyHint) {
     galaxyHint = document.createElement('div');
     galaxyHint.id = 'galaxy-hint';
-    galaxyHint.textContent =
-      'Нажмите на звезду для выбора  •  Перетаскивайте для вращения  •  Колёсико — масштаб';
+    galaxyHint.textContent = isTouchDevice()
+      ? 'Нажмите на звезду для выбора  •  Проведите для вращения  •  Щипок — масштаб'
+      : 'Нажмите на звезду для выбора  •  Перетаскивайте для вращения  •  Колёсико — масштаб';
     document.body.appendChild(galaxyHint);
   }
 }
@@ -222,14 +234,14 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 /** Check if event target is an HTML UI overlay (buttons, panels) */
-function isUIClick(e: MouseEvent): boolean {
-  if (!(e.target instanceof HTMLElement)) return false;
-  return !!e.target.closest('#galaxy-info-panel, #galaxy-hud');
+function isUIElement(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return !!target.closest('#galaxy-info-panel, #galaxy-hud');
 }
 
 function onMouseDown(e: MouseEvent): void {
   if (!enabled || traveling) return;
-  if (isUIClick(e)) return;
+  if (isUIElement(e.target)) return;
   if (e.button === 0) {
     isDragging = true;
     dragStartX = e.clientX;
@@ -254,7 +266,7 @@ function onMouseMove(e: MouseEvent): void {
 
 function onMouseUp(e: MouseEvent): void {
   if (!enabled || traveling) return;
-  if (isUIClick(e)) {
+  if (isUIElement(e.target)) {
     isDragging = false;
     return;
   }
@@ -289,6 +301,105 @@ function onWheel(e: WheelEvent): void {
   updateCamera();
 }
 
+// ── Touch handlers ────────────────────────────────────────────────────────────
+
+function getTouchDist(e: TouchEvent): number {
+  const t0 = e.touches[0];
+  const t1 = e.touches[1];
+  const dx = t0.clientX - t1.clientX;
+  const dy = t0.clientY - t1.clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function onTouchStart(e: TouchEvent): void {
+  if (!enabled || traveling) return;
+  if (isUIElement(e.target)) return;
+
+  if (e.touches.length === 2) {
+    // Start pinch zoom
+    isPinching = true;
+    touchDragId = null;
+    pinchStartDist = getTouchDist(e);
+    pinchStartRadius = orbitRadius;
+    e.preventDefault();
+    return;
+  }
+
+  if (e.touches.length === 1) {
+    const t = e.touches[0];
+    touchDragId = t.identifier;
+    touchStartX = t.clientX;
+    touchStartY = t.clientY;
+    lastTouchX = t.clientX;
+    lastTouchY = t.clientY;
+    e.preventDefault();
+  }
+}
+
+function onTouchMove(e: TouchEvent): void {
+  if (!enabled || traveling) return;
+
+  if (isPinching && e.touches.length >= 2) {
+    e.preventDefault();
+    const dist = getTouchDist(e);
+    const scale = pinchStartDist / dist;
+    orbitRadius = Math.max(30, Math.min(120, pinchStartRadius * scale));
+    updateCamera();
+    return;
+  }
+
+  if (touchDragId === null) return;
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const t = e.changedTouches[i];
+    if (t.identifier === touchDragId) {
+      e.preventDefault();
+      const dx = t.clientX - lastTouchX;
+      const dy = t.clientY - lastTouchY;
+      orbitTheta -= dx * 0.005;
+      orbitPhi = Math.max(0.2, Math.min(Math.PI / 2.2, orbitPhi - dy * 0.005));
+      lastTouchX = t.clientX;
+      lastTouchY = t.clientY;
+      updateCamera();
+    }
+  }
+}
+
+function onTouchEnd(e: TouchEvent): void {
+  if (!enabled || traveling) return;
+
+  if (isPinching) {
+    if (e.touches.length < 2) isPinching = false;
+    return;
+  }
+
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const t = e.changedTouches[i];
+    if (t.identifier !== touchDragId) continue;
+    touchDragId = null;
+
+    const moved =
+      Math.abs(t.clientX - touchStartX) > 8 || Math.abs(t.clientY - touchStartY) > 8;
+    if (moved) return;
+
+    // Tap → raycast to pick star
+    mouse.x = (t.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(t.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+
+    const meshes = Array.from(getStarMeshes().values());
+    const hits = raycaster.intersectObjects(meshes);
+    if (hits.length > 0) {
+      const id = hits[0].object.userData.systemId as string;
+      selectedSystemId = id;
+      selectSystem(id);
+    } else {
+      selectedSystemId = null;
+      selectSystem(null);
+    }
+    updateInfoPanel();
+  }
+}
+
 // ── Enable / Disable ─────────────────────────────────────────────────────────
 
 export function enableGalaxyControls(stationCb: () => void, combatCb: () => void): void {
@@ -302,6 +413,10 @@ export function enableGalaxyControls(stationCb: () => void, combatCb: () => void
   window.addEventListener('mousemove', onMouseMove);
   window.addEventListener('mouseup', onMouseUp);
   window.addEventListener('wheel', onWheel, { passive: false });
+  window.addEventListener('touchstart', onTouchStart, { passive: false });
+  window.addEventListener('touchmove', onTouchMove, { passive: false });
+  window.addEventListener('touchend', onTouchEnd);
+  window.addEventListener('touchcancel', onTouchEnd);
 
   setupGalaxyCamera();
   highlightRoutes();
@@ -322,6 +437,10 @@ export function disableGalaxyControls(): void {
   window.removeEventListener('mousemove', onMouseMove);
   window.removeEventListener('mouseup', onMouseUp);
   window.removeEventListener('wheel', onWheel);
+  window.removeEventListener('touchstart', onTouchStart);
+  window.removeEventListener('touchmove', onTouchMove);
+  window.removeEventListener('touchend', onTouchEnd);
+  window.removeEventListener('touchcancel', onTouchEnd);
 
   if (galaxyHud) galaxyHud.style.display = 'none';
   if (infoPanel) infoPanel.style.display = 'none';
