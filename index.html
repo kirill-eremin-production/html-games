@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Space Combat</title>
+  </head>
+  <body>
+    <div id="start-screen">
+      <h1>SPACE COMBAT</h1>
+      <div class="subtitle">Космический бой</div>
+      <div class="controls">
+        <span>МЫШЬ</span> — направление полёта и прицеливание<br />
+        <span>A / D</span> — крен влево/вправо<br />
+        <span>W / SHIFT</span> — ускорение &nbsp; <span>S</span> — торможение<br />
+        <span>ПРОБЕЛ / ЛКМ</span> — лазерная стрельба<br />
+        Уничтожьте <span>3 боевых корабля</span>, затем <span>100 истребителей</span>!<br />
+        32 истребителя сражаются на вашей стороне.<br />
+      </div>
+      <button id="start-btn">В БОЙ</button>
+    </div>
+
+    <div id="game-over">
+      <h1>УНИЧТОЖЕН!</h1>
+      <div class="final-score" id="final-score">Счёт: 0</div>
+      <button id="restart-btn">ЗАНОВО</button>
+    </div>
+
+    <div id="victory-screen">
+      <h1>ПОБЕДА!</h1>
+      <div class="final-score" id="victory-score">Все враги уничтожены!</div>
+      <button id="victory-restart-btn">ИГРАТЬ СНОВА</button>
+    </div>
+
+    <div id="hud">
+      <div id="crosshair"></div>
+      <div id="mouse-cursor"></div>
+      <div id="stats">
+        <div>Счёт: <span id="score">0</span></div>
+        <div>Жизни: <span id="lives">5</span></div>
+        <div>Здоровье:</div>
+        <div id="health-bar-container"><div id="health-bar"></div></div>
+        <div>Союзники: <span id="ally-count">0</span> | Враги: <span id="enemy-count">0</span></div>
+        <div id="objective"></div>
+      </div>
+      <div id="speed-indicator">SPD: 0</div>
+      <div id="ship-status"></div>
+      <div id="kill-feed"></div>
+      <div id="minimap">
+        <canvas id="minimap-canvas" width="180" height="180"></canvas>
+      </div>
+      <div id="message"></div>
+      <div id="enemy-indicators"></div>
+      <div id="target-markers"></div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
