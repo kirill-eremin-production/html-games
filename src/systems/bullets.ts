@@ -11,8 +11,8 @@ import { createExplosion, destroyedSubMat } from './explosions';
 import { playerPlane } from './player';
 import { cleanupExcessBullets } from './weapons';
 
-const HIT_DIST_SQ = 8 * 8; // 64
-const PLAYER_HIT_DIST_SQ = 4 * 4; // 16
+const HIT_DIST_SQ = 12 * 12; // 144 (scaled 1.5×)
+const PLAYER_HIT_DIST_SQ = 6 * 6; // 36 (scaled 1.5×)
 const _hitWorldPos = new THREE.Vector3();
 
 function hitTestFighters(laser: LaserData, fighters: Fighter[], isPlayerLaser: boolean): boolean {
@@ -23,7 +23,7 @@ function hitTestFighters(laser: LaserData, fighters: Fighter[], isPlayerLaser: b
       createExplosion(laser.mesh.position.clone(), 0.3);
 
       if (f.health <= 0) {
-        createExplosion(f.mesh.position.clone(), 2);
+        createExplosion(f.mesh.position.clone(), 3);
         scene.remove(f.mesh);
         if (f.healthFill && f.healthFill.geometry) f.healthFill.geometry.dispose();
         if (f.healthFill && f.healthFill.material)
@@ -75,23 +75,23 @@ function hitTestCapitalShips(laser: LaserData): boolean {
         createExplosion(laser.mesh.position.clone(), 0.5);
 
         if (sub.health <= 0) {
-          createExplosion(_hitWorldPos.clone(), 3);
+          createExplosion(_hitWorldPos.clone(), 4.5);
           state.score += 500;
           showMessage(`${sub.name} УНИЧТОЖЕНА! +500`, 2);
         }
 
         if (cs.subsystems.every((s) => s.health <= 0)) {
           cs.alive = false;
-          createExplosion(cs.mesh.position.clone(), 8);
+          createExplosion(cs.mesh.position.clone(), 12);
           for (let k = 0; k < 5; k++) {
             setTimeout(() => {
               if (!cs.mesh.parent) return;
               const offset = new THREE.Vector3(
-                (Math.random() - 0.5) * 60,
-                (Math.random() - 0.5) * 20,
+                (Math.random() - 0.5) * 90,
                 (Math.random() - 0.5) * 30,
+                (Math.random() - 0.5) * 45,
               );
-              createExplosion(cs.mesh.position.clone().add(offset), 4);
+              createExplosion(cs.mesh.position.clone().add(offset), 6);
             }, k * 300);
           }
           setTimeout(() => {

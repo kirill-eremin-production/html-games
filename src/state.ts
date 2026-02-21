@@ -54,6 +54,7 @@ export function createInitialState(): GameState {
     damageFlash: 0,
     noDamageTimer: 0,
     respawnQueue: [],
+    lockedTarget: null,
   };
 }
 

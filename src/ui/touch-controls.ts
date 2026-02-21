@@ -1,5 +1,7 @@
 import { resumeAudio } from '../audio/sound';
 import { state } from '../state';
+import { playerPlane } from '../systems/player';
+import { toggleTargetLock } from './markers';
 
 let aimReturnInterval: number | null = null;
 
@@ -187,6 +189,24 @@ export function initTouchControls(pauseCallback: () => void): void {
   };
   fireBtn.addEventListener('touchend', handleFireEnd, { passive: false });
   fireBtn.addEventListener('touchcancel', handleFireEnd, { passive: false });
+
+  // --- Lock button ---
+  const lockBtn = document.createElement('div');
+  lockBtn.className = 'touch-lock-btn';
+  lockBtn.textContent = 'LOCK';
+  container.appendChild(lockBtn);
+
+  lockBtn.addEventListener(
+    'touchstart',
+    (e) => {
+      e.preventDefault();
+      resumeAudio();
+      toggleTargetLock(playerPlane);
+      lockBtn.classList.add('active');
+      setTimeout(() => lockBtn.classList.remove('active'), 200);
+    },
+    { passive: false },
+  );
 
   // --- Pause button ---
   const pauseBtn = document.createElement('div');

@@ -216,16 +216,23 @@ canvas {
   height: 100%;
   border-radius: 50%;
 }
+@media (max-width: 768px) {
+  #minimap {
+    width: 100px;
+    height: 100px;
+    bottom: 10px;
+  }
+}
 
 #message {
   position: absolute;
-  top: 45%;
+  top: 12%;
   left: 50%;
   transform: translate(-50%, -50%);
   color: #fff;
-  font-size: 42px;
+  font-size: 21px;
   font-weight: bold;
-  text-shadow: 0 0 30px rgba(0, 200, 255, 0.8);
+  text-shadow: 0 0 20px rgba(0, 200, 255, 0.8);
   opacity: 0;
   transition: opacity 0.5s;
   text-align: center;
@@ -414,28 +421,19 @@ canvas {
   z-index: 14;
 }
 .target-marker .diamond {
-  width: 28px;
-  height: 28px;
+  width: 21px;
+  height: 21px;
   border: 2px solid #ff3333;
   transform: rotate(45deg);
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
 }
-.target-marker.locked .diamond {
-  border-color: #00ffcc;
-  box-shadow:
-    0 0 12px rgba(0, 255, 200, 0.6),
-    inset 0 0 8px rgba(0, 255, 200, 0.2);
-}
 .target-marker.capital .diamond {
-  width: 36px;
-  height: 36px;
+  width: 21px;
+  height: 21px;
   border-color: #ff8800;
-  border-width: 3px;
-}
-.target-marker.capital.locked .diamond {
-  border-color: #00ffcc;
+  border-width: 2px;
 }
 .target-marker .marker-dist {
   color: #ff6666;
@@ -445,14 +443,39 @@ canvas {
   text-shadow: 0 0 4px #000;
   font-weight: bold;
 }
-.target-marker.locked .marker-dist {
-  color: #00ffcc;
-}
 .target-marker .marker-label {
   color: #ff8800;
   font-size: 10px;
   text-align: center;
   text-shadow: 0 0 4px #000;
+}
+.target-marker.target-locked .diamond {
+  border-color: #ffff00;
+  border-width: 3px;
+  box-shadow:
+    0 0 16px rgba(255, 255, 0, 0.7),
+    inset 0 0 10px rgba(255, 255, 0, 0.25);
+  animation: lock-pulse 1s ease-in-out infinite;
+}
+.target-marker.target-locked .marker-dist {
+  color: #ffff00;
+}
+.target-marker.target-locked .marker-label {
+  color: #ffff00;
+  font-weight: bold;
+}
+@keyframes lock-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 16px rgba(255, 255, 0, 0.7),
+      inset 0 0 10px rgba(255, 255, 0, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 0 24px rgba(255, 255, 0, 0.9),
+      inset 0 0 14px rgba(255, 255, 0, 0.4);
+  }
 }
 
 .enemy-indicator {
@@ -734,6 +757,34 @@ canvas {
   background: rgba(255, 100, 0, 0.6);
   border-color: rgba(255, 150, 0, 0.9);
   box-shadow: 0 0 25px rgba(255, 100, 0, 0.5);
+  color: #fff;
+}
+
+.touch-lock-btn {
+  position: absolute;
+  bottom: 150px;
+  left: 45px;
+  width: 60px;
+  height: 40px;
+  border-radius: 6px;
+  background: rgba(255, 255, 0, 0.1);
+  border: 2px solid rgba(255, 255, 0, 0.3);
+  box-shadow: 0 0 10px rgba(255, 255, 0, 0.1);
+  pointer-events: all;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 100, 0.8);
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  user-select: none;
+}
+.touch-lock-btn.active {
+  background: rgba(255, 255, 0, 0.4);
+  border-color: rgba(255, 255, 0, 0.8);
+  box-shadow: 0 0 20px rgba(255, 255, 0, 0.4);
   color: #fff;
 }
 

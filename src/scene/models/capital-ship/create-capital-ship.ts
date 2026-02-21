@@ -31,7 +31,13 @@ export function createCapitalShip(index: number, hullColor?: number): THREE.Grou
     };
   });
 
+  // Scale subsystem hit radii to match visual scale
+  for (const sub of subsystems) {
+    sub.radius *= 1.5;
+  }
+
   group.userData.subsystems = subsystems;
   group.userData.index = index;
+  group.scale.setScalar(1.5);
   return group;
 }

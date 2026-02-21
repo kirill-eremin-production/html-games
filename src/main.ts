@@ -24,7 +24,7 @@ import { spawnAlly, spawnEnemy, updateRespawnQueue } from './systems/spawner';
 import { hideMessage, resetCachedShipHTML, showMessage, updateHUD } from './ui/hud';
 import { updateEnemyIndicators } from './ui/indicators';
 import { clearKillFeed, updateKillFeed } from './ui/kill-feed';
-import { updateTargetMarkers } from './ui/markers';
+import { toggleTargetLock, updateTargetMarkers } from './ui/markers';
 import { drawMinimap } from './ui/minimap';
 import { showSettingsScreen } from './ui/settings-ui';
 import { initTouchControls } from './ui/touch-controls';
@@ -79,6 +79,10 @@ window.addEventListener('mousemove', (e) => {
 });
 window.addEventListener('mousedown', (e) => {
   if (e.button === 0) state.keys['MouseLeft'] = true;
+  if (e.button === 1 && state.running) {
+    e.preventDefault();
+    toggleTargetLock(playerPlane);
+  }
   resumeAudio();
 });
 window.addEventListener('mouseup', (e) => {
@@ -217,6 +221,7 @@ function resetGame(): void {
   state.keys = {};
   state.mouseX = 0;
   state.mouseY = 0;
+  state.lockedTarget = null;
   resetCachedShipHTML();
   resetNameCounters();
   clearKillFeed();
@@ -227,7 +232,7 @@ function resetGame(): void {
   playerRotation.pitch = 0;
   playerRotation.yaw = 0;
   playerRotation.roll = 0;
-  camera.position.set(-14, 5, 0);
+  camera.position.set(-10.5, 3.75, 0);
   camera.lookAt(playerPlane.position);
 
   // Rebuild player model with current settings colors
@@ -265,7 +270,7 @@ function startGame(): void {
 // Init
 createStarfield();
 createNebulae();
-camera.position.set(-14, 5, 0);
+camera.position.set(-10.5, 3.75, 0);
 camera.lookAt(0, 0, 0);
 
 document.getElementById('start-btn')!.addEventListener('click', startGame);

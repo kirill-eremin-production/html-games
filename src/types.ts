@@ -68,6 +68,10 @@ export interface RespawnEntry {
   timer: number;
 }
 
+export type LockedTarget =
+  | { kind: 'fighter'; fighter: Fighter }
+  | { kind: 'subsystem'; subsystem: Subsystem; ship: CapitalShip };
+
 export interface GameState {
   running: boolean;
   phase: 1 | 2;
@@ -98,4 +102,5 @@ export interface GameState {
   damageFlash: number;
   noDamageTimer: number;
   respawnQueue: RespawnEntry[];
+  lockedTarget: LockedTarget | null;
 }

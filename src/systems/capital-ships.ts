@@ -92,9 +92,9 @@ export function updateCapitalShips(dt: number): void {
       const shots = 2 + Math.floor(Math.random() * 2);
       for (let i = 0; i < shots; i++) {
         _csOrigin.set(
-          shipPos.x + (Math.random() - 0.5) * 20,
-          shipPos.y + (Math.random() - 0.5) * 10,
-          shipPos.z + (Math.random() - 0.5) * 20,
+          shipPos.x + (Math.random() - 0.5) * 30,
+          shipPos.y + (Math.random() - 0.5) * 15,
+          shipPos.z + (Math.random() - 0.5) * 30,
         );
         _csShotDir.copy(_csDir);
         _csShotDir.x += (Math.random() - 0.5) * 0.05;

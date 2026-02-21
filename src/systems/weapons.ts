@@ -5,10 +5,10 @@ import { scene } from '../scene/setup';
 import { state } from '../state';
 import type { LaserData } from '../types';
 
-const laserGeoAlly = new THREE.CylinderGeometry(0.1, 0.1, 3.5, 4);
+const laserGeoAlly = new THREE.CylinderGeometry(0.15, 0.15, 5, 4);
 laserGeoAlly.rotateZ(Math.PI / 2);
 
-const laserGeoEnemy = new THREE.CylinderGeometry(0.12, 0.12, 3.5, 4);
+const laserGeoEnemy = new THREE.CylinderGeometry(0.18, 0.18, 5, 4);
 laserGeoEnemy.rotateZ(Math.PI / 2);
 
 const laserMatPlayer = new THREE.MeshBasicMaterial({

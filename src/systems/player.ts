@@ -85,7 +85,7 @@ export function updatePlayer(dt: number): void {
   }
   updateEngineHum(speedRatio);
 
-  const camOffset = _tmpVec2.set(-14, 5, 0).applyQuaternion(playerPlane.quaternion);
+  const camOffset = _tmpVec2.set(-10.5, 3.75, 0).applyQuaternion(playerPlane.quaternion);
   const camTarget = _tmpVec3.copy(playerPlane.position).add(camOffset);
   camera.position.lerp(camTarget, 5 * dt);
   const lookTarget = _tmpVec2.copy(playerPlane.position).add(forward.multiplyScalar(20));
@@ -130,7 +130,7 @@ export function updatePlayer(dt: number): void {
 }
 
 export function playerDeath(): void {
-  createExplosion(playerPlane.position.clone(), 4);
+  createExplosion(playerPlane.position.clone(), 6);
   addKillFeedEntry(state.lastAttacker || '?', PLAYER_NAME, 'enemy', 'player');
 
   state.lives--;
@@ -152,6 +152,6 @@ export function playerDeath(): void {
   state.invulnTimer = 3;
   state.damageFlash = 0;
   state.lastAttacker = '';
-  camera.position.set(-14, 5, 0);
+  camera.position.set(-10.5, 3.75, 0);
   camera.lookAt(playerPlane.position);
 }

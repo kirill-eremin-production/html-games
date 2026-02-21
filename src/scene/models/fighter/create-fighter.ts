@@ -113,5 +113,6 @@ export function createFighter(color: number, teamColor: number): THREE.Group {
   haloL.position.set(-3.3, 0, -1.0);
   group.add(haloL);
 
+  group.scale.setScalar(1.5);
   return group;
 }

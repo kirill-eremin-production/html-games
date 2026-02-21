@@ -13,7 +13,7 @@ export function createStarfield(): void {
     positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
     positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
     positions[i * 3 + 2] = r * Math.cos(phi);
-    const brightness = 0.6 + Math.random() * 0.4;
+    const brightness = 0.3 + Math.random() * 0.2;
     const tint = Math.random();
     colors[i * 3] = brightness * (tint > 0.7 ? 1.0 : 0.85);
     colors[i * 3 + 1] = brightness * (tint > 0.3 ? 1.0 : 0.85);
@@ -21,7 +21,13 @@ export function createStarfield(): void {
   }
   geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  const mat = new THREE.PointsMaterial({ size: 2.5, vertexColors: true, sizeAttenuation: false });
+  const mat = new THREE.PointsMaterial({
+    size: 1.5,
+    vertexColors: true,
+    sizeAttenuation: false,
+    transparent: true,
+    opacity: 0.85,
+  });
   scene.add(new THREE.Points(geo, mat));
 }
 

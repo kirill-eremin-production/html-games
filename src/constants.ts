@@ -7,7 +7,9 @@ export const RESPAWN_DELAY = 5;
 export const KILL_TARGET = 100;
 export const KILL_FEED_MAX = 7;
 export const KILL_FEED_DURATION = 6;
-export const LOCK_RADIUS = 30;
+export const CURSOR_PROXIMITY_FACTOR = 0.3;
+export const CAPITAL_CLOSE_RANGE_SQ = 550 * 550;
+export const LOCK_PICK_RADIUS = 80;
 
 export const PLAYER_NAME = 'Ас';
 
