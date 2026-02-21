@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "format": "prettier --write \"src/**/*.{ts,css}\" \"*.{json,html}\"",
     "format:check": "prettier --check \"src/**/*.{ts,css}\" \"*.{json,html}\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "export-models": "tsx scripts/export-models.ts"
   },
   "lint-staged": {
     "*.{ts,css,json,html}": "prettier --write",
@@ -20,10 +21,12 @@
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
+    "@types/node": "^25.3.0",
     "@types/three": "^0.183.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
   }
