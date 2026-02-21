@@ -661,3 +661,99 @@ canvas {
   background: rgba(0, 100, 200, 0.2);
   box-shadow: 0 0 20px rgba(0, 150, 255, 0.4);
 }
+
+/* Touch Controls */
+#touch-controls {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.touch-aim-zone {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  pointer-events: all;
+}
+
+.touch-joystick {
+  position: absolute;
+  bottom: 30px;
+  left: 30px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(0, 255, 255, 0.1);
+  border: 2px solid rgba(0, 255, 255, 0.25);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+  pointer-events: all;
+  touch-action: none;
+}
+.touch-joystick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(0, 255, 255, 0.3);
+  border: 2px solid rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  transform: translate(-25px, -25px);
+  pointer-events: none;
+}
+
+.touch-fire-btn {
+  position: absolute;
+  bottom: 30px;
+  right: 30px;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: rgba(255, 100, 0, 0.3);
+  border: 3px solid rgba(255, 100, 0, 0.5);
+  box-shadow: 0 0 15px rgba(255, 100, 0, 0.2);
+  pointer-events: all;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 150, 50, 0.9);
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  user-select: none;
+}
+.touch-fire-btn.active {
+  background: rgba(255, 100, 0, 0.6);
+  border-color: rgba(255, 150, 0, 0.9);
+  box-shadow: 0 0 25px rgba(255, 100, 0, 0.5);
+  color: #fff;
+}
+
+.touch-pause-btn {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.25);
+  pointer-events: all;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0, 255, 255, 0.6);
+  font-size: 14px;
+  letter-spacing: 2px;
+  user-select: none;
+}

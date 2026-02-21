@@ -27,6 +27,7 @@ import { clearKillFeed, updateKillFeed } from './ui/kill-feed';
 import { updateTargetMarkers } from './ui/markers';
 import { drawMinimap } from './ui/minimap';
 import { showSettingsScreen } from './ui/settings-ui';
+import { initTouchControls } from './ui/touch-controls';
 
 // Build player model
 let playerModel = createFighter(
@@ -271,6 +272,8 @@ document.getElementById('start-btn')!.addEventListener('click', startGame);
 document.getElementById('restart-btn')!.addEventListener('click', startGame);
 document.getElementById('victory-restart-btn')!.addEventListener('click', startGame);
 document.getElementById('settings-btn')!.addEventListener('click', showSettingsScreen);
+
+initTouchControls(pauseGame);
 
 clock.start();
 gameLoop();
