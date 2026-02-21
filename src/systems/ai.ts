@@ -132,7 +132,7 @@ function updateFighterAI(
   fighter.shootTimer -= dt;
   if (fighter.shootTimer <= 0 && dist < 400) {
     fighter.shootTimer = 0.5 + Math.random() * 0.7;
-    shootFromFighter(fighter.mesh.position, dirToTarget, shootTeam, fighter.name, playerPlane);
+    shootFromFighter(fighter.mesh, dirToTarget, shootTeam, fighter.name, playerPlane);
   }
 
   fighter.healthBar.lookAt(camera.position);

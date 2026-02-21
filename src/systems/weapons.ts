@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { playLaserSound } from '../audio/sound';
+import { GUN_OFFSET_L, GUN_OFFSET_R } from '../scene/models';
 import { scene } from '../scene/setup';
 import { state } from '../state';
 import type { LaserData } from '../types';
@@ -83,9 +84,10 @@ export function cleanupExcessBullets(): void {
 const _fShootDir = new THREE.Vector3();
 const _fBulletPos = new THREE.Vector3();
 const AUDIO_DIST_SQ = 300 * 300;
+let _fGunToggle = false;
 
 export function shootFromFighter(
-  position: THREE.Vector3,
+  fighter: THREE.Group,
   dirToTarget: THREE.Vector3,
   team: LaserData['team'],
   name: string,
@@ -96,9 +98,12 @@ export function shootFromFighter(
   _fShootDir.y += (Math.random() - 0.5) * 0.05;
   _fShootDir.z += (Math.random() - 0.5) * 0.05;
   _fShootDir.normalize();
-  _fBulletPos.copy(position).addScaledVector(_fShootDir, 4);
+  // Alternate between left and right gun pods
+  _fGunToggle = !_fGunToggle;
+  const offset = _fGunToggle ? GUN_OFFSET_R : GUN_OFFSET_L;
+  _fBulletPos.copy(offset).applyQuaternion(fighter.quaternion).add(fighter.position);
   createLaser(_fBulletPos, _fShootDir, team, name);
-  if (position.distanceToSquared(playerPlane.position) < AUDIO_DIST_SQ) {
+  if (fighter.position.distanceToSquared(playerPlane.position) < AUDIO_DIST_SQ) {
     playLaserSound(false);
   }
 }

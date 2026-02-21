@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { playLaserSound } from '../audio/sound';
 import { PLAYER_NAME } from '../constants';
+import { GUN_OFFSET_L, GUN_OFFSET_R } from '../scene/models';
 import { camera } from '../scene/setup';
 import { state } from '../state';
 import { showMessage } from '../ui/hud';
@@ -17,9 +18,6 @@ const _tmpVec3 = new THREE.Vector3();
 const _tmpQuat = new THREE.Quaternion();
 const _shootAim = new THREE.Vector3();
 const _shootDir = new THREE.Vector3();
-const _shootFwd = new THREE.Vector3();
-const _shootPos = new THREE.Vector3();
-const _shootRight = new THREE.Vector3();
 const _shootOrigin = new THREE.Vector3();
 
 export function initPlayerModel(): void {
@@ -109,12 +107,17 @@ export function updatePlayer(dt: number): void {
     state.shootCooldown = 0.1;
     _shootAim.set(state.mouseX, -state.mouseY, 0.5).unproject(camera);
     _shootDir.copy(_shootAim).sub(camera.position).normalize();
-    _shootFwd.set(1, 0, 0).applyQuaternion(playerPlane.quaternion);
-    _shootPos.copy(playerPlane.position).addScaledVector(_shootFwd, 4);
-    _shootRight.set(0, 0, 1).applyQuaternion(playerPlane.quaternion);
-    _shootOrigin.copy(_shootPos).addScaledVector(_shootRight, 1.5);
+    // Right gun muzzle
+    _shootOrigin
+      .copy(GUN_OFFSET_R)
+      .applyQuaternion(playerPlane.quaternion)
+      .add(playerPlane.position);
     createLaser(_shootOrigin, _shootDir, 'player', PLAYER_NAME);
-    _shootOrigin.copy(_shootPos).addScaledVector(_shootRight, -1.5);
+    // Left gun muzzle
+    _shootOrigin
+      .copy(GUN_OFFSET_L)
+      .applyQuaternion(playerPlane.quaternion)
+      .add(playerPlane.position);
     createLaser(_shootOrigin, _shootDir, 'player', PLAYER_NAME);
     playLaserSound(true);
   }
