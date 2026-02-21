@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { createFighter } from '../scene/models';
 import { parseHexColor, settings } from '../settings';
-import { STAR_SYSTEMS } from './data';
+import { STAR_SYSTEMS, getSystem } from './data';
 import { campaign } from './state';
 
 export const galaxyGroup = new THREE.Group();
@@ -10,7 +10,6 @@ galaxyGroup.visible = false;
 // ── Internal refs ────────────────────────────────────────────────────────────
 
 const starMeshes = new Map<string, THREE.Mesh>();
-const starGlows = new Map<string, THREE.PointLight>();
 const starHalos = new Map<string, THREE.Sprite>();
 const routeLines: THREE.Line[] = [];
 let playerShipModel: THREE.Group | null = null;
@@ -20,8 +19,42 @@ let contractMarker: THREE.Mesh | null = null;
 const _pulse = { time: 0 };
 const _projVec = new THREE.Vector3();
 
+// Twinkle uniform for bright star overlay
+let twinkleTimeUniform: { value: number } | null = null;
+
 let labelsContainer: HTMLElement | null = null;
 const labelElements = new Map<string, HTMLElement>();
+
+// ── Nearby systems (within N hops) — controls labels + star scale ────────────
+
+const NEARBY_HOPS = 6;
+const NEARBY_SCALE = 1.0;
+const FAR_SCALE = 0.5;
+const SCALE_LERP_SPEED = 3.0;
+
+const nearbySystemIds = new Set<string>();
+const starScaleCurrent = new Map<string, number>();
+
+function recomputeNearby(): void {
+  nearbySystemIds.clear();
+
+  const queue: [string, number][] = [[campaign.currentSystemId, 0]];
+  nearbySystemIds.add(campaign.currentSystemId);
+
+  while (queue.length > 0) {
+    const [id, depth] = queue.shift()!;
+    if (depth >= NEARBY_HOPS) continue;
+
+    const sys = getSystem(id);
+    if (!sys) continue;
+    for (const connId of sys.connections) {
+      if (!nearbySystemIds.has(connId)) {
+        nearbySystemIds.add(connId);
+        queue.push([connId, depth + 1]);
+      }
+    }
+  }
+}
 
 // Radial gradient texture for soft glow sprites (created once, shared)
 function createGlowTexture(): THREE.CanvasTexture {
@@ -239,7 +272,7 @@ function createBackgroundStars(): THREE.Group {
       x = r * Math.cos(angle + wobble) + offset * Math.cos(perpA) + gr() * 3.5;
       z = r * Math.sin(angle + wobble) + offset * Math.sin(perpA) + gr() * 3.5;
       y = gr() * 1.5 * (1 - t * 0.5);
-      brightness = 0.25 + Math.random() * 0.55;
+      brightness = 0.09 + Math.random() * 0.22;
     } else if (i < CORE_END) {
       // ── Core / central bar ──
       // Milky Way has a central bar ~2:1 aspect ratio
@@ -255,7 +288,7 @@ function createBackgroundStars(): THREE.Group {
       x = rawX * cosB - rawZ * sinB + gr() * 2;
       z = rawX * sinB + rawZ * cosB + gr() * 2;
       y = gr() * 1.5 * Math.max(0.15, 1 - r / 20);
-      brightness = 0.45 + Math.random() * 0.55;
+      brightness = 0.15 + Math.random() * 0.26;
     } else if (i < INTER_END) {
       // ── Inter-arm / scattered field ──
       const a = Math.random() * TWO_PI;
@@ -263,7 +296,7 @@ function createBackgroundStars(): THREE.Group {
       x = r * Math.cos(a) + gr() * 6;
       z = r * Math.sin(a) + gr() * 6;
       y = gr() * 2 * (1 - r / 120);
-      brightness = 0.15 + Math.random() * 0.45;
+      brightness = 0.06 + Math.random() * 0.16;
     } else if (i < DISK_END) {
       // ── Thin disk fill — smooth background ──
       const a = Math.random() * TWO_PI;
@@ -271,7 +304,7 @@ function createBackgroundStars(): THREE.Group {
       x = r * Math.cos(a) + gr() * 2;
       z = r * Math.sin(a) + gr() * 2;
       y = gr() * 0.8 * (1 - r / 100);
-      brightness = 0.12 + Math.random() * 0.35;
+      brightness = 0.045 + Math.random() * 0.13;
     } else {
       // ── Halo — spheroidal, dim ──
       const a = Math.random() * TWO_PI;
@@ -279,7 +312,7 @@ function createBackgroundStars(): THREE.Group {
       x = r * Math.cos(a) + gr() * 12;
       z = r * Math.sin(a) + gr() * 12;
       y = gr() * 5;
-      brightness = 0.08 + Math.random() * 0.2;
+      brightness = 0.03 + Math.random() * 0.075;
     }
 
     // Apply density cluster pull (~15% of disk stars)
@@ -313,17 +346,18 @@ function createBackgroundStars(): THREE.Group {
     map: dotTexture,
     vertexColors: true,
     transparent: true,
-    opacity: 0.75,
+    opacity: 0.34,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     sizeAttenuation: true,
   });
   group.add(new THREE.Points(geo, matMain));
 
-  // Bright star overlay — 1500 larger glowing points
+  // Bright star overlay — 1500 larger glowing points with per-star twinkling
   const brightCount = 1500;
   const bPos = new Float32Array(brightCount * 3);
   const bCol = new Float32Array(brightCount * 3);
+  const bPhase = new Float32Array(brightCount);
   for (let i = 0; i < brightCount; i++) {
     const src = Math.floor(Math.random() * TOTAL);
     bPos[i * 3] = positions[src * 3];
@@ -333,20 +367,47 @@ function createBackgroundStars(): THREE.Group {
     bCol[i * 3] = Math.min(1, colors[src * 3] * 1.3);
     bCol[i * 3 + 1] = Math.min(1, colors[src * 3 + 1] * 1.3);
     bCol[i * 3 + 2] = Math.min(1, colors[src * 3 + 2] * 1.3);
+    // Random phase for twinkling
+    bPhase[i] = Math.random() * Math.PI * 2;
   }
   const bGeo = new THREE.BufferGeometry();
   bGeo.setAttribute('position', new THREE.BufferAttribute(bPos, 3));
   bGeo.setAttribute('color', new THREE.BufferAttribute(bCol, 3));
+  bGeo.setAttribute('aPhase', new THREE.BufferAttribute(bPhase, 1));
+  const timeUniform = { value: 0 };
+  twinkleTimeUniform = timeUniform;
   const matBright = new THREE.PointsMaterial({
     size: 0.7,
     map: dotTexture,
     vertexColors: true,
     transparent: true,
-    opacity: 0.35,
+    opacity: 0.13,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     sizeAttenuation: true,
   });
+  matBright.onBeforeCompile = (shader) => {
+    shader.uniforms.uTime = timeUniform;
+    // Inject phase attribute and varying into vertex shader
+    shader.vertexShader = shader.vertexShader.replace(
+      'void main() {',
+      'attribute float aPhase;\nvarying float vTwinkle;\nvoid main() {',
+    );
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <begin_vertex>',
+      `#include <begin_vertex>
+      vTwinkle = 0.55 + 0.45 * sin(uTime * 1.8 + aPhase) * sin(uTime * 0.7 + aPhase * 2.3);`,
+    );
+    // Modulate alpha in fragment shader
+    shader.fragmentShader = shader.fragmentShader.replace(
+      'void main() {',
+      'uniform float uTime;\nvarying float vTwinkle;\nvoid main() {',
+    );
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <premultiplied_alpha_fragment>',
+      'gl_FragColor.a *= vTwinkle;\n#include <premultiplied_alpha_fragment>',
+    );
+  };
   group.add(new THREE.Points(bGeo, matBright));
 
   return group;
@@ -386,22 +447,22 @@ function createGalaxyNebulae(): THREE.Group {
   // Nebulae along spiral arms
   const nebulaConfigs: { hue: number; sat: number; pos: [number, number, number]; scale: number; opacity: number }[] = [
     // Arm nebulae — placed along spiral paths
-    { hue: 0.6, sat: 0.8, pos: [25, 0.5, -18], scale: 20, opacity: 0.12 },
-    { hue: 0.55, sat: 0.7, pos: [-22, -0.3, -25], scale: 25, opacity: 0.1 },
-    { hue: 0.75, sat: 0.6, pos: [-35, 0.2, 15], scale: 22, opacity: 0.1 },
-    { hue: 0.0, sat: 0.7, pos: [40, -0.5, 20], scale: 18, opacity: 0.08 },
-    { hue: 0.85, sat: 0.5, pos: [10, 0.3, 40], scale: 24, opacity: 0.1 },
+    { hue: 0.6, sat: 0.8, pos: [25, 0.5, -18], scale: 20, opacity: 0.045 },
+    { hue: 0.55, sat: 0.7, pos: [-22, -0.3, -25], scale: 25, opacity: 0.037 },
+    { hue: 0.75, sat: 0.6, pos: [-35, 0.2, 15], scale: 22, opacity: 0.037 },
+    { hue: 0.0, sat: 0.7, pos: [40, -0.5, 20], scale: 18, opacity: 0.03 },
+    { hue: 0.85, sat: 0.5, pos: [10, 0.3, 40], scale: 24, opacity: 0.037 },
     // Core glow
-    { hue: 0.12, sat: 0.6, pos: [0, 0, 0], scale: 30, opacity: 0.15 },
-    { hue: 0.08, sat: 0.4, pos: [2, 0, -3], scale: 20, opacity: 0.12 },
+    { hue: 0.12, sat: 0.6, pos: [0, 0, 0], scale: 30, opacity: 0.06 },
+    { hue: 0.08, sat: 0.4, pos: [2, 0, -3], scale: 20, opacity: 0.045 },
     // Outer arm dust
-    { hue: 0.58, sat: 0.9, pos: [50, 0, -30], scale: 28, opacity: 0.06 },
-    { hue: 0.7, sat: 0.7, pos: [-45, 0, -35], scale: 22, opacity: 0.07 },
-    { hue: 0.45, sat: 0.6, pos: [-30, 0, 45], scale: 26, opacity: 0.07 },
-    { hue: 0.15, sat: 0.5, pos: [30, 0, 50], scale: 20, opacity: 0.06 },
+    { hue: 0.58, sat: 0.9, pos: [50, 0, -30], scale: 28, opacity: 0.022 },
+    { hue: 0.7, sat: 0.7, pos: [-45, 0, -35], scale: 22, opacity: 0.026 },
+    { hue: 0.45, sat: 0.6, pos: [-30, 0, 45], scale: 26, opacity: 0.026 },
+    { hue: 0.15, sat: 0.5, pos: [30, 0, 50], scale: 20, opacity: 0.022 },
     // Faint large background clouds
-    { hue: 0.65, sat: 0.3, pos: [0, -1, 30], scale: 50, opacity: 0.04 },
-    { hue: 0.5, sat: 0.3, pos: [-20, 0.5, -10], scale: 55, opacity: 0.04 },
+    { hue: 0.65, sat: 0.3, pos: [0, -1, 30], scale: 50, opacity: 0.015 },
+    { hue: 0.5, sat: 0.3, pos: [-20, 0.5, -10], scale: 55, opacity: 0.015 },
   ];
 
   for (const cfg of nebulaConfigs) {
@@ -421,11 +482,11 @@ function createGalaxyNebulae(): THREE.Group {
 
   // Dark dust lanes — subtractive-looking patches (very dark, low opacity normal blending)
   const dustConfigs: { pos: [number, number, number]; scale: number; opacity: number }[] = [
-    { pos: [15, 0, -8], scale: 15, opacity: 0.25 },
-    { pos: [-12, 0, 10], scale: 18, opacity: 0.2 },
-    { pos: [30, 0, 5], scale: 12, opacity: 0.18 },
-    { pos: [-8, 0, -30], scale: 14, opacity: 0.15 },
-    { pos: [5, 0, 25], scale: 16, opacity: 0.2 },
+    { pos: [15, 0, -8], scale: 15, opacity: 0.09 },
+    { pos: [-12, 0, 10], scale: 18, opacity: 0.075 },
+    { pos: [30, 0, 5], scale: 12, opacity: 0.067 },
+    { pos: [-8, 0, -30], scale: 14, opacity: 0.06 },
+    { pos: [5, 0, 25], scale: 16, opacity: 0.075 },
   ];
 
   const dustTex = createNebulaTexture(0, 0);
@@ -454,7 +515,6 @@ export function buildGalaxyScene(): void {
     galaxyGroup.remove(galaxyGroup.children[0]);
   }
   starMeshes.clear();
-  starGlows.clear();
   starHalos.clear();
   routeLines.length = 0;
 
@@ -466,72 +526,43 @@ export function buildGalaxyScene(): void {
   galaxyGroup.add(createBackgroundStars());
   galaxyGroup.add(createGalaxyNebulae());
 
+  // Shared geometry for all star systems (optimized for 1000 systems)
+  const sharedStarGeo = new THREE.SphereGeometry(0.4, 8, 8);
+  if (!glowTexture) glowTexture = createGlowTexture();
+
   // Star systems
   for (let i = 0; i < STAR_SYSTEMS.length; i++) {
     const sys = STAR_SYSTEMS[i];
     const color = STAR_COLORS[i % STAR_COLORS.length];
 
-    // Star sphere
-    const geo = new THREE.SphereGeometry(1.2, 16, 16);
-    const mat = new THREE.MeshStandardMaterial({
+    // Star sphere (shared geometry, emissive — no PointLight needed)
+    const mat = new THREE.MeshBasicMaterial({
       color,
-      emissive: color,
-      emissiveIntensity: 0.8,
     });
-    const mesh = new THREE.Mesh(geo, mat);
+    const mesh = new THREE.Mesh(sharedStarGeo, mat);
     mesh.position.set(...sys.position);
     mesh.userData.systemId = sys.id;
     galaxyGroup.add(mesh);
     starMeshes.set(sys.id, mesh);
 
-    // Point light
-    const light = new THREE.PointLight(color, 1.5, 15);
-    light.position.set(...sys.position);
-    galaxyGroup.add(light);
-    starGlows.set(sys.id, light);
-
     // Soft glow sprite
-    if (!glowTexture) glowTexture = createGlowTexture();
     const spriteMat = new THREE.SpriteMaterial({
       map: glowTexture,
       color,
       transparent: true,
-      opacity: 1,
+      opacity: 0.7,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
     const sprite = new THREE.Sprite(spriteMat);
     sprite.position.set(...sys.position);
-    sprite.scale.setScalar(8);
+    sprite.scale.setScalar(2.5);
     galaxyGroup.add(sprite);
     starHalos.set(sys.id, sprite);
   }
 
-  // Route lines (avoid duplicates)
-  const drawnRoutes = new Set<string>();
-  for (const sys of STAR_SYSTEMS) {
-    for (const connId of sys.connections) {
-      const key = [sys.id, connId].sort().join('-');
-      if (drawnRoutes.has(key)) continue;
-      drawnRoutes.add(key);
-
-      const from = starMeshes.get(sys.id)!;
-      const to = starMeshes.get(connId)!;
-      const points = [from.position, to.position];
-      const geo = new THREE.BufferGeometry().setFromPoints(points);
-      const mat = new THREE.LineBasicMaterial({
-        color: 0x0088aa,
-        transparent: true,
-        opacity: 0.25,
-      });
-      const line = new THREE.Line(geo, mat);
-      galaxyGroup.add(line);
-      routeLines.push(line);
-    }
-  }
-
   // Selection ring (hidden by default)
-  const ringGeo = new THREE.RingGeometry(1.8, 2.2, 32);
+  const ringGeo = new THREE.RingGeometry(0.7, 0.9, 32);
   const ringMat = new THREE.MeshBasicMaterial({
     color: 0xffff00,
     transparent: true,
@@ -544,11 +575,9 @@ export function buildGalaxyScene(): void {
   galaxyGroup.add(selectionRing);
 
   // Contract target marker (red pulsing diamond)
-  const diamondGeo = new THREE.OctahedronGeometry(0.6, 0);
-  const diamondMat = new THREE.MeshStandardMaterial({
+  const diamondGeo = new THREE.OctahedronGeometry(0.5, 0);
+  const diamondMat = new THREE.MeshBasicMaterial({
     color: 0xff3333,
-    emissive: 0xff3333,
-    emissiveIntensity: 0.6,
   });
   contractMarker = new THREE.Mesh(diamondGeo, diamondMat);
   contractMarker.visible = false;
@@ -563,8 +592,56 @@ export function buildGalaxyScene(): void {
   galaxyGroup.add(playerShipModel);
 
   updatePlayerShipPosition();
+  recomputeNearby();
 
-  // Create HTML labels for each star system
+  // Set initial scales instantly (no animation on first build)
+  for (const [id, mesh] of starMeshes) {
+    const s = nearbySystemIds.has(id) ? NEARBY_SCALE : FAR_SCALE;
+    starScaleCurrent.set(id, s);
+    mesh.scale.setScalar(s);
+    const halo = starHalos.get(id);
+    if (halo) halo.scale.setScalar(2.5 * s);
+  }
+
+  rebuildRouteLines();
+  rebuildLabels();
+}
+
+// ── Route lines (only from current system) ──────────────────────────────────
+
+function rebuildRouteLines(): void {
+  // Remove old route lines
+  for (const line of routeLines) {
+    galaxyGroup.remove(line);
+    line.geometry.dispose();
+    (line.material as THREE.LineBasicMaterial).dispose();
+  }
+  routeLines.length = 0;
+
+  const currentSys = getSystem(campaign.currentSystemId);
+  if (!currentSys) return;
+
+  for (const connId of currentSys.connections) {
+    const from = starMeshes.get(campaign.currentSystemId);
+    const to = starMeshes.get(connId);
+    if (!from || !to) continue;
+
+    const points = [from.position, to.position];
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({
+      color: 0x00ccff,
+      transparent: true,
+      opacity: 0.5,
+    });
+    const line = new THREE.Line(geo, mat);
+    galaxyGroup.add(line);
+    routeLines.push(line);
+  }
+}
+
+// ── Labels (systems within NEARBY_HOPS) ─────────────────────────────────────
+
+function rebuildLabels(): void {
   if (!labelsContainer) {
     labelsContainer = document.createElement('div');
     labelsContainer.id = 'galaxy-labels';
@@ -572,7 +649,10 @@ export function buildGalaxyScene(): void {
   }
   for (const el of labelElements.values()) el.remove();
   labelElements.clear();
-  for (const sys of STAR_SYSTEMS) {
+
+  for (const id of nearbySystemIds) {
+    const sys = getSystem(id);
+    if (!sys) continue;
     const label = document.createElement('div');
     label.className = 'galaxy-label';
     label.textContent = sys.name;
@@ -586,30 +666,22 @@ export function buildGalaxyScene(): void {
 export function updateGalaxyScene(dt: number): void {
   _pulse.time += dt;
 
-  // Current system pulse
-  const currentMesh = starMeshes.get(campaign.currentSystemId);
-  if (currentMesh) {
-    const mat = currentMesh.material as THREE.MeshStandardMaterial;
-    mat.emissiveIntensity = 0.8 + Math.sin(_pulse.time * 3) * 0.3;
-  }
-  const currentLight = starGlows.get(campaign.currentSystemId);
-  if (currentLight) {
-    currentLight.intensity = 1.5 + Math.sin(_pulse.time * 3) * 0.5;
-  }
+  // Update twinkle time for bright star overlay
+  if (twinkleTimeUniform) twinkleTimeUniform.value = _pulse.time;
+
+  // Current system halo pulse
   const currentHalo = starHalos.get(campaign.currentSystemId);
   if (currentHalo) {
-    const s = 8 + Math.sin(_pulse.time * 3) * 1.2;
+    const s = 3 + Math.sin(_pulse.time * 3) * 0.5;
     currentHalo.scale.setScalar(s);
     (currentHalo.material as THREE.SpriteMaterial).opacity =
-      0.63 + Math.sin(_pulse.time * 3) * 0.19;
+      0.8 + Math.sin(_pulse.time * 3) * 0.2;
   }
 
   // Contract marker animation
   if (contractMarker && contractMarker.visible) {
     contractMarker.rotation.y += dt * 2;
     contractMarker.position.y = contractMarker.userData.baseY + Math.sin(_pulse.time * 4) * 0.5;
-    const mat = contractMarker.material as THREE.MeshStandardMaterial;
-    mat.emissiveIntensity = 0.4 + Math.sin(_pulse.time * 5) * 0.3;
   }
 
   // Rotate player ship model gently
@@ -622,6 +694,30 @@ export function updateGalaxyScene(dt: number): void {
     const mat = selectionRing.material as THREE.MeshBasicMaterial;
     mat.opacity = 0.5 + Math.sin(_pulse.time * 4) * 0.2;
   }
+
+  // Animate star scales (nearby = full, far = half)
+  for (const [id, mesh] of starMeshes) {
+    const target = nearbySystemIds.has(id) ? NEARBY_SCALE : FAR_SCALE;
+    const current = starScaleCurrent.get(id) ?? target;
+    const diff = target - current;
+    if (Math.abs(diff) > 0.005) {
+      const next = current + diff * Math.min(1, dt * SCALE_LERP_SPEED);
+      starScaleCurrent.set(id, next);
+      mesh.scale.setScalar(next);
+      const halo = starHalos.get(id);
+      // Skip halo of current system — it has its own pulse
+      if (halo && id !== campaign.currentSystemId) {
+        halo.scale.setScalar(2.5 * next);
+      }
+    } else if (current !== target) {
+      starScaleCurrent.set(id, target);
+      mesh.scale.setScalar(target);
+      const halo = starHalos.get(id);
+      if (halo && id !== campaign.currentSystemId) {
+        halo.scale.setScalar(2.5 * target);
+      }
+    }
+  }
 }
 
 // ── Label projection ─────────────────────────────────────────────────────────
@@ -631,10 +727,9 @@ export function updateGalaxyLabels(cam: THREE.Camera): void {
   const w = window.innerWidth;
   const h = window.innerHeight;
 
-  for (const sys of STAR_SYSTEMS) {
-    const mesh = starMeshes.get(sys.id);
-    const label = labelElements.get(sys.id);
-    if (!mesh || !label) continue;
+  for (const [id, label] of labelElements) {
+    const mesh = starMeshes.get(id);
+    if (!mesh) continue;
 
     _projVec.copy(mesh.position);
     _projVec.project(cam);
@@ -653,9 +748,9 @@ export function updateGalaxyLabels(cam: THREE.Camera): void {
     label.style.top = `${y + 18}px`;
 
     // Highlight current system
-    label.classList.toggle('current', sys.id === campaign.currentSystemId);
+    label.classList.toggle('current', id === campaign.currentSystemId);
     // Highlight contract target
-    label.classList.toggle('contract-target', campaign.activeContract?.targetSystemId === sys.id);
+    label.classList.toggle('contract-target', campaign.activeContract?.targetSystemId === id);
   }
 }
 
@@ -724,36 +819,9 @@ export function getStarMeshes(): Map<string, THREE.Mesh> {
   return starMeshes;
 }
 
-// Highlight accessible routes from current system
+// Rebuild routes, labels, and nearby set for current system
 export function highlightRoutes(): void {
-  const currentSys = STAR_SYSTEMS.find((s) => s.id === campaign.currentSystemId);
-  if (!currentSys) return;
-  const connSet = new Set(currentSys.connections);
-
-  for (const line of routeLines) {
-    const mat = line.material as THREE.LineBasicMaterial;
-    // Check if this line connects to current system
-    const geo = line.geometry as THREE.BufferGeometry;
-    const positions = geo.attributes.position;
-    const p1 = new THREE.Vector3(positions.getX(0), positions.getY(0), positions.getZ(0));
-
-    let isConnected = false;
-    const currentMesh = starMeshes.get(campaign.currentSystemId);
-    if (currentMesh && p1.distanceTo(currentMesh.position) < 0.1) {
-      isConnected = true;
-    } else if (currentMesh) {
-      const p2 = new THREE.Vector3(positions.getX(1), positions.getY(1), positions.getZ(1));
-      if (p2.distanceTo(currentMesh.position) < 0.1) {
-        isConnected = true;
-      }
-    }
-
-    if (isConnected) {
-      mat.opacity = 0.6;
-      mat.color.set(0x00ccff);
-    } else {
-      mat.opacity = 0.15;
-      mat.color.set(0x0088aa);
-    }
-  }
+  recomputeNearby();
+  rebuildRouteLines();
+  rebuildLabels();
 }

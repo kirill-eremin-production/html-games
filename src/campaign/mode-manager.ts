@@ -67,7 +67,7 @@ export function enterCampaignFromMenu(): void {
   enterGalaxyMode();
 }
 
-export function enterGalaxyMode(): void {
+export function enterGalaxyMode(resetCamera = true): void {
   setMode('galaxy');
 
   // Hide other screens
@@ -87,6 +87,7 @@ export function enterGalaxyMode(): void {
   enableGalaxyControls(
     () => enterStationMode(),
     () => enterCombatFromContract(),
+    resetCamera,
   );
 }
 
@@ -97,7 +98,7 @@ export function enterStationMode(): void {
   hideHUD();
   hideAllGameScreens();
 
-  showStation(() => enterGalaxyMode());
+  showStation(() => enterGalaxyMode(false));
 }
 
 function enterCombatFromContract(): void {

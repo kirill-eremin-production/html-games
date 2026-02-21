@@ -21,7 +21,7 @@ let selectedSystemId: string | null = null;
 // Orbit camera state
 let orbitTheta = 0; // horizontal angle
 let orbitPhi = Math.PI / 4; // vertical angle (from top)
-let orbitRadius = 70;
+let orbitRadius = 52;
 let orbitTarget = new THREE.Vector3(0, 0, 0);
 
 // Mouse drag
@@ -186,7 +186,6 @@ export function updateTravelAnimation(dt: number): void {
       if (onStartCombat) onStartCombat();
     } else {
       regenerateContracts();
-      if (onArriveAtStation) onArriveAtStation();
     }
     return;
   }
@@ -224,7 +223,7 @@ export function setupGalaxyCamera(): void {
   orbitTarget.set(...sys.position);
   orbitTheta = 0;
   orbitPhi = Math.PI / 4;
-  orbitRadius = 70;
+  orbitRadius = 52;
   updateCamera();
 }
 
@@ -297,7 +296,7 @@ function onMouseUp(e: MouseEvent): void {
 function onWheel(e: WheelEvent): void {
   if (!enabled || traveling) return;
   e.preventDefault();
-  orbitRadius = Math.max(30, Math.min(120, orbitRadius + e.deltaY * 0.05));
+  orbitRadius = Math.max(10, Math.min(120, orbitRadius + e.deltaY * 0.05));
   updateCamera();
 }
 
@@ -343,7 +342,7 @@ function onTouchMove(e: TouchEvent): void {
     e.preventDefault();
     const dist = getTouchDist(e);
     const scale = pinchStartDist / dist;
-    orbitRadius = Math.max(30, Math.min(120, pinchStartRadius * scale));
+    orbitRadius = Math.max(10, Math.min(120, pinchStartRadius * scale));
     updateCamera();
     return;
   }
@@ -402,7 +401,11 @@ function onTouchEnd(e: TouchEvent): void {
 
 // ── Enable / Disable ─────────────────────────────────────────────────────────
 
-export function enableGalaxyControls(stationCb: () => void, combatCb: () => void): void {
+export function enableGalaxyControls(
+  stationCb: () => void,
+  combatCb: () => void,
+  resetCamera = true,
+): void {
   ensureUI();
   enabled = true;
   selectedSystemId = null;
@@ -418,7 +421,15 @@ export function enableGalaxyControls(stationCb: () => void, combatCb: () => void
   window.addEventListener('touchend', onTouchEnd);
   window.addEventListener('touchcancel', onTouchEnd);
 
-  setupGalaxyCamera();
+  if (resetCamera) {
+    setupGalaxyCamera();
+  } else {
+    // Re-center on current system but keep orbit angles and zoom
+    const sys = getSystem(campaign.currentSystemId);
+    orbitTarget.set(...sys.position);
+    camera.up.set(0, 1, 0);
+    updateCamera();
+  }
   highlightRoutes();
   updateContractMarker();
   updateGalaxyHud();
