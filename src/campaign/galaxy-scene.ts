@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { createFighter } from '../scene/models';
+import { camera } from '../scene/setup';
+import { setStarfieldVisible } from '../scene/starfield';
 import { parseHexColor, settings } from '../settings';
 import { STAR_SYSTEMS, getSystem } from './data';
 import { campaign } from './state';
@@ -72,6 +74,8 @@ function createGlowTexture(): THREE.CanvasTexture {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, size, size);
   const tex = new THREE.CanvasTexture(canvas);
+  tex.generateMipmaps = false;
+  tex.minFilter = THREE.LinearFilter;
   return tex;
 }
 
@@ -92,7 +96,10 @@ function createDotTexture(): THREE.CanvasTexture {
   grad.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, size, size);
-  return new THREE.CanvasTexture(canvas);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.generateMipmaps = false;
+  tex.minFilter = THREE.LinearFilter;
+  return tex;
 }
 
 let dotTexture: THREE.CanvasTexture | null = null;
@@ -351,6 +358,18 @@ function createBackgroundStars(): THREE.Group {
     blending: THREE.AdditiveBlending,
     sizeAttenuation: true,
   });
+  matMain.onBeforeCompile = (shader) => {
+    // Cap point size to prevent oversized points near camera
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <clipping_planes_vertex>',
+      'gl_PointSize = min(gl_PointSize, 64.0);\n#include <clipping_planes_vertex>',
+    );
+    // Enforce circular shape — prevents square artifacts on some GPUs
+    shader.fragmentShader = shader.fragmentShader.replace(
+      'void main() {',
+      'void main() {\nif (length(gl_PointCoord - vec2(0.5)) > 0.5) discard;',
+    );
+  };
   group.add(new THREE.Points(geo, matMain));
 
   // Bright star overlay — 1500 larger glowing points with per-star twinkling
@@ -398,10 +417,15 @@ function createBackgroundStars(): THREE.Group {
       `#include <begin_vertex>
       vTwinkle = 0.55 + 0.45 * sin(uTime * 1.8 + aPhase) * sin(uTime * 0.7 + aPhase * 2.3);`,
     );
-    // Modulate alpha in fragment shader
+    // Cap point size to prevent oversized points near camera
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <clipping_planes_vertex>',
+      'gl_PointSize = min(gl_PointSize, 64.0);\n#include <clipping_planes_vertex>',
+    );
+    // Modulate alpha in fragment shader + enforce circular shape
     shader.fragmentShader = shader.fragmentShader.replace(
       'void main() {',
-      'uniform float uTime;\nvarying float vTwinkle;\nvoid main() {',
+      'uniform float uTime;\nvarying float vTwinkle;\nvoid main() {\nif (length(gl_PointCoord - vec2(0.5)) > 0.5) discard;',
     );
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <premultiplied_alpha_fragment>',
@@ -438,7 +462,10 @@ function createNebulaTexture(
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, size, size);
 
-  return new THREE.CanvasTexture(canvas);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.generateMipmaps = false;
+  tex.minFilter = THREE.LinearFilter;
+  return tex;
 }
 
 function createGalaxyNebulae(): THREE.Group {
@@ -669,13 +696,11 @@ export function updateGalaxyScene(dt: number): void {
   // Update twinkle time for bright star overlay
   if (twinkleTimeUniform) twinkleTimeUniform.value = _pulse.time;
 
-  // Current system halo pulse
+  // Current system halo pulse (opacity handled in the distance-fade loop below)
   const currentHalo = starHalos.get(campaign.currentSystemId);
   if (currentHalo) {
     const s = 3 + Math.sin(_pulse.time * 3) * 0.5;
     currentHalo.scale.setScalar(s);
-    (currentHalo.material as THREE.SpriteMaterial).opacity =
-      0.8 + Math.sin(_pulse.time * 3) * 0.2;
   }
 
   // Contract marker animation
@@ -696,6 +721,11 @@ export function updateGalaxyScene(dt: number): void {
   }
 
   // Animate star scales (nearby = full, far = half)
+  // Also fade out halos when they're close to camera to prevent screen-filling rectangles
+  const HALO_FADE_FAR = 10; // full opacity at this distance
+  const HALO_FADE_NEAR = 5; // fully hidden at this distance
+  const camPos = camera.position;
+
   for (const [id, mesh] of starMeshes) {
     const target = nearbySystemIds.has(id) ? NEARBY_SCALE : FAR_SCALE;
     const current = starScaleCurrent.get(id) ?? target;
@@ -704,18 +734,25 @@ export function updateGalaxyScene(dt: number): void {
       const next = current + diff * Math.min(1, dt * SCALE_LERP_SPEED);
       starScaleCurrent.set(id, next);
       mesh.scale.setScalar(next);
-      const halo = starHalos.get(id);
-      // Skip halo of current system — it has its own pulse
-      if (halo && id !== campaign.currentSystemId) {
-        halo.scale.setScalar(2.5 * next);
-      }
     } else if (current !== target) {
       starScaleCurrent.set(id, target);
       mesh.scale.setScalar(target);
-      const halo = starHalos.get(id);
-      if (halo && id !== campaign.currentSystemId) {
-        halo.scale.setScalar(2.5 * target);
-      }
+    }
+
+    // Distance-based halo fade — prevents giant sprite rectangles near camera
+    const halo = starHalos.get(id);
+    if (!halo) continue;
+    const dist = camPos.distanceTo(mesh.position);
+    const fade = Math.max(0, Math.min(1, (dist - HALO_FADE_NEAR) / (HALO_FADE_FAR - HALO_FADE_NEAR)));
+
+    if (id === campaign.currentSystemId) {
+      // Current system has its own pulse — modulate by fade
+      (halo.material as THREE.SpriteMaterial).opacity =
+        fade * (0.8 + Math.sin(_pulse.time * 3) * 0.2);
+    } else {
+      const s = starScaleCurrent.get(id) ?? target;
+      halo.scale.setScalar(2.5 * s);
+      (halo.material as THREE.SpriteMaterial).opacity = fade * 0.7;
     }
   }
 }
@@ -806,11 +843,19 @@ export function updateContractMarker(): void {
 
 export function showGalaxy(): void {
   galaxyGroup.visible = true;
+  setStarfieldVisible(false);
+  // Increase near plane to clip sprites/points that are too close to camera
+  camera.near = 5;
+  camera.updateProjectionMatrix();
   if (labelsContainer) labelsContainer.style.display = 'block';
 }
 
 export function hideGalaxy(): void {
   galaxyGroup.visible = false;
+  setStarfieldVisible(true);
+  // Restore near plane for combat mode
+  camera.near = 1;
+  camera.updateProjectionMatrix();
   if (selectionRing) selectionRing.visible = false;
   if (labelsContainer) labelsContainer.style.display = 'none';
 }

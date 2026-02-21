@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { scene } from './setup';
 
+let starfieldPoints: THREE.Points | null = null;
+
 export function createStarfield(): void {
   const count = 2500;
   const geo = new THREE.BufferGeometry();
@@ -28,33 +30,10 @@ export function createStarfield(): void {
     transparent: true,
     opacity: 0.85,
   });
-  scene.add(new THREE.Points(geo, mat));
+  starfieldPoints = new THREE.Points(geo, mat);
+  scene.add(starfieldPoints);
 }
 
-export function createNebulae(): void {
-  for (let i = 0; i < 5; i++) {
-    const s = 1500 + Math.random() * 2000;
-    const geo = new THREE.PlaneGeometry(s, s);
-    const hue = Math.random();
-    const color = new THREE.Color().setHSL(hue, 0.7, 0.2);
-    const mat = new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity: 0.12 + Math.random() * 0.08,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-    });
-    const mesh = new THREE.Mesh(geo, mat);
-    const dist = 2200 + Math.random() * 2000;
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.random() * Math.PI;
-    mesh.position.set(
-      dist * Math.sin(phi) * Math.cos(theta),
-      dist * Math.cos(phi),
-      dist * Math.sin(phi) * Math.sin(theta),
-    );
-    mesh.lookAt(0, 0, 0);
-    mesh.rotation.z = Math.random() * Math.PI;
-    scene.add(mesh);
-  }
+export function setStarfieldVisible(visible: boolean): void {
+  if (starfieldPoints) starfieldPoints.visible = visible;
 }

@@ -3,7 +3,7 @@ import { scene } from '../scene/setup';
 import { playerPlane } from '../systems/player';
 import { hideHUD, showHUD } from '../ui/hud';
 import { DIFFICULTY_CONFIGS } from './balance';
-import { hideCombatResult, showCombatResult } from './combat-result';
+import { hideCombatResult, showCombatQuitResult, showCombatResult } from './combat-result';
 import { disableGalaxyControls, enableGalaxyControls } from './galaxy-controls';
 import {
   buildGalaxyScene,
@@ -16,6 +16,7 @@ import {
 } from './galaxy-scene';
 import {
   campaign,
+  failContract,
   isCampaignActive,
   loadCampaign,
   regenerateContracts,
@@ -127,6 +128,21 @@ export function onCombatEnd(victory: boolean, score: number): void {
   if (stopCombatFn) stopCombatFn();
 
   showCombatResult(victory, score, () => {
+    hideCombatResult();
+    regenerateContracts();
+    enterStationMode();
+  });
+}
+
+export function onCombatQuit(): void {
+  if (!isCampaignActive) return;
+
+  setMode('result');
+  hideHUD();
+  if (stopCombatFn) stopCombatFn();
+
+  const penalty = failContract();
+  showCombatQuitResult(penalty, () => {
     hideCombatResult();
     regenerateContracts();
     enterStationMode();

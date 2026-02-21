@@ -398,10 +398,9 @@ canvas {
   margin-bottom: 30px;
   text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
 }
-#resume-btn {
+#pause-screen button {
   padding: 15px 50px;
   font-size: 20px;
-  background: linear-gradient(135deg, #08f, #06c);
   border: none;
   color: #fff;
   border-radius: 8px;
@@ -410,8 +409,15 @@ canvas {
   letter-spacing: 2px;
   transition: transform 0.2s;
 }
-#resume-btn:hover {
+#pause-screen button:hover {
   transform: scale(1.05);
+}
+#resume-btn {
+  background: linear-gradient(135deg, #08f, #06c);
+}
+#quit-btn {
+  margin-top: 15px;
+  background: linear-gradient(135deg, #c33, #911);
 }
 
 .target-marker {
@@ -810,6 +816,7 @@ canvas {
 }
 
 /* Galaxy mode cursor fix */
+body.galaxy-mode,
 body.galaxy-mode canvas {
   cursor: default !important;
 }

@@ -7,6 +7,7 @@ export const STARTING_FUEL = 5;
 export const MAX_FUEL = 10;
 export const FUEL_PRICE = 50;
 export const DEFEAT_REWARD_FRACTION = 0.3;
+export const QUIT_PENALTY = 1000;
 
 // ── Difficulty presets ───────────────────────────────────────────────────────
 

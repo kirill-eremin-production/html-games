@@ -194,10 +194,8 @@ export function updateTravelAnimation(dt: number): void {
   const t = travelProgress;
   const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
-  // Move player ship along path with arc
+  // Move player ship along straight path
   _lerpPos.lerpVectors(travelFromPos, travelToPos, ease);
-  // Add vertical arc (peak at midpoint)
-  _lerpPos.y += Math.sin(ease * Math.PI) * 4;
   setPlayerShipAt(_lerpPos);
 
   // Camera follows smoothly

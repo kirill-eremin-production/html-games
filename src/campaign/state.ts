@@ -1,4 +1,4 @@
-import { MAX_FUEL, REWARDS, STARTING_FUEL, STARTING_MONEY } from './balance';
+import { MAX_FUEL, QUIT_PENALTY, REWARDS, STARTING_FUEL, STARTING_MONEY } from './balance';
 import { generateContracts, getSystem } from './data';
 import type { CampaignState, Contract, GameMode } from './types';
 
@@ -83,6 +83,14 @@ export function completeContract(victory: boolean, combatScore: number): number 
   campaign.completedContracts++;
   saveCampaign();
   return reward;
+}
+
+export function failContract(): number {
+  campaign.activeContract = null;
+  const penalty = Math.min(QUIT_PENALTY, campaign.money);
+  campaign.money -= penalty;
+  saveCampaign();
+  return penalty;
 }
 
 export function buyFuel(units: number): boolean {

@@ -15,6 +15,7 @@ import { updateGalaxyLabels, updateGalaxyScene } from './campaign/galaxy-scene';
 import {
   enterCampaignFromMenu,
   onCombatEnd,
+  onCombatQuit,
   registerCombatCallbacks,
 } from './campaign/mode-manager';
 import { currentMode, isCampaignActive, setMode } from './campaign/state';
@@ -22,7 +23,7 @@ import type { CombatConfig } from './campaign/types';
 import { applyCombatConfig, combatConfig } from './constants';
 import { createFighter } from './scene/models';
 import { camera, handleResize, renderer, scene } from './scene/setup';
-import { createNebulae, createStarfield } from './scene/starfield';
+import { createStarfield } from './scene/starfield';
 import { parseHexColor, settings } from './settings';
 import { resetNameCounters, state } from './state';
 import './styles/main.css';
@@ -81,6 +82,19 @@ function resumeGame(): void {
 }
 
 document.getElementById('resume-btn')!.addEventListener('click', resumeGame);
+
+function quitBattle(): void {
+  paused = false;
+  pauseScreen.style.display = 'none';
+  if (isCampaignActive) {
+    onCombatQuit();
+  } else {
+    stopCombat();
+    (document.getElementById('start-screen')! as HTMLElement).style.display = 'flex';
+  }
+}
+
+document.getElementById('quit-btn')!.addEventListener('click', quitBattle);
 
 // Input
 window.addEventListener('keydown', (e) => {
@@ -240,8 +254,8 @@ function gameLoop(timestamp = 0): void {
   renderer.render(scene, camera);
 }
 
-// Reset game
-function resetGame(): void {
+// Remove all combat objects from the scene
+function clearCombatObjects(): void {
   for (const b of state.bullets) scene.remove(b.mesh);
   for (const b of state.allyBullets) scene.remove(b.mesh);
   for (const b of state.enemyBullets) scene.remove(b.mesh);
@@ -264,6 +278,11 @@ function resetGame(): void {
   state.capitalShips = [];
   state.explosions = [];
   state.respawnQueue = [];
+}
+
+// Reset game
+function resetGame(): void {
+  clearCombatObjects();
   state.killFeed = [];
   state.phase = 1;
   state.score = 0;
@@ -359,6 +378,7 @@ function stopCombat(): void {
   stopEngineHum();
   stopProximityHum();
   hideHUD();
+  clearCombatObjects();
 }
 
 // Register callbacks for mode manager
@@ -374,7 +394,6 @@ function startCampaign(): void {
 
 // Init
 createStarfield();
-createNebulae();
 camera.position.set(-10.5, 3.75, 0);
 camera.lookAt(0, 0, 0);
 

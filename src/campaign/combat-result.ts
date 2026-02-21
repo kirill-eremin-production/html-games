@@ -49,6 +49,37 @@ export function showCombatResult(
   }
 }
 
+export function showCombatQuitResult(penalty: number, continueCb: () => void): void {
+  resultScreen = document.getElementById('combat-result');
+  if (!resultScreen) return;
+  onContinue = continueCb;
+
+  let html = `
+    <h1 style="color:#ff8844">ДЕЗЕРТИРСТВО</h1>
+    <div class="result-stats">
+      <div class="result-line">Контракт провален</div>`;
+
+  if (penalty > 0) {
+    html += `
+      <div class="result-line">Штраф: <span style="color:#ff4444">-${penalty}₵</span></div>`;
+  }
+
+  html += `
+      <div class="result-line result-total">Баланс: <span>${campaign.money}₵</span></div>
+    </div>
+    <button class="station-btn result-continue-btn" id="result-continue-btn">ПРОДОЛЖИТЬ</button>`;
+
+  resultScreen.innerHTML = html;
+  resultScreen.style.display = 'flex';
+
+  const btn = document.getElementById('result-continue-btn');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      if (onContinue) onContinue();
+    });
+  }
+}
+
 export function hideCombatResult(): void {
   if (resultScreen) resultScreen.style.display = 'none';
 }
