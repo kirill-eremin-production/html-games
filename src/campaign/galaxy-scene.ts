@@ -24,6 +24,15 @@ const _projVec = new THREE.Vector3();
 // Twinkle uniform for bright star overlay
 let twinkleTimeUniform: { value: number } | null = null;
 
+// Brightness control — materials tracked for dynamic adjustment
+let mainStarsMat: THREE.PointsMaterial | null = null;
+let brightStarsMat: THREE.PointsMaterial | null = null;
+const nebulaMats: THREE.SpriteMaterial[] = [];
+const BASE_MAIN_OPACITY = 0.34;
+const BASE_BRIGHT_OPACITY = 0.13;
+const baseNebulaOpacities: number[] = [];
+let galaxyBrightness = 1.0;
+
 let labelsContainer: HTMLElement | null = null;
 const labelElements = new Map<string, HTMLElement>();
 
@@ -370,6 +379,7 @@ function createBackgroundStars(): THREE.Group {
       'void main() {\nif (length(gl_PointCoord - vec2(0.5)) > 0.5) discard;',
     );
   };
+  mainStarsMat = matMain;
   group.add(new THREE.Points(geo, matMain));
 
   // Bright star overlay — 1500 larger glowing points with per-star twinkling
@@ -432,6 +442,7 @@ function createBackgroundStars(): THREE.Group {
       'gl_FragColor.a *= vTwinkle;\n#include <premultiplied_alpha_fragment>',
     );
   };
+  brightStarsMat = matBright;
   group.add(new THREE.Points(bGeo, matBright));
 
   return group;
@@ -492,6 +503,8 @@ function createGalaxyNebulae(): THREE.Group {
     { hue: 0.5, sat: 0.3, pos: [-20, 0.5, -10], scale: 55, opacity: 0.015 },
   ];
 
+  nebulaMats.length = 0;
+  baseNebulaOpacities.length = 0;
   for (const cfg of nebulaConfigs) {
     const tex = createNebulaTexture(cfg.hue, cfg.sat);
     const mat = new THREE.SpriteMaterial({
@@ -501,6 +514,8 @@ function createGalaxyNebulae(): THREE.Group {
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
+    nebulaMats.push(mat);
+    baseNebulaOpacities.push(cfg.opacity);
     const sprite = new THREE.Sprite(mat);
     sprite.position.set(...cfg.pos);
     sprite.scale.setScalar(cfg.scale);
@@ -862,6 +877,21 @@ export function hideGalaxy(): void {
 
 export function getStarMeshes(): Map<string, THREE.Mesh> {
   return starMeshes;
+}
+
+// ── Brightness control ────────────────────────────────────────────────────────
+
+export function setGalaxyBrightness(value: number): void {
+  galaxyBrightness = value;
+  if (mainStarsMat) mainStarsMat.opacity = BASE_MAIN_OPACITY * value;
+  if (brightStarsMat) brightStarsMat.opacity = BASE_BRIGHT_OPACITY * value;
+  for (let i = 0; i < nebulaMats.length; i++) {
+    nebulaMats[i].opacity = baseNebulaOpacities[i] * value;
+  }
+}
+
+export function getGalaxyBrightness(): number {
+  return galaxyBrightness;
 }
 
 // Rebuild routes, labels, and nearby set for current system

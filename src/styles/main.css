@@ -992,6 +992,30 @@ body.galaxy-mode canvas {
   box-shadow: 0 0 20px rgba(0, 150, 255, 0.5);
 }
 
+/* Galaxy Brightness Slider */
+#galaxy-brightness {
+  position: fixed;
+  bottom: 60px;
+  left: 20px;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  z-index: 30;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+}
+#galaxy-brightness input[type='range'] {
+  width: 100px;
+  accent-color: #0ff;
+  cursor: pointer;
+}
+#galaxy-brightness span {
+  min-width: 36px;
+  text-align: right;
+  color: #0ff;
+  font-size: 12px;
+}
+
 /* Station Screen */
 #station-screen {
   position: fixed;

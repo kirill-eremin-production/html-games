@@ -7,6 +7,7 @@ import {
   getStarPosition,
   highlightRoutes,
   selectSystem,
+  setGalaxyBrightness,
   setPlayerShipAt,
   updateContractMarker,
   updatePlayerShipPosition,
@@ -60,6 +61,9 @@ let onStartCombat: (() => void) | null = null;
 let galaxyHud: HTMLElement | null = null;
 let infoPanel: HTMLElement | null = null;
 let galaxyHint: HTMLElement | null = null;
+let brightnessSlider: HTMLElement | null = null;
+
+const LS_BRIGHTNESS_KEY = 'galaxyBrightness';
 
 function ensureUI(): void {
   galaxyHud = document.getElementById('galaxy-hud');
@@ -71,6 +75,29 @@ function ensureUI(): void {
       ? 'Нажмите на звезду для выбора  •  Проведите для вращения  •  Щипок — масштаб'
       : 'Нажмите на звезду для выбора  •  Перетаскивайте для вращения  •  Колёсико — масштаб';
     document.body.appendChild(galaxyHint);
+  }
+  if (!brightnessSlider) {
+    // Load saved brightness
+    const saved = localStorage.getItem(LS_BRIGHTNESS_KEY);
+    const initial = saved !== null ? parseFloat(saved) : 1.0;
+    setGalaxyBrightness(initial);
+
+    brightnessSlider = document.createElement('div');
+    brightnessSlider.id = 'galaxy-brightness';
+    brightnessSlider.innerHTML =
+      `<label>Яркость</label>` +
+      `<input type="range" min="0" max="200" value="${Math.round(initial * 100)}" />` +
+      `<span>${Math.round(initial * 100)}%</span>`;
+    document.body.appendChild(brightnessSlider);
+
+    const input = brightnessSlider.querySelector('input')!;
+    const span = brightnessSlider.querySelector('span')!;
+    input.addEventListener('input', () => {
+      const v = parseInt(input.value, 10) / 100;
+      setGalaxyBrightness(v);
+      span.textContent = `${input.value}%`;
+      localStorage.setItem(LS_BRIGHTNESS_KEY, String(v));
+    });
   }
 }
 
@@ -233,7 +260,7 @@ const mouse = new THREE.Vector2();
 /** Check if event target is an HTML UI overlay (buttons, panels) */
 function isUIElement(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
-  return !!target.closest('#galaxy-info-panel, #galaxy-hud');
+  return !!target.closest('#galaxy-info-panel, #galaxy-hud, #galaxy-brightness');
 }
 
 function onMouseDown(e: MouseEvent): void {
@@ -435,6 +462,7 @@ export function enableGalaxyControls(
   if (infoPanel) infoPanel.style.display = 'none';
   if (galaxyHud) galaxyHud.style.display = 'block';
   if (galaxyHint) galaxyHint.style.display = 'block';
+  if (brightnessSlider) brightnessSlider.style.display = 'flex';
 
   // Show cursor for galaxy map via CSS class
   document.body.classList.add('galaxy-mode');
@@ -454,6 +482,7 @@ export function disableGalaxyControls(): void {
   if (galaxyHud) galaxyHud.style.display = 'none';
   if (infoPanel) infoPanel.style.display = 'none';
   if (galaxyHint) galaxyHint.style.display = 'none';
+  if (brightnessSlider) brightnessSlider.style.display = 'none';
 
   // Restore cursor
   document.body.classList.remove('galaxy-mode');
