@@ -1,0 +1,85 @@
+import * as THREE from 'three';
+import { camera } from '../../scene/setup';
+import { campaign } from '../state';
+import {
+  FAR_SCALE,
+  NEARBY_SCALE,
+  SCALE_LERP_SPEED,
+  nearbySystemIds,
+  pulse,
+  refs,
+  starHalos,
+  starMeshes,
+  starScaleCurrent,
+} from './refs';
+
+export function updateGalaxyScene(dt: number): void {
+  pulse.time += dt;
+
+  // Update twinkle time for bright star overlay
+  if (refs.twinkleTimeUniform) refs.twinkleTimeUniform.value = pulse.time;
+
+  // Current system halo pulse (opacity handled in the distance-fade loop below)
+  const currentHalo = starHalos.get(campaign.currentSystemId);
+  if (currentHalo) {
+    const s = 3 + Math.sin(pulse.time * 3) * 0.5;
+    currentHalo.scale.setScalar(s);
+  }
+
+  // Contract marker animation
+  if (refs.contractMarker && refs.contractMarker.visible) {
+    refs.contractMarker.rotation.y += dt * 2;
+    refs.contractMarker.position.y =
+      refs.contractMarker.userData.baseY + Math.sin(pulse.time * 4) * 0.5;
+  }
+
+  // Rotate player ship model gently
+  if (refs.playerShipModel) {
+    refs.playerShipModel.rotation.y += dt * 0.5;
+  }
+
+  // Selection ring pulse
+  if (refs.selectionRing && refs.selectionRing.visible) {
+    const mat = refs.selectionRing.material as THREE.MeshBasicMaterial;
+    mat.opacity = 0.5 + Math.sin(pulse.time * 4) * 0.2;
+  }
+
+  // Animate star scales (nearby = full, far = half)
+  // Also fade out halos when they're close to camera to prevent screen-filling rectangles
+  const HALO_FADE_FAR = 10; // full opacity at this distance
+  const HALO_FADE_NEAR = 5; // fully hidden at this distance
+  const camPos = camera.position;
+
+  for (const [id, mesh] of starMeshes) {
+    const target = nearbySystemIds.has(id) ? NEARBY_SCALE : FAR_SCALE;
+    const current = starScaleCurrent.get(id) ?? target;
+    const diff = target - current;
+    if (Math.abs(diff) > 0.005) {
+      const next = current + diff * Math.min(1, dt * SCALE_LERP_SPEED);
+      starScaleCurrent.set(id, next);
+      mesh.scale.setScalar(next);
+    } else if (current !== target) {
+      starScaleCurrent.set(id, target);
+      mesh.scale.setScalar(target);
+    }
+
+    // Distance-based halo fade — prevents giant sprite rectangles near camera
+    const halo = starHalos.get(id);
+    if (!halo) continue;
+    const dist = camPos.distanceTo(mesh.position);
+    const fade = Math.max(
+      0,
+      Math.min(1, (dist - HALO_FADE_NEAR) / (HALO_FADE_FAR - HALO_FADE_NEAR)),
+    );
+
+    if (id === campaign.currentSystemId) {
+      // Current system has its own pulse — modulate by fade
+      (halo.material as THREE.SpriteMaterial).opacity =
+        fade * (0.8 + Math.sin(pulse.time * 3) * 0.2);
+    } else {
+      const s = starScaleCurrent.get(id) ?? target;
+      halo.scale.setScalar(2.5 * s);
+      (halo.material as THREE.SpriteMaterial).opacity = fade * 0.7;
+    }
+  }
+}

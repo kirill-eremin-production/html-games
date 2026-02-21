@@ -1,6 +1,7 @@
-import { SUBSYSTEM_SHORT, combatConfig } from '../constants';
+import { combatConfig } from '../constants';
 import { settings } from '../settings';
 import { state } from '../state';
+import { HUD_TEMPLATES } from './hud-templates';
 
 const hudEl = document.getElementById('hud')! as HTMLElement;
 const scoreEl = document.getElementById('score')!;
@@ -62,21 +63,13 @@ export function updateHUD(): void {
   }
 
   if (state.phase === 1) {
-    let html = '<h3>КОРАБЛИ ПРОТИВНИКА</h3>';
-    for (const cs of state.capitalShips) {
-      if (!cs.alive) {
-        html += `<div class="ship-entry"><div class="ship-name" style="color:#666;text-decoration:line-through;">Корабль ${cs.mesh.userData.index + 1} — УНИЧТОЖЕН</div></div>`;
-        continue;
-      }
-      html += `<div class="ship-entry"><div class="ship-name">Корабль ${cs.mesh.userData.index + 1}</div><div class="subsystems">`;
-      for (let s = 0; s < cs.subsystems.length; s++) {
-        const sub = cs.subsystems[s];
-        const alive = sub.health > 0;
-        const pct = Math.ceil((sub.health / sub.maxHealth) * 100);
-        html += `<div class="subsys-dot ${alive ? 'alive' : 'dead'}" title="${sub.name}: ${alive ? pct + '%' : 'уничтожена'}">${SUBSYSTEM_SHORT[s]}</div>`;
-      }
-      html += '</div></div>';
-    }
+    const html = HUD_TEMPLATES.shipStatus(
+      state.capitalShips.map((cs) => ({
+        alive: cs.alive,
+        index: cs.mesh.userData.index as number,
+        subsystems: cs.subsystems,
+      })),
+    );
     if (html !== cachedShipHTML) {
       cachedShipHTML = html;
       shipStatusEl.innerHTML = html;

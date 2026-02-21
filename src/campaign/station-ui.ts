@@ -8,21 +8,10 @@ import {
   needsEmergencyFuel,
   stationContracts,
 } from './state';
-import type { Contract } from './types';
+import { STATION_TEMPLATES } from './station-templates';
 
 let stationScreen: HTMLElement | null = null;
 let onGoToMap: (() => void) | null = null;
-
-const DIFF_LABELS: Record<string, string> = {
-  easy: 'ПРОСТОЙ',
-  medium: 'СРЕДНИЙ',
-  hard: 'СЛОЖНЫЙ',
-};
-const DIFF_COLORS: Record<string, string> = {
-  easy: '#44ff88',
-  medium: '#ffaa44',
-  hard: '#ff4444',
-};
 
 export function showStation(goToMapCb: () => void): void {
   stationScreen = document.getElementById('station-screen');
@@ -46,59 +35,21 @@ function renderStation(): void {
   if (!stationScreen) return;
   const sys = getSystem(campaign.currentSystemId);
 
-  let html = `
-    <div class="station-header">
-      <h1>СТАНЦИЯ «${sys.name}»</h1>
-      <div class="station-balance">
-        <span class="station-money">${campaign.money}₵</span>
-        <span class="station-fuel">⛽ ${campaign.fuel}/${campaign.maxFuel}</span>
-      </div>
-    </div>
-    <div class="station-body">
-      <div class="station-section station-fuel-section">
-        <h2>ТОПЛИВО</h2>
-        <div class="fuel-price">${FUEL_PRICE}₵ за единицу</div>
-        <div class="fuel-buttons">
-          <button class="station-btn fuel-btn" data-amount="1">+1</button>
-          <button class="station-btn fuel-btn" data-amount="5">+5</button>
-          <button class="station-btn fuel-btn" data-amount="${campaign.maxFuel}">MAX</button>
-        </div>
-      </div>
-      <div class="station-section station-contracts-section">
-        <h2>КОНТРАКТЫ</h2>
-        <div class="contracts-list">`;
-
+  const targetNames: Record<string, string> = {};
   for (const c of stationContracts) {
-    const targetSys = getSystem(c.targetSystemId);
-    const isActive = campaign.activeContract?.id === c.id;
-    const hasContract = campaign.activeContract !== null;
-    const diffColor = DIFF_COLORS[c.difficulty];
-    const diffLabel = DIFF_LABELS[c.difficulty];
-
-    html += `
-      <div class="contract-card ${c.difficulty}${isActive ? ' active' : ''}">
-        <div class="contract-diff" style="color:${diffColor}">[${diffLabel}]</div>
-        <div class="contract-title">${c.title}</div>
-        <div class="contract-desc">${c.description}</div>
-        <div class="contract-target">→ ${targetSys.name}</div>
-        <div class="contract-reward">${c.reward}₵</div>
-        ${
-          isActive
-            ? '<div class="contract-status">ПРИНЯТ</div>'
-            : hasContract
-              ? ''
-              : `<button class="station-btn contract-accept-btn" data-id="${c.id}">ВЗЯТЬ</button>`
-        }
-      </div>`;
+    targetNames[c.targetSystemId] = getSystem(c.targetSystemId).name;
   }
 
-  html += `
-        </div>
-      </div>
-    </div>
-    <button class="station-btn station-map-btn" id="station-map-btn">НА КАРТУ</button>`;
-
-  stationScreen.innerHTML = html;
+  stationScreen.innerHTML = STATION_TEMPLATES.page({
+    systemName: sys.name,
+    money: campaign.money,
+    fuel: campaign.fuel,
+    maxFuel: campaign.maxFuel,
+    fuelPrice: FUEL_PRICE,
+    contracts: stationContracts,
+    activeContractId: campaign.activeContract?.id ?? null,
+    targetNames,
+  });
 
   // Bind fuel buttons
   stationScreen.querySelectorAll('.fuel-btn').forEach((btn) => {

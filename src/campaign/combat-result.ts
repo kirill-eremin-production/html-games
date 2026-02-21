@@ -1,7 +1,17 @@
+import { COMBAT_RESULT_TEMPLATES } from './combat-result-templates';
 import { campaign, completeContract } from './state';
 
 let resultScreen: HTMLElement | null = null;
 let onContinue: (() => void) | null = null;
+
+function bindContinueButton(): void {
+  const btn = document.getElementById('result-continue-btn');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      if (onContinue) onContinue();
+    });
+  }
+}
 
 export function showCombatResult(
   victory: boolean,
@@ -14,39 +24,14 @@ export function showCombatResult(
 
   const reward = completeContract(victory, combatScore);
 
-  const title = victory ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ';
-  const titleColor = victory ? '#44ff88' : '#ff4444';
-
-  let html = `
-    <h1 style="color:${titleColor}">${title}</h1>
-    <div class="result-stats">
-      <div class="result-line">Очки: <span>${combatScore}</span></div>`;
-
-  if (reward > 0) {
-    if (victory) {
-      const base = campaign.activeContract ? 0 : reward; // contract already cleared by completeContract
-      html += `
-      <div class="result-line">Награда: <span class="result-reward">+${reward}₵</span></div>`;
-    } else {
-      html += `
-      <div class="result-line">Частичная награда: <span class="result-reward">+${reward}₵</span></div>`;
-    }
-  }
-
-  html += `
-      <div class="result-line result-total">Баланс: <span>${campaign.money}₵</span></div>
-    </div>
-    <button class="station-btn result-continue-btn" id="result-continue-btn">ПРОДОЛЖИТЬ</button>`;
-
-  resultScreen.innerHTML = html;
+  resultScreen.innerHTML = COMBAT_RESULT_TEMPLATES.victory({
+    victory,
+    combatScore,
+    reward,
+    money: campaign.money,
+  });
   resultScreen.style.display = 'flex';
-
-  const btn = document.getElementById('result-continue-btn');
-  if (btn) {
-    btn.addEventListener('click', () => {
-      if (onContinue) onContinue();
-    });
-  }
+  bindContinueButton();
 }
 
 export function showCombatQuitResult(penalty: number, continueCb: () => void): void {
@@ -54,30 +39,9 @@ export function showCombatQuitResult(penalty: number, continueCb: () => void): v
   if (!resultScreen) return;
   onContinue = continueCb;
 
-  let html = `
-    <h1 style="color:#ff8844">ДЕЗЕРТИРСТВО</h1>
-    <div class="result-stats">
-      <div class="result-line">Контракт провален</div>`;
-
-  if (penalty > 0) {
-    html += `
-      <div class="result-line">Штраф: <span style="color:#ff4444">-${penalty}₵</span></div>`;
-  }
-
-  html += `
-      <div class="result-line result-total">Баланс: <span>${campaign.money}₵</span></div>
-    </div>
-    <button class="station-btn result-continue-btn" id="result-continue-btn">ПРОДОЛЖИТЬ</button>`;
-
-  resultScreen.innerHTML = html;
+  resultScreen.innerHTML = COMBAT_RESULT_TEMPLATES.desertion(penalty, campaign.money);
   resultScreen.style.display = 'flex';
-
-  const btn = document.getElementById('result-continue-btn');
-  if (btn) {
-    btn.addEventListener('click', () => {
-      if (onContinue) onContinue();
-    });
-  }
+  bindContinueButton();
 }
 
 export function hideCombatResult(): void {
