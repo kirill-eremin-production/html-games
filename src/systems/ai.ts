@@ -12,21 +12,22 @@ const _aiRotQ = new THREE.Quaternion();
 const _aiRollQ = new THREE.Quaternion();
 const _aiFwd = new THREE.Vector3();
 const _tmpVec = new THREE.Vector3();
+const _aiOrbitDir = new THREE.Vector3();
+const _aiSubWorldPos = new THREE.Vector3();
 
-function findNearestTarget(
-  pos: THREE.Vector3,
-  targets: Fighter[],
-): { target: Fighter | null; dist: number } {
-  let best: Fighter | null = null;
-  let bestDist = Infinity;
+let _nearestTarget: Fighter | null = null;
+
+function findNearestTarget(pos: THREE.Vector3, targets: Fighter[]): Fighter | null {
+  _nearestTarget = null;
+  let bestDistSq = Infinity;
   for (const t of targets) {
-    const d = pos.distanceTo(t.mesh.position);
-    if (d < bestDist) {
-      bestDist = d;
-      best = t;
+    const dSq = pos.distanceToSquared(t.mesh.position);
+    if (dSq < bestDistSq) {
+      bestDistSq = dSq;
+      _nearestTarget = t;
     }
   }
-  return { target: best, dist: bestDist };
+  return _nearestTarget;
 }
 
 function updateFighterAI(
@@ -42,8 +43,7 @@ function updateFighterAI(
     if (isEnemy && Math.random() < 0.15 && playerPos) {
       fighter.ai.target = { mesh: { position: playerPos }, name: PLAYER_NAME };
     } else {
-      const { target } = findNearestTarget(fighter.mesh.position, enemies);
-      fighter.ai.target = target;
+      fighter.ai.target = findNearestTarget(fighter.mesh.position, enemies);
     }
   }
 
@@ -52,9 +52,9 @@ function updateFighterAI(
       if (!cs.alive) continue;
       for (const sub of cs.subsystems) {
         if (sub.health > 0) {
-          const worldPos = sub.center.clone().applyMatrix4(cs.mesh.matrixWorld);
+          _aiSubWorldPos.copy(sub.center).applyMatrix4(cs.mesh.matrixWorld);
           fighter.ai.target = {
-            mesh: { position: worldPos },
+            mesh: { position: _aiSubWorldPos.clone() },
             name: `Корабль-${cs.mesh.userData.index + 1}`,
           };
           break;
@@ -104,10 +104,11 @@ function updateFighterAI(
       break;
     case 'orbit': {
       const correction = ((dist - 250) / 250) * 0.3;
-      targetDir = fighter.ai.evadeDir
-        .clone()
-        .add(dirToTarget.clone().multiplyScalar(correction))
+      _aiOrbitDir
+        .copy(fighter.ai.evadeDir)
+        .addScaledVector(dirToTarget, correction)
         .normalize();
+      targetDir = _aiOrbitDir;
       break;
     }
     default:
@@ -116,9 +117,11 @@ function updateFighterAI(
 
   _aiCurrentFwd.set(1, 0, 0).applyQuaternion(fighter.mesh.quaternion);
   _aiCross.copy(_aiCurrentFwd).cross(targetDir);
-  if (_aiCross.length() > 0.001) {
-    const angle = Math.asin(Math.min(1, _aiCross.length())) * 1.5 * dt;
-    _aiRotQ.setFromAxisAngle(_aiCross.normalize(), angle);
+  const crossLen = _aiCross.length();
+  if (crossLen > 0.001) {
+    const angle = Math.asin(Math.min(1, crossLen)) * 1.5 * dt;
+    _aiCross.divideScalar(crossLen); // normalize without re-computing length
+    _aiRotQ.setFromAxisAngle(_aiCross, angle);
     fighter.mesh.quaternion.premultiply(_aiRotQ);
     fighter.mesh.quaternion.normalize();
   }

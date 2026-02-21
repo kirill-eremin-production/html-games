@@ -9,21 +9,44 @@ export const destroyedSubMat = new THREE.MeshBasicMaterial({
   opacity: 0.4,
 });
 
+// Shared geometry for all explosion particles (scaled via mesh.scale)
+const explosionGeo = new THREE.SphereGeometry(1, 4, 3);
+const explosionColors = [0xff4400, 0xff6600, 0xff8800, 0xffaa00, 0x00ccff, 0x444444];
+
+// Object pool for explosion particle meshes
+const particlePool: THREE.Mesh[] = [];
+
+function acquireParticle(): THREE.Mesh {
+  const mesh = particlePool.pop();
+  if (mesh) {
+    mesh.visible = true;
+    (mesh.material as THREE.MeshBasicMaterial).opacity = 1;
+    return mesh;
+  }
+  return new THREE.Mesh(
+    explosionGeo,
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 1 }),
+  );
+}
+
+function releaseParticle(mesh: THREE.Mesh): void {
+  mesh.visible = false;
+  scene.remove(mesh);
+  particlePool.push(mesh);
+}
+
 export function createExplosion(position: THREE.Vector3, size = 1): void {
   playExplosionSound(size);
   const count = 3 + Math.floor(Math.random() * 3);
   const particles: { mesh: THREE.Mesh; velocity: THREE.Vector3; life: number }[] = [];
   for (let i = 0; i < count; i++) {
     const s = (0.5 + Math.random() * 1.5) * size;
-    const geo = new THREE.SphereGeometry(s, 4, 3);
-    const colors = [0xff4400, 0xff6600, 0xff8800, 0xffaa00, 0x00ccff, 0x444444];
-    const mat = new THREE.MeshBasicMaterial({
-      color: colors[Math.floor(Math.random() * colors.length)],
-      transparent: true,
-      opacity: 1,
-    });
-    const m = new THREE.Mesh(geo, mat);
+    const m = acquireParticle();
+    (m.material as THREE.MeshBasicMaterial).color.setHex(
+      explosionColors[Math.floor(Math.random() * explosionColors.length)],
+    );
     m.position.copy(position);
+    m.scale.setScalar(s);
     scene.add(m);
     const vel = new THREE.Vector3(
       (Math.random() - 0.5) * 60 * size,
@@ -47,17 +70,13 @@ export function updateExplosions(dt: number): void {
       (p.mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0, p.life);
       p.mesh.scale.multiplyScalar(1 - 0.5 * dt);
       if (p.life <= 0) {
-        scene.remove(p.mesh);
-        p.mesh.geometry.dispose();
-        (p.mesh.material as THREE.Material).dispose();
+        releaseParticle(p.mesh);
         exp.particles.splice(j, 1);
       }
     }
     if (exp.timer <= 0) {
       for (const p of exp.particles) {
-        scene.remove(p.mesh);
-        p.mesh.geometry.dispose();
-        (p.mesh.material as THREE.Material).dispose();
+        releaseParticle(p.mesh);
       }
       state.explosions.splice(i, 1);
     }

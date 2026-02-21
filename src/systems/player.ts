@@ -15,6 +15,12 @@ const _tmpVec = new THREE.Vector3();
 const _tmpVec2 = new THREE.Vector3();
 const _tmpVec3 = new THREE.Vector3();
 const _tmpQuat = new THREE.Quaternion();
+const _shootAim = new THREE.Vector3();
+const _shootDir = new THREE.Vector3();
+const _shootFwd = new THREE.Vector3();
+const _shootPos = new THREE.Vector3();
+const _shootRight = new THREE.Vector3();
+const _shootOrigin = new THREE.Vector3();
 
 export function initPlayerModel(): void {
   // Player model is created externally and added to scene
@@ -93,24 +99,15 @@ export function updatePlayer(dt: number): void {
   state.shootCooldown -= dt;
   if ((state.keys['Space'] || state.keys['MouseLeft']) && state.shootCooldown <= 0) {
     state.shootCooldown = 0.1;
-    const mouseNDC = new THREE.Vector2(state.mouseX, -state.mouseY);
-    const aimTarget = new THREE.Vector3(mouseNDC.x, mouseNDC.y, 0.5).unproject(camera);
-    const shootDir = aimTarget.sub(camera.position).normalize();
-    const planeForward = new THREE.Vector3(1, 0, 0).applyQuaternion(playerPlane.quaternion);
-    const bulletPos = playerPlane.position.clone().add(planeForward.clone().multiplyScalar(4));
-    const right = new THREE.Vector3(0, 0, 1).applyQuaternion(playerPlane.quaternion);
-    createLaser(
-      bulletPos.clone().add(right.clone().multiplyScalar(1.5)),
-      shootDir,
-      'player',
-      PLAYER_NAME,
-    );
-    createLaser(
-      bulletPos.clone().add(right.clone().multiplyScalar(-1.5)),
-      shootDir,
-      'player',
-      PLAYER_NAME,
-    );
+    _shootAim.set(state.mouseX, -state.mouseY, 0.5).unproject(camera);
+    _shootDir.copy(_shootAim).sub(camera.position).normalize();
+    _shootFwd.set(1, 0, 0).applyQuaternion(playerPlane.quaternion);
+    _shootPos.copy(playerPlane.position).addScaledVector(_shootFwd, 4);
+    _shootRight.set(0, 0, 1).applyQuaternion(playerPlane.quaternion);
+    _shootOrigin.copy(_shootPos).addScaledVector(_shootRight, 1.5);
+    createLaser(_shootOrigin, _shootDir, 'player', PLAYER_NAME);
+    _shootOrigin.copy(_shootPos).addScaledVector(_shootRight, -1.5);
+    createLaser(_shootOrigin, _shootDir, 'player', PLAYER_NAME);
     playLaserSound(true);
   }
 }

@@ -41,6 +41,14 @@ function updateCapitalShipVisuals(cs: (typeof state.capitalShips)[number], dt: n
   if (cs.subsystems[0].health > 0) cs.mesh.rotation.y += 0.02 * dt;
 }
 
+const _csTargets: THREE.Vector3[] = [];
+const _csDir = new THREE.Vector3();
+const _csOrigin = new THREE.Vector3();
+const _csShotDir = new THREE.Vector3();
+const TURRET_RANGE_SQ = 800 * 800;
+const ALLY_TURRET_RANGE_SQ = 600 * 600;
+const AUDIO_CS_RANGE_SQ = 600 * 600;
+
 export function updateCapitalShips(dt: number): void {
   for (const cs of state.capitalShips) {
     if (!cs.alive) continue;
@@ -53,44 +61,45 @@ export function updateCapitalShips(dt: number): void {
     cs.turretTimer -= dt;
     if (cs.turretTimer <= 0) {
       cs.turretTimer = 3 + Math.random() * 2;
-      const targets: THREE.Vector3[] = [];
+      _csTargets.length = 0;
       const shipPos = cs.mesh.position;
-      if (shipPos.distanceTo(playerPlane.position) < 800)
-        targets.push(playerPlane.position.clone());
+      if (shipPos.distanceToSquared(playerPlane.position) < TURRET_RANGE_SQ)
+        _csTargets.push(playerPlane.position);
       for (const a of state.allies) {
-        if (shipPos.distanceTo(a.mesh.position) < 600) targets.push(a.mesh.position.clone());
+        if (shipPos.distanceToSquared(a.mesh.position) < ALLY_TURRET_RANGE_SQ)
+          _csTargets.push(a.mesh.position);
       }
-      if (targets.length === 0) {
+      if (_csTargets.length === 0) {
         updateCapitalShipVisuals(cs, dt);
         continue;
       }
 
-      const tgt = targets[Math.floor(Math.random() * targets.length)];
-      const dir = tgt.sub(shipPos).normalize();
+      const tgt = _csTargets[Math.floor(Math.random() * _csTargets.length)];
+      _csDir.copy(tgt).sub(shipPos).normalize();
       const bridgeSub = cs.subsystems[1];
       const inaccuracy = bridgeSub.health <= 0 ? 0.4 : 0.15;
-      dir.x += (Math.random() - 0.5) * inaccuracy;
-      dir.y += (Math.random() - 0.5) * inaccuracy;
-      dir.z += (Math.random() - 0.5) * inaccuracy;
-      dir.normalize();
+      _csDir.x += (Math.random() - 0.5) * inaccuracy;
+      _csDir.y += (Math.random() - 0.5) * inaccuracy;
+      _csDir.z += (Math.random() - 0.5) * inaccuracy;
+      _csDir.normalize();
 
       const shipName = `Корабль-${cs.mesh.userData.index + 1}`;
       const shots = 2 + Math.floor(Math.random() * 2);
       for (let i = 0; i < shots; i++) {
-        const offset = new THREE.Vector3(
-          (Math.random() - 0.5) * 20,
-          (Math.random() - 0.5) * 10,
-          (Math.random() - 0.5) * 20,
+        _csOrigin.set(
+          shipPos.x + (Math.random() - 0.5) * 20,
+          shipPos.y + (Math.random() - 0.5) * 10,
+          shipPos.z + (Math.random() - 0.5) * 20,
         );
-        const origin = shipPos.clone().add(offset);
-        const shotDir = dir.clone();
-        shotDir.x += (Math.random() - 0.5) * 0.05;
-        shotDir.y += (Math.random() - 0.5) * 0.05;
-        shotDir.z += (Math.random() - 0.5) * 0.05;
-        shotDir.normalize();
-        createLaser(origin, shotDir, 'enemy', shipName);
+        _csShotDir.copy(_csDir);
+        _csShotDir.x += (Math.random() - 0.5) * 0.05;
+        _csShotDir.y += (Math.random() - 0.5) * 0.05;
+        _csShotDir.z += (Math.random() - 0.5) * 0.05;
+        _csShotDir.normalize();
+        createLaser(_csOrigin, _csShotDir, 'enemy', shipName);
       }
-      if (shipPos.distanceTo(playerPlane.position) < 600) playLaserSound(false);
+      if (shipPos.distanceToSquared(playerPlane.position) < AUDIO_CS_RANGE_SQ)
+        playLaserSound(false);
     }
     updateCapitalShipVisuals(cs, dt);
   }

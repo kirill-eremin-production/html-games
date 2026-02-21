@@ -4,6 +4,7 @@ import { state } from '../state';
 
 const indicatorsContainer = document.getElementById('enemy-indicators')!;
 const indicatorPool: HTMLElement[] = [];
+const _indPos = new THREE.Vector3();
 
 function getIndicatorElement(index: number): HTMLElement {
   if (index < indicatorPool.length) {
@@ -28,10 +29,10 @@ export function updateEnemyIndicators(playerPlane: THREE.Group): void {
 
   for (const cs of state.capitalShips) {
     if (!cs.alive) continue;
-    const pos = cs.mesh.position.clone().project(camera);
-    const screenX = (pos.x * 0.5 + 0.5) * w;
-    const screenY = (-pos.y * 0.5 + 0.5) * h;
-    const inFront = pos.z < 1;
+    _indPos.copy(cs.mesh.position).project(camera);
+    const screenX = (_indPos.x * 0.5 + 0.5) * w;
+    const screenY = (-_indPos.y * 0.5 + 0.5) * h;
+    const inFront = _indPos.z < 1;
     const onScreen =
       inFront &&
       screenX > margin &&

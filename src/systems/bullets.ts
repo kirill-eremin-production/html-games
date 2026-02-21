@@ -11,10 +11,14 @@ import { createExplosion, destroyedSubMat } from './explosions';
 import { playerPlane } from './player';
 import { cleanupExcessBullets } from './weapons';
 
+const HIT_DIST_SQ = 8 * 8; // 64
+const PLAYER_HIT_DIST_SQ = 4 * 4; // 16
+const _hitWorldPos = new THREE.Vector3();
+
 function hitTestFighters(laser: LaserData, fighters: Fighter[], isPlayerLaser: boolean): boolean {
   for (let j = fighters.length - 1; j >= 0; j--) {
     const f = fighters[j];
-    if (laser.mesh.position.distanceTo(f.mesh.position) < 8) {
+    if (laser.mesh.position.distanceToSquared(f.mesh.position) < HIT_DIST_SQ) {
       f.health -= laser.damage;
       createExplosion(laser.mesh.position.clone(), 0.3);
 
@@ -62,13 +66,13 @@ function hitTestCapitalShips(laser: LaserData): boolean {
     if (!cs.alive) continue;
     for (const sub of cs.subsystems) {
       if (sub.health <= 0) continue;
-      const worldPos = sub.center.clone().applyMatrix4(cs.mesh.matrixWorld);
-      if (laser.mesh.position.distanceTo(worldPos) < sub.radius) {
+      _hitWorldPos.copy(sub.center).applyMatrix4(cs.mesh.matrixWorld);
+      if (laser.mesh.position.distanceToSquared(_hitWorldPos) < sub.radius * sub.radius) {
         sub.health -= laser.damage;
         createExplosion(laser.mesh.position.clone(), 0.5);
 
         if (sub.health <= 0) {
-          createExplosion(worldPos, 3);
+          createExplosion(_hitWorldPos.clone(), 3);
           state.score += 500;
           showMessage(`${sub.name} УНИЧТОЖЕНА! +500`, 2);
         }
@@ -148,7 +152,7 @@ export function updateBullets(dt: number): void {
       if (hitAllies && !hit) hit = hitTestFighters(b, state.allies, false);
 
       if (hitPlayer && !hit && state.invulnTimer <= 0) {
-        if (b.mesh.position.distanceTo(playerPlane.position) < 4) {
+        if (b.mesh.position.distanceToSquared(playerPlane.position) < PLAYER_HIT_DIST_SQ) {
           state.playerHealth -= b.damage;
           state.damageFlash = 0.3;
           state.lastAttacker = b.shooterName || '?';

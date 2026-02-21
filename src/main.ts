@@ -24,8 +24,33 @@ playerPlane.add(playerModel);
 scene.add(playerPlane);
 playerPlane.position.set(0, 0, 0);
 
+// Pause
+let paused = false;
+const pauseScreen = document.getElementById('pause-screen')! as HTMLElement;
+
+function pauseGame(): void {
+  if (!state.running || paused) return;
+  paused = true;
+  pauseScreen.style.display = 'flex';
+  document.exitFullscreen?.();
+}
+
+function resumeGame(): void {
+  if (!paused) return;
+  document.documentElement.requestFullscreen?.();
+  paused = false;
+  pauseScreen.style.display = 'none';
+  clock.getDelta(); // discard elapsed time while paused
+}
+
+document.getElementById('resume-btn')!.addEventListener('click', resumeGame);
+
 // Input
 window.addEventListener('keydown', (e) => {
+  if (e.code === 'Escape' || e.code === 'KeyP') {
+    pauseGame();
+    return;
+  }
   state.keys[e.code] = true;
   e.preventDefault();
 });
@@ -75,7 +100,7 @@ function checkVictory(): void {
 
 // Game loop
 const clock = new THREE.Clock();
-const TARGET_FPS = 30;
+const TARGET_FPS = 60;
 const FRAME_INTERVAL = 1000 / TARGET_FPS;
 let lastFrameTime = 0;
 let hudFrameCounter = 0;
@@ -87,7 +112,7 @@ function gameLoop(timestamp = 0): void {
   lastFrameTime = timestamp - (elapsed % FRAME_INTERVAL);
   const dt = Math.min(clock.getDelta(), 0.05);
 
-  if (!state.running) {
+  if (!state.running || paused) {
     renderer.render(scene, camera);
     return;
   }
@@ -103,7 +128,7 @@ function gameLoop(timestamp = 0): void {
   updateKillFeed(dt);
 
   hudFrameCounter++;
-  if (hudFrameCounter % 3 === 0) {
+  if (hudFrameCounter % 2 === 0) {
     updateHUD();
     updateEnemyIndicators(playerPlane);
     updateTargetMarkers(playerPlane);
@@ -182,6 +207,9 @@ function resetGame(): void {
 }
 
 function startGame(): void {
+  document.documentElement.requestFullscreen?.();
+  paused = false;
+  pauseScreen.style.display = 'none';
   (document.getElementById('start-screen')! as HTMLElement).style.display = 'none';
   (document.getElementById('game-over')! as HTMLElement).style.display = 'none';
   (document.getElementById('victory-screen')! as HTMLElement).style.display = 'none';

@@ -16,6 +16,7 @@ const laserMatEnemy = new THREE.MeshBasicMaterial({ color: 0xff3300 });
 
 const _laserAxis = new THREE.Vector3(1, 0, 0);
 const _laserQuat = new THREE.Quaternion();
+const _laserDir = new THREE.Vector3();
 
 export function createLaser(
   origin: THREE.Vector3,
@@ -30,14 +31,15 @@ export function createLaser(
 
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.copy(origin);
-  _laserQuat.setFromUnitVectors(_laserAxis, direction.clone().normalize());
+  _laserDir.copy(direction).normalize();
+  _laserQuat.setFromUnitVectors(_laserAxis, _laserDir);
   mesh.quaternion.copy(_laserQuat);
   scene.add(mesh);
 
   const speed = isEnemy ? 250 : 400;
   const data: LaserData = {
     mesh,
-    velocity: direction.clone().normalize().multiplyScalar(speed),
+    velocity: new THREE.Vector3().copy(_laserDir).multiplyScalar(speed),
     life: 2.0,
     team,
     damage: isPlayer ? 15 : isEnemy ? 8 : 10,
@@ -57,15 +59,18 @@ export function cleanupExcessBullets(): void {
     const arrays = [state.bullets, state.allyBullets, state.enemyBullets];
     arrays.sort((a, b) => b.length - a.length);
     const target = arrays[0];
-    while (
-      target.length > 0 &&
-      state.bullets.length + state.allyBullets.length + state.enemyBullets.length > 160
-    ) {
-      scene.remove(target[0].mesh);
-      target.shift();
+    const removeCount = total - 160;
+    const toRemove = Math.min(removeCount, target.length);
+    for (let i = 0; i < toRemove; i++) {
+      scene.remove(target[i].mesh);
     }
+    target.splice(0, toRemove);
   }
 }
+
+const _fShootDir = new THREE.Vector3();
+const _fBulletPos = new THREE.Vector3();
+const AUDIO_DIST_SQ = 300 * 300;
 
 export function shootFromFighter(
   position: THREE.Vector3,
@@ -74,14 +79,14 @@ export function shootFromFighter(
   name: string,
   playerPlane: THREE.Group,
 ): void {
-  const shootDir = dirToTarget.clone();
-  shootDir.x += (Math.random() - 0.5) * 0.2;
-  shootDir.y += (Math.random() - 0.5) * 0.2;
-  shootDir.z += (Math.random() - 0.5) * 0.2;
-  shootDir.normalize();
-  const bulletPos = position.clone().add(shootDir.clone().multiplyScalar(4));
-  createLaser(bulletPos, shootDir, team, name);
-  if (position.distanceTo(playerPlane.position) < 300) {
+  _fShootDir.copy(dirToTarget);
+  _fShootDir.x += (Math.random() - 0.5) * 0.2;
+  _fShootDir.y += (Math.random() - 0.5) * 0.2;
+  _fShootDir.z += (Math.random() - 0.5) * 0.2;
+  _fShootDir.normalize();
+  _fBulletPos.copy(position).addScaledVector(_fShootDir, 4);
+  createLaser(_fBulletPos, _fShootDir, team, name);
+  if (position.distanceToSquared(playerPlane.position) < AUDIO_DIST_SQ) {
     playLaserSound(false);
   }
 }
