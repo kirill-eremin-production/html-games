@@ -1,22 +1,27 @@
 import * as THREE from 'three';
 import { playLaserSound } from '../audio/sound';
-import { CAPITAL_SHIP_COUNT } from '../constants';
 import { createCapitalShip } from '../scene/models';
 import { scene } from '../scene/setup';
+import { parseHexColor, settings } from '../settings';
 import { state } from '../state';
 import { destroyedSubMat } from './explosions';
 import { playerPlane } from './player';
 import { createLaser } from './weapons';
 
+const SHIP_POSITIONS = [
+  new THREE.Vector3(2000, 100, 0),
+  new THREE.Vector3(-1000, -200, 2200),
+  new THREE.Vector3(-500, 300, -2500),
+  new THREE.Vector3(1500, -300, -1800),
+  new THREE.Vector3(-2000, 200, 1000),
+];
+
 export function spawnCapitalShips(): void {
-  const positions = [
-    new THREE.Vector3(2000, 100, 0),
-    new THREE.Vector3(-1000, -200, 2200),
-    new THREE.Vector3(-500, 300, -2500),
-  ];
-  for (let i = 0; i < CAPITAL_SHIP_COUNT; i++) {
-    const ship = createCapitalShip(i);
-    ship.position.copy(positions[i]);
+  const count = settings.counts.capitalShips;
+  const hullColor = parseHexColor(settings.colors.capitalHull);
+  for (let i = 0; i < count; i++) {
+    const ship = createCapitalShip(i, hullColor);
+    ship.position.copy(SHIP_POSITIONS[i]);
     ship.lookAt(0, 0, 0);
     scene.add(ship);
     state.capitalShips.push({

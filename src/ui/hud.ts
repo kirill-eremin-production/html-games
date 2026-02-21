@@ -1,4 +1,5 @@
-import { CAPITAL_SHIP_COUNT, KILL_TARGET, SUBSYSTEM_SHORT } from '../constants';
+import { KILL_TARGET, SUBSYSTEM_SHORT } from '../constants';
+import { settings } from '../settings';
 import { state } from '../state';
 
 const scoreEl = document.getElementById('score')!;
@@ -53,7 +54,8 @@ export function updateHUD(): void {
 
   if (state.phase === 1) {
     const alive = state.capitalShips.filter((cs) => cs.alive).length;
-    objectiveEl.textContent = `Цель: уничтожить корабли [${CAPITAL_SHIP_COUNT - alive}/${CAPITAL_SHIP_COUNT}]`;
+    const total = settings.counts.capitalShips;
+    objectiveEl.textContent = `Цель: уничтожить корабли [${total - alive}/${total}]`;
   } else {
     objectiveEl.textContent = `Цель: уничтожить истребителей [${state.totalEnemyKills}/${KILL_TARGET}]`;
   }

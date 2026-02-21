@@ -96,5 +96,6 @@ export interface GameState {
   shootCooldown: number;
   messageTimer: number;
   damageFlash: number;
+  noDamageTimer: number;
   respawnQueue: RespawnEntry[];
 }

@@ -50,16 +50,17 @@ export function createFighter(color: number, teamColor: number): THREE.Group {
   return group;
 }
 
-export function createCapitalShip(index: number): THREE.Group {
+export function createCapitalShip(index: number, hullColor?: number): THREE.Group {
   const group = new THREE.Group();
+  const hc = hullColor ?? 0x667788;
   const hullMat = new THREE.MeshPhongMaterial({
-    color: 0x667788,
-    emissive: 0x223344,
+    color: hc,
+    emissive: new THREE.Color(hc).multiplyScalar(0.33),
     emissiveIntensity: 0.15,
   });
   const detailMat = new THREE.MeshPhongMaterial({
-    color: 0x556677,
-    emissive: 0x1a2a3a,
+    color: new THREE.Color(hc).multiplyScalar(0.82),
+    emissive: new THREE.Color(hc).multiplyScalar(0.33),
     emissiveIntensity: 0.1,
   });
   const glowMat = new THREE.MeshBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0.7 });

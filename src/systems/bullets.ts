@@ -46,8 +46,11 @@ function hitTestFighters(laser: LaserData, fighters: Fighter[], isPlayerLaser: b
 
         if (isPlayerLaser) {
           state.score += 100;
-          state.playerHealth = state.maxHealth;
-          showMessage('+100 | HP ВОССТАНОВЛЕНО!', 1.5);
+          state.playerHealth = Math.min(
+            state.maxHealth,
+            state.playerHealth + state.maxHealth * 0.1,
+          );
+          showMessage('+100 | +10% HP', 1.5);
         }
 
         state.respawnQueue.push({
@@ -155,6 +158,7 @@ export function updateBullets(dt: number): void {
         if (b.mesh.position.distanceToSquared(playerPlane.position) < PLAYER_HIT_DIST_SQ) {
           state.playerHealth -= b.damage;
           state.damageFlash = 0.3;
+          state.noDamageTimer = 0;
           state.lastAttacker = b.shooterName || '?';
           createExplosion(b.mesh.position.clone(), 0.3);
           playHitSound();

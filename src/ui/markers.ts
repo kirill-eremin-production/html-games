@@ -38,13 +38,7 @@ export function updateTargetMarkers(playerPlane: THREE.Group): void {
     _mrkPos.copy(e.mesh.position).project(camera);
     const screenX = (_mrkPos.x * 0.5 + 0.5) * w;
     const screenY = (-_mrkPos.y * 0.5 + 0.5) * h;
-    if (
-      _mrkPos.z >= 1 ||
-      screenX < -20 ||
-      screenX > w + 20 ||
-      screenY < -20 ||
-      screenY > h + 20
-    )
+    if (_mrkPos.z >= 1 || screenX < -20 || screenX > w + 20 || screenY < -20 || screenY > h + 20)
       continue;
     const el = getMarkerElement(usedCount);
     usedCount++;
@@ -72,13 +66,7 @@ export function updateTargetMarkers(playerPlane: THREE.Group): void {
       _mrkPos.project(camera);
       const screenX = (_mrkPos.x * 0.5 + 0.5) * w;
       const screenY = (-_mrkPos.y * 0.5 + 0.5) * h;
-      if (
-        _mrkPos.z >= 1 ||
-        screenX < -20 ||
-        screenX > w + 20 ||
-        screenY < -20 ||
-        screenY > h + 20
-      )
+      if (_mrkPos.z >= 1 || screenX < -20 || screenX > w + 20 || screenY < -20 || screenY > h + 20)
         continue;
       const el = getMarkerElement(usedCount);
       usedCount++;

@@ -52,6 +52,7 @@ export function createInitialState(): GameState {
     shootCooldown: 0,
     messageTimer: 0,
     damageFlash: 0,
+    noDamageTimer: 0,
     respawnQueue: [],
   };
 }

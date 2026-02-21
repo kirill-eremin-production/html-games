@@ -96,6 +96,14 @@ export function updatePlayer(dt: number): void {
     playerPlane.visible = true;
   }
 
+  state.noDamageTimer += dt;
+  if (state.noDamageTimer >= 5 && state.playerHealth < state.maxHealth) {
+    state.playerHealth = Math.min(
+      state.maxHealth,
+      state.playerHealth + state.maxHealth * 0.02 * dt,
+    );
+  }
+
   state.shootCooldown -= dt;
   if ((state.keys['Space'] || state.keys['MouseLeft']) && state.shootCooldown <= 0) {
     state.shootCooldown = 0.1;

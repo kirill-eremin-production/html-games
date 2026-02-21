@@ -2,11 +2,15 @@ import * as THREE from 'three';
 import { FIGHTER_HP } from '../constants';
 import { addHealthBar, createFighter } from '../scene/models';
 import { scene } from '../scene/setup';
+import { parseHexColor, settings } from '../settings';
 import { nextAllyName, nextEnemyName, state } from '../state';
 import { playerPlane } from './player';
 
 export function spawnAlly(near: THREE.Vector3): void {
-  const mesh = createFighter(0x33cc77, 0x00ffaa);
+  const mesh = createFighter(
+    parseHexColor(settings.colors.allyBody),
+    parseHexColor(settings.colors.allyExhaust),
+  );
   scene.add(mesh);
   const offset = new THREE.Vector3(
     (Math.random() - 0.5) * 200,
@@ -31,9 +35,10 @@ export function spawnAlly(near: THREE.Vector3): void {
 }
 
 export function spawnEnemy(near: THREE.Vector3): void {
-  const colors = [0xdd3333, 0xcc2222, 0xbb4411, 0xee4422];
-  const color = colors[Math.floor(Math.random() * colors.length)];
-  const mesh = createFighter(color, 0xff3300);
+  const mesh = createFighter(
+    parseHexColor(settings.colors.enemyBody),
+    parseHexColor(settings.colors.enemyExhaust),
+  );
   scene.add(mesh);
   const offset = new THREE.Vector3(
     (Math.random() - 0.5) * 300,

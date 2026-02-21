@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { initAudio, isAudioInitialized, resumeAudio } from './audio/sound';
-import { ALLY_COUNT, ENEMY_COUNT } from './constants';
 import { createFighter } from './scene/models';
 import { camera, handleResize, renderer, scene } from './scene/setup';
 import { createNebulae, createStarfield } from './scene/starfield';
+import { parseHexColor, settings } from './settings';
 import { resetNameCounters, state } from './state';
 import './styles/main.css';
 import { updateAllies, updateEnemies } from './systems/ai';
@@ -17,9 +17,13 @@ import { updateEnemyIndicators } from './ui/indicators';
 import { clearKillFeed, updateKillFeed } from './ui/kill-feed';
 import { updateTargetMarkers } from './ui/markers';
 import { drawMinimap } from './ui/minimap';
+import { showSettingsScreen } from './ui/settings-ui';
 
 // Build player model
-const playerModel = createFighter(0x2299dd, 0x00ddff);
+let playerModel = createFighter(
+  parseHexColor(settings.colors.playerBody),
+  parseHexColor(settings.colors.playerExhaust),
+);
 playerPlane.add(playerModel);
 scene.add(playerPlane);
 playerPlane.position.set(0, 0, 0);
@@ -181,6 +185,7 @@ function resetGame(): void {
   state.shootCooldown = 0;
   state.messageTimer = 0;
   state.damageFlash = 0;
+  state.noDamageTimer = 0;
   state.invulnTimer = 0;
   state.keys = {};
   state.mouseX = 0;
@@ -198,9 +203,17 @@ function resetGame(): void {
   camera.position.set(-14, 5, 0);
   camera.lookAt(playerPlane.position);
 
+  // Rebuild player model with current settings colors
+  playerPlane.remove(playerModel);
+  playerModel = createFighter(
+    parseHexColor(settings.colors.playerBody),
+    parseHexColor(settings.colors.playerExhaust),
+  );
+  playerPlane.add(playerModel);
+
   spawnCapitalShips();
-  for (let i = 0; i < ALLY_COUNT; i++) spawnAlly(playerPlane.position);
-  for (let i = 0; i < ENEMY_COUNT; i++) {
+  for (let i = 0; i < settings.counts.allies; i++) spawnAlly(playerPlane.position);
+  for (let i = 0; i < settings.counts.enemies; i++) {
     const shipIdx = i % state.capitalShips.length;
     spawnEnemy(state.capitalShips[shipIdx].mesh.position);
   }
@@ -229,6 +242,7 @@ camera.lookAt(0, 0, 0);
 document.getElementById('start-btn')!.addEventListener('click', startGame);
 document.getElementById('restart-btn')!.addEventListener('click', startGame);
 document.getElementById('victory-restart-btn')!.addEventListener('click', startGame);
+document.getElementById('settings-btn')!.addEventListener('click', showSettingsScreen);
 
 clock.start();
 gameLoop();

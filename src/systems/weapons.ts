@@ -10,9 +10,21 @@ laserGeoAlly.rotateZ(Math.PI / 2);
 const laserGeoEnemy = new THREE.CylinderGeometry(0.12, 0.12, 3.5, 4);
 laserGeoEnemy.rotateZ(Math.PI / 2);
 
-const laserMatPlayer = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
-const laserMatAlly = new THREE.MeshBasicMaterial({ color: 0x44ff88 });
-const laserMatEnemy = new THREE.MeshBasicMaterial({ color: 0xff3300 });
+const laserMatPlayer = new THREE.MeshBasicMaterial({
+  color: 0x00ffcc,
+  blending: THREE.AdditiveBlending,
+  transparent: true,
+});
+const laserMatAlly = new THREE.MeshBasicMaterial({
+  color: 0x44ff88,
+  blending: THREE.AdditiveBlending,
+  transparent: true,
+});
+const laserMatEnemy = new THREE.MeshBasicMaterial({
+  color: 0xff3300,
+  blending: THREE.AdditiveBlending,
+  transparent: true,
+});
 
 const _laserAxis = new THREE.Vector3(1, 0, 0);
 const _laserQuat = new THREE.Quaternion();
@@ -42,7 +54,7 @@ export function createLaser(
     velocity: new THREE.Vector3().copy(_laserDir).multiplyScalar(speed),
     life: 2.0,
     team,
-    damage: isPlayer ? 15 : isEnemy ? 8 : 10,
+    damage: isPlayer ? 15 : isEnemy ? 10 : 10,
     shooterName: shooterName || '',
   };
 
@@ -80,9 +92,9 @@ export function shootFromFighter(
   playerPlane: THREE.Group,
 ): void {
   _fShootDir.copy(dirToTarget);
-  _fShootDir.x += (Math.random() - 0.5) * 0.2;
-  _fShootDir.y += (Math.random() - 0.5) * 0.2;
-  _fShootDir.z += (Math.random() - 0.5) * 0.2;
+  _fShootDir.x += (Math.random() - 0.5) * 0.05;
+  _fShootDir.y += (Math.random() - 0.5) * 0.05;
+  _fShootDir.z += (Math.random() - 0.5) * 0.05;
   _fShootDir.normalize();
   _fBulletPos.copy(position).addScaledVector(_fShootDir, 4);
   createLaser(_fBulletPos, _fShootDir, team, name);

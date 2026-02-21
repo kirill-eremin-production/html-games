@@ -40,7 +40,7 @@ function updateFighterAI(
   playerPlane: THREE.Group,
 ): void {
   if (!fighter.ai.target || Math.random() < 0.01) {
-    if (isEnemy && Math.random() < 0.15 && playerPos) {
+    if (isEnemy && Math.random() < 0.5 && playerPos) {
       fighter.ai.target = { mesh: { position: playerPos }, name: PLAYER_NAME };
     } else {
       fighter.ai.target = findNearestTarget(fighter.mesh.position, enemies);
@@ -104,10 +104,7 @@ function updateFighterAI(
       break;
     case 'orbit': {
       const correction = ((dist - 250) / 250) * 0.3;
-      _aiOrbitDir
-        .copy(fighter.ai.evadeDir)
-        .addScaledVector(dirToTarget, correction)
-        .normalize();
+      _aiOrbitDir.copy(fighter.ai.evadeDir).addScaledVector(dirToTarget, correction).normalize();
       targetDir = _aiOrbitDir;
       break;
     }
@@ -134,7 +131,7 @@ function updateFighterAI(
 
   fighter.shootTimer -= dt;
   if (fighter.shootTimer <= 0 && dist < 400) {
-    fighter.shootTimer = 1.5 + Math.random() * 2;
+    fighter.shootTimer = 0.5 + Math.random() * 0.7;
     shootFromFighter(fighter.mesh.position, dirToTarget, shootTeam, fighter.name, playerPlane);
   }
 
