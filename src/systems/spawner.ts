@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { FIGHTER_HP } from '../constants';
+import { combatConfig } from '../constants';
 import { addHealthBar, createFighter } from '../scene/models';
 import { scene } from '../scene/setup';
 import { parseHexColor, settings } from '../settings';
@@ -26,10 +26,14 @@ export function spawnAlly(near: THREE.Vector3): void {
     name,
     healthBar: hb.bar,
     healthFill: hb.fill,
-    health: FIGHTER_HP,
-    maxHealth: FIGHTER_HP,
-    speed: 55 + Math.random() * 20,
-    shootTimer: 1 + Math.random() * 2,
+    health: combatConfig.fighterHP,
+    maxHealth: combatConfig.fighterHP,
+    speed:
+      combatConfig.allySpeedMin +
+      Math.random() * (combatConfig.allySpeedMax - combatConfig.allySpeedMin),
+    shootTimer:
+      combatConfig.allyFireRateMin +
+      Math.random() * (combatConfig.allyFireRateMax - combatConfig.allyFireRateMin),
     ai: { state: 'chase', timer: 0, evadeDir: new THREE.Vector3(), target: null },
   });
 }
@@ -53,10 +57,14 @@ export function spawnEnemy(near: THREE.Vector3): void {
     name,
     healthBar: hb.bar,
     healthFill: hb.fill,
-    health: FIGHTER_HP,
-    maxHealth: FIGHTER_HP,
-    speed: 45 + Math.random() * 20,
-    shootTimer: 2 + Math.random() * 3,
+    health: combatConfig.fighterHP,
+    maxHealth: combatConfig.fighterHP,
+    speed:
+      combatConfig.enemySpeedMin +
+      Math.random() * (combatConfig.enemySpeedMax - combatConfig.enemySpeedMin),
+    shootTimer:
+      combatConfig.enemyFireRateMin +
+      Math.random() * (combatConfig.enemyFireRateMax - combatConfig.enemyFireRateMin),
     ai: { state: 'chase', timer: 0, evadeDir: new THREE.Vector3(), target: null },
   });
 }

@@ -2,10 +2,13 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>Space Combat</title>
-    <script type="module" crossorigin src="./assets/index-D4Aa7_Fi.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-CAbOgc7b.css">
+    <script type="module" crossorigin src="./assets/index-B1_QThES.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-D1xyUZze.css">
   </head>
   <body>
     <div id="start-screen">
@@ -21,7 +24,10 @@
         Уничтожьте <span>3 боевых корабля</span>, затем <span>100 истребителей</span>!<br />
         32 истребителя сражаются на вашей стороне.<br />
       </div>
-      <button id="start-btn">В БОЙ</button>
+      <div class="start-buttons">
+        <button id="start-btn">В БОЙ</button>
+        <button id="campaign-btn">КАМПАНИЯ</button>
+      </div>
       <button id="settings-btn">НАСТРОЙКИ</button>
     </div>
 
@@ -65,6 +71,11 @@
       <div id="enemy-indicators"></div>
       <div id="target-markers"></div>
     </div>
+
+    <div id="galaxy-hud"></div>
+    <div id="galaxy-info-panel"></div>
+    <div id="station-screen"></div>
+    <div id="combat-result"></div>
 
   </body>
 </html>

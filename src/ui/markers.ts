@@ -1,9 +1,5 @@
 import * as THREE from 'three';
-import {
-  CAPITAL_CLOSE_RANGE_SQ,
-  CURSOR_PROXIMITY_FACTOR,
-  LOCK_PICK_RADIUS,
-} from '../constants';
+import { CAPITAL_CLOSE_RANGE_SQ, CURSOR_PROXIMITY_FACTOR, LOCK_PICK_RADIUS } from '../constants';
 import { camera } from '../scene/setup';
 import { state } from '../state';
 import type { LockedTarget } from '../types';
@@ -46,13 +42,7 @@ function renderCapitalShipMarkers(
       _mrkPos.copy(cs.mesh.position).project(camera);
       const screenX = (_mrkPos.x * 0.5 + 0.5) * w;
       const screenY = (-_mrkPos.y * 0.5 + 0.5) * h;
-      if (
-        _mrkPos.z >= 1 ||
-        screenX < -20 ||
-        screenX > w + 20 ||
-        screenY < -20 ||
-        screenY > h + 20
-      )
+      if (_mrkPos.z >= 1 || screenX < -20 || screenX > w + 20 || screenY < -20 || screenY > h + 20)
         continue;
       const el = getMarkerElement(usedCount++);
       el.className = 'target-marker capital';

@@ -1,7 +1,8 @@
-import { KILL_TARGET, SUBSYSTEM_SHORT } from '../constants';
+import { SUBSYSTEM_SHORT, combatConfig } from '../constants';
 import { settings } from '../settings';
 import { state } from '../state';
 
+const hudEl = document.getElementById('hud')! as HTMLElement;
 const scoreEl = document.getElementById('score')!;
 const livesEl = document.getElementById('lives')!;
 const healthBarEl = document.getElementById('health-bar')! as HTMLElement;
@@ -57,7 +58,7 @@ export function updateHUD(): void {
     const total = settings.counts.capitalShips;
     objectiveEl.textContent = `Цель: уничтожить корабли [${total - alive}/${total}]`;
   } else {
-    objectiveEl.textContent = `Цель: уничтожить истребителей [${state.totalEnemyKills}/${KILL_TARGET}]`;
+    objectiveEl.textContent = `Цель: уничтожить истребителей [${state.totalEnemyKills}/${combatConfig.killTarget}]`;
   }
 
   if (state.phase === 1) {
@@ -86,4 +87,12 @@ export function updateHUD(): void {
     (shipStatusEl as HTMLElement).style.display = 'none';
     killFeedEl.style.top = '20px';
   }
+}
+
+export function showHUD(): void {
+  hudEl.style.display = 'block';
+}
+
+export function hideHUD(): void {
+  hudEl.style.display = 'none';
 }

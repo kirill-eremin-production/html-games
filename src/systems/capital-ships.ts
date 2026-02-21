@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { playLaserSound } from '../audio/sound';
+import { combatConfig } from '../constants';
 import { createCapitalShip } from '../scene/models';
 import { scene } from '../scene/setup';
 import { parseHexColor, settings } from '../settings';
@@ -65,7 +66,9 @@ export function updateCapitalShips(dt: number): void {
 
     cs.turretTimer -= dt;
     if (cs.turretTimer <= 0) {
-      cs.turretTimer = 3 + Math.random() * 2;
+      cs.turretTimer =
+        combatConfig.turretFireRateMin +
+        Math.random() * (combatConfig.turretFireRateMax - combatConfig.turretFireRateMin);
       _csTargets.length = 0;
       const shipPos = cs.mesh.position;
       if (shipPos.distanceToSquared(playerPlane.position) < TURRET_RANGE_SQ)
@@ -82,7 +85,8 @@ export function updateCapitalShips(dt: number): void {
       const tgt = _csTargets[Math.floor(Math.random() * _csTargets.length)];
       _csDir.copy(tgt).sub(shipPos).normalize();
       const bridgeSub = cs.subsystems[1];
-      const inaccuracy = bridgeSub.health <= 0 ? 0.4 : 0.15;
+      const inaccuracy =
+        bridgeSub.health <= 0 ? combatConfig.turretAccuracy * 2.5 : combatConfig.turretAccuracy;
       _csDir.x += (Math.random() - 0.5) * inaccuracy;
       _csDir.y += (Math.random() - 0.5) * inaccuracy;
       _csDir.z += (Math.random() - 0.5) * inaccuracy;

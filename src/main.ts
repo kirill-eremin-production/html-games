@@ -9,6 +9,17 @@ import {
   stopProximityHum,
   updateProximityHum,
 } from './audio/sound';
+import { DEFAULT_COMBAT_CONFIG } from './campaign/balance';
+import { updateTravelAnimation } from './campaign/galaxy-controls';
+import { updateGalaxyLabels, updateGalaxyScene } from './campaign/galaxy-scene';
+import {
+  enterCampaignFromMenu,
+  onCombatEnd,
+  registerCombatCallbacks,
+} from './campaign/mode-manager';
+import { currentMode, isCampaignActive, setMode } from './campaign/state';
+import type { CombatConfig } from './campaign/types';
+import { applyCombatConfig, combatConfig } from './constants';
 import { createFighter } from './scene/models';
 import { camera, handleResize, renderer, scene } from './scene/setup';
 import { createNebulae, createStarfield } from './scene/starfield';
@@ -19,9 +30,21 @@ import { updateAllies, updateEnemies } from './systems/ai';
 import { updateBullets } from './systems/bullets';
 import { spawnCapitalShips, updateCapitalShips } from './systems/capital-ships';
 import { updateExplosions } from './systems/explosions';
-import { playerDeath, playerPlane, playerRotation, updatePlayer } from './systems/player';
+import {
+  playerDeath as playerDeathOriginal,
+  playerPlane,
+  playerRotation,
+  updatePlayer,
+} from './systems/player';
 import { spawnAlly, spawnEnemy, updateRespawnQueue } from './systems/spawner';
-import { hideMessage, resetCachedShipHTML, showMessage, updateHUD } from './ui/hud';
+import {
+  hideHUD,
+  hideMessage,
+  resetCachedShipHTML,
+  showHUD,
+  showMessage,
+  updateHUD,
+} from './ui/hud';
 import { updateEnemyIndicators } from './ui/indicators';
 import { clearKillFeed, updateKillFeed } from './ui/kill-feed';
 import { toggleTargetLock, updateTargetMarkers } from './ui/markers';
@@ -61,6 +84,7 @@ document.getElementById('resume-btn')!.addEventListener('click', resumeGame);
 
 // Input
 window.addEventListener('keydown', (e) => {
+  if (currentMode !== 'combat') return;
   if (e.code === 'Escape' || e.code === 'KeyP') {
     pauseGame();
     return;
@@ -69,19 +93,23 @@ window.addEventListener('keydown', (e) => {
   e.preventDefault();
 });
 window.addEventListener('keyup', (e) => {
+  if (currentMode !== 'combat') return;
   state.keys[e.code] = false;
   e.preventDefault();
 });
 window.addEventListener('mousemove', (e) => {
+  if (currentMode !== 'combat') return;
   state.mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
   state.mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
   state.mouseActive = true;
 });
 window.addEventListener('mousedown', (e) => {
-  if (e.button === 0) state.keys['MouseLeft'] = true;
-  if (e.button === 1 && state.running) {
-    e.preventDefault();
-    toggleTargetLock(playerPlane);
+  if (currentMode === 'combat') {
+    if (e.button === 0) state.keys['MouseLeft'] = true;
+    if (e.button === 1 && state.running) {
+      e.preventDefault();
+      toggleTargetLock(playerPlane);
+    }
   }
   resumeAudio();
 });
@@ -108,11 +136,26 @@ function updateDamageEffect(dt: number): void {
 // Victory check
 function checkVictory(): void {
   if (state.phase === 1) return;
-  if (state.phase === 2 && state.totalEnemyKills >= 100) {
+  if (state.phase === 2 && state.totalEnemyKills >= combatConfig.killTarget) {
     state.running = false;
-    document.getElementById('victory-score')!.textContent =
-      `Счёт: ${state.score} | Уничтожено: ${state.totalEnemyKills}`;
-    (document.getElementById('victory-screen')! as HTMLElement).style.display = 'flex';
+    if (isCampaignActive) {
+      onCombatEnd(true, state.score);
+    } else {
+      document.getElementById('victory-score')!.textContent =
+        `Счёт: ${state.score} | Уничтожено: ${state.totalEnemyKills}`;
+      (document.getElementById('victory-screen')! as HTMLElement).style.display = 'flex';
+    }
+  }
+}
+
+// Player death wrapper for campaign
+function playerDeath(): void {
+  playerDeathOriginal();
+  // If lives ran out and this is campaign mode, route to combat result
+  if (state.lives <= 0 && isCampaignActive && !state.running) {
+    // Hide game-over screen that playerDeathOriginal showed
+    (document.getElementById('game-over')! as HTMLElement).style.display = 'none';
+    onCombatEnd(false, state.score);
   }
 }
 
@@ -130,6 +173,22 @@ function gameLoop(timestamp = 0): void {
   lastFrameTime = timestamp - (elapsed % FRAME_INTERVAL);
   const dt = Math.min(clock.getDelta(), 0.05);
 
+  // Galaxy mode: update galaxy scene animations
+  if (currentMode === 'galaxy') {
+    updateGalaxyScene(dt);
+    updateTravelAnimation(dt);
+    updateGalaxyLabels(camera);
+    renderer.render(scene, camera);
+    return;
+  }
+
+  // Non-combat modes: just render
+  if (currentMode !== 'combat') {
+    renderer.render(scene, camera);
+    return;
+  }
+
+  // Combat mode
   if (!state.running || paused) {
     renderer.render(scene, camera);
     return;
@@ -243,15 +302,23 @@ function resetGame(): void {
   );
   playerPlane.add(playerModel);
 
+  // Use combatConfig for counts (overridden in campaign mode)
+  const csCount = Math.min(combatConfig.capitalShips, 5);
+  settings.counts.capitalShips = csCount;
   spawnCapitalShips();
-  for (let i = 0; i < settings.counts.allies; i++) spawnAlly(playerPlane.position);
-  for (let i = 0; i < settings.counts.enemies; i++) {
-    const shipIdx = i % state.capitalShips.length;
+
+  const allyCount = combatConfig.allies;
+  for (let i = 0; i < allyCount; i++) spawnAlly(playerPlane.position);
+
+  const enemyCount = combatConfig.enemies;
+  for (let i = 0; i < enemyCount; i++) {
+    const shipIdx = i % Math.max(1, state.capitalShips.length);
     spawnEnemy(state.capitalShips[shipIdx].mesh.position);
   }
 }
 
-function startGame(): void {
+// Start quick play (existing flow)
+function startQuickPlay(): void {
   document.documentElement.requestFullscreen?.();
   paused = false;
   pauseScreen.style.display = 'none';
@@ -260,11 +327,49 @@ function startGame(): void {
   (document.getElementById('victory-screen')! as HTMLElement).style.display = 'none';
   if (!isAudioInitialized()) initAudio();
   resumeAudio();
+  applyCombatConfig(DEFAULT_COMBAT_CONFIG);
+  setMode('combat');
   resetGame();
+  showHUD();
   startEngineHum();
   startProximityHum();
   state.running = true;
   showMessage('В БОЙ!', 2);
+}
+
+// Start combat from campaign
+function startCampaignCombat(config: CombatConfig): void {
+  document.documentElement.requestFullscreen?.();
+  paused = false;
+  pauseScreen.style.display = 'none';
+  if (!isAudioInitialized()) initAudio();
+  resumeAudio();
+  applyCombatConfig(config);
+  setMode('combat');
+  resetGame();
+  showHUD();
+  startEngineHum();
+  startProximityHum();
+  state.running = true;
+  showMessage('В БОЙ!', 2);
+}
+
+function stopCombat(): void {
+  state.running = false;
+  stopEngineHum();
+  stopProximityHum();
+  hideHUD();
+}
+
+// Register callbacks for mode manager
+registerCombatCallbacks(startCampaignCombat, stopCombat);
+
+// Start campaign
+function startCampaign(): void {
+  (document.getElementById('start-screen')! as HTMLElement).style.display = 'none';
+  if (!isAudioInitialized()) initAudio();
+  resumeAudio();
+  enterCampaignFromMenu();
 }
 
 // Init
@@ -273,9 +378,10 @@ createNebulae();
 camera.position.set(-10.5, 3.75, 0);
 camera.lookAt(0, 0, 0);
 
-document.getElementById('start-btn')!.addEventListener('click', startGame);
-document.getElementById('restart-btn')!.addEventListener('click', startGame);
-document.getElementById('victory-restart-btn')!.addEventListener('click', startGame);
+document.getElementById('start-btn')!.addEventListener('click', startQuickPlay);
+document.getElementById('restart-btn')!.addEventListener('click', startQuickPlay);
+document.getElementById('victory-restart-btn')!.addEventListener('click', startQuickPlay);
+document.getElementById('campaign-btn')!.addEventListener('click', startCampaign);
 document.getElementById('settings-btn')!.addEventListener('click', showSettingsScreen);
 
 initTouchControls(pauseGame);

@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { playHitSound } from '../audio/sound';
-import { KILL_TARGET } from '../constants';
-import { RESPAWN_DELAY } from '../constants';
+import { combatConfig } from '../constants';
 import { scene } from '../scene/setup';
 import { state } from '../state';
 import type { Fighter, LaserData } from '../types';
@@ -55,7 +54,7 @@ function hitTestFighters(laser: LaserData, fighters: Fighter[], isPlayerLaser: b
 
         state.respawnQueue.push({
           team: isEnemyVictim ? 'enemy' : 'ally',
-          timer: RESPAWN_DELAY,
+          timer: combatConfig.respawnDelay,
         });
       }
       return true;
@@ -103,7 +102,10 @@ function hitTestCapitalShips(laser: LaserData): boolean {
           if (state.phase === 1 && state.capitalShips.every((c) => !c.alive)) {
             state.phase = 2;
             setTimeout(() => {
-              showMessage(`ВСЕ КОРАБЛИ УНИЧТОЖЕНЫ!\nУничтожьте ${KILL_TARGET} истребителей!`, 4);
+              showMessage(
+                `ВСЕ КОРАБЛИ УНИЧТОЖЕНЫ!\nУничтожьте ${combatConfig.killTarget} истребителей!`,
+                4,
+              );
             }, 3500);
           }
         }
