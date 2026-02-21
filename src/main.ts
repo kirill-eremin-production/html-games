@@ -1,5 +1,14 @@
 import * as THREE from 'three';
-import { initAudio, isAudioInitialized, resumeAudio } from './audio/sound';
+import {
+  initAudio,
+  isAudioInitialized,
+  resumeAudio,
+  startEngineHum,
+  startProximityHum,
+  stopEngineHum,
+  stopProximityHum,
+  updateProximityHum,
+} from './audio/sound';
 import { createFighter } from './scene/models';
 import { camera, handleResize, renderer, scene } from './scene/setup';
 import { createNebulae, createStarfield } from './scene/starfield';
@@ -128,6 +137,18 @@ function gameLoop(timestamp = 0): void {
   updateBullets(dt);
   updateExplosions(dt);
   updateRespawnQueue(dt);
+
+  // Proximity engine sound — find closest fighter
+  let minDistSq = Infinity;
+  for (const a of state.allies) {
+    const dSq = playerPlane.position.distanceToSquared(a.mesh.position);
+    if (dSq < minDistSq) minDistSq = dSq;
+  }
+  for (const e of state.enemies) {
+    const dSq = playerPlane.position.distanceToSquared(e.mesh.position);
+    if (dSq < minDistSq) minDistSq = dSq;
+  }
+  updateProximityHum(minDistSq);
   updateDamageEffect(dt);
   updateKillFeed(dt);
 
@@ -146,6 +167,11 @@ function gameLoop(timestamp = 0): void {
 
   if (state.playerHealth <= 0) playerDeath();
   checkVictory();
+
+  if (!state.running) {
+    stopEngineHum();
+    stopProximityHum();
+  }
 
   renderer.render(scene, camera);
 }
@@ -229,6 +255,8 @@ function startGame(): void {
   if (!isAudioInitialized()) initAudio();
   resumeAudio();
   resetGame();
+  startEngineHum();
+  startProximityHum();
   state.running = true;
   showMessage('В БОЙ!', 2);
 }

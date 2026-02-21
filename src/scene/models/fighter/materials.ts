@@ -35,5 +35,17 @@ export function createExhaustMat(teamColor: number): THREE.MeshBasicMaterial {
     color: teamColor,
     transparent: true,
     opacity: 0.9,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+}
+
+export function createGlowHaloMat(teamColor: number): THREE.MeshBasicMaterial {
+  return new THREE.MeshBasicMaterial({
+    color: teamColor,
+    transparent: true,
+    opacity: 0.25,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
   });
 }

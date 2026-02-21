@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { playLaserSound } from '../audio/sound';
+import { playLaserSound, updateEngineHum } from '../audio/sound';
 import { PLAYER_NAME } from '../constants';
 import { GUN_OFFSET_L, GUN_OFFSET_R } from '../scene/models';
 import { camera } from '../scene/setup';
@@ -72,12 +72,18 @@ export function updatePlayer(dt: number): void {
   const forward = _tmpVec.set(1, 0, 0).applyQuaternion(playerPlane.quaternion);
   playerPlane.position.addScaledVector(forward, state.speed * dt);
 
+  const speedRatio = state.speed / state.boostSpeed;
   const exhaust = playerPlane.getObjectByName('exhaust') as THREE.Mesh | undefined;
   if (exhaust) {
-    (exhaust.material as THREE.MeshBasicMaterial).opacity =
-      0.4 + (state.speed / state.boostSpeed) * 0.6;
-    exhaust.scale.setScalar(0.8 + (state.speed / state.boostSpeed) * 0.6);
+    (exhaust.material as THREE.MeshBasicMaterial).opacity = 0.4 + speedRatio * 0.6;
+    exhaust.scale.setScalar(0.8 + speedRatio * 0.6);
   }
+  const glow = playerPlane.getObjectByName('glow') as THREE.Mesh | undefined;
+  if (glow) {
+    (glow.material as THREE.MeshBasicMaterial).opacity = 0.1 + speedRatio * 0.3;
+    glow.scale.setScalar(0.7 + speedRatio * 0.8);
+  }
+  updateEngineHum(speedRatio);
 
   const camOffset = _tmpVec2.set(-14, 5, 0).applyQuaternion(playerPlane.quaternion);
   const camTarget = _tmpVec3.copy(playerPlane.position).add(camOffset);

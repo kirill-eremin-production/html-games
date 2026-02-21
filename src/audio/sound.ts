@@ -88,6 +88,111 @@ export function playExplosionSound(size: number): void {
   source.start(t);
 }
 
+// ── Player engine hum (continuous drone) ──
+
+let engineOsc1: OscillatorNode | null = null;
+let engineOsc2: OscillatorNode | null = null;
+let engineGain: GainNode | null = null;
+
+export function startEngineHum(): void {
+  if (!isAudioReady() || engineOsc1) return;
+  const ctx = audioCtx!;
+
+  engineGain = ctx.createGain();
+  engineGain.gain.value = 0.08;
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 200;
+  filter.connect(engineGain);
+  engineGain.connect(masterGain!);
+
+  engineOsc1 = ctx.createOscillator();
+  engineOsc1.type = 'triangle';
+  engineOsc1.frequency.value = 55;
+  engineOsc1.connect(filter);
+  engineOsc1.start();
+
+  const harmGain = ctx.createGain();
+  harmGain.gain.value = 0.4; // harmonic is quieter relative to base
+  harmGain.connect(filter);
+
+  engineOsc2 = ctx.createOscillator();
+  engineOsc2.type = 'sawtooth';
+  engineOsc2.frequency.value = 110;
+  engineOsc2.connect(harmGain);
+  engineOsc2.start();
+}
+
+export function updateEngineHum(speedRatio: number): void {
+  if (!engineOsc1 || !engineGain) return;
+  // speedRatio: 0..1 (baseSpeed/boostSpeed .. 1)
+  engineOsc1.frequency.value = 55 + speedRatio * 8;
+  engineOsc2!.frequency.value = 110 + speedRatio * 16;
+  engineGain.gain.value = 0.06 + speedRatio * 0.04;
+}
+
+export function stopEngineHum(): void {
+  engineOsc1?.stop();
+  engineOsc2?.stop();
+  engineOsc1 = null;
+  engineOsc2 = null;
+  engineGain = null;
+}
+
+// ── Proximity engine hum (nearby ships) ──
+
+let proxOsc1: OscillatorNode | null = null;
+let proxOsc2: OscillatorNode | null = null;
+let proxGain: GainNode | null = null;
+
+export function startProximityHum(): void {
+  if (!isAudioReady() || proxOsc1) return;
+  const ctx = audioCtx!;
+
+  proxGain = ctx.createGain();
+  proxGain.gain.value = 0;
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 180;
+  filter.connect(proxGain);
+  proxGain.connect(masterGain!);
+
+  proxOsc1 = ctx.createOscillator();
+  proxOsc1.type = 'triangle';
+  proxOsc1.frequency.value = 70;
+  proxOsc1.connect(filter);
+  proxOsc1.start();
+
+  const harmGain = ctx.createGain();
+  harmGain.gain.value = 0.35;
+  harmGain.connect(filter);
+
+  proxOsc2 = ctx.createOscillator();
+  proxOsc2.type = 'sawtooth';
+  proxOsc2.frequency.value = 140;
+  proxOsc2.connect(harmGain);
+  proxOsc2.start();
+}
+
+export function updateProximityHum(closestDistSq: number): void {
+  if (!proxGain) return;
+  const RANGE = 200;
+  const dist = Math.sqrt(closestDistSq);
+  const t = Math.max(0, 1 - dist / RANGE);
+  // Smooth ramp to avoid clicks
+  proxGain.gain.linearRampToValueAtTime(t * 0.04, audioCtx!.currentTime + 0.05);
+}
+
+export function stopProximityHum(): void {
+  proxOsc1?.stop();
+  proxOsc2?.stop();
+  proxOsc1 = null;
+  proxOsc2 = null;
+  proxGain = null;
+}
+
 export function playHitSound(): void {
   if (!isAudioReady()) return;
   const t = audioCtx!.currentTime + 0.005;

@@ -30,3 +30,6 @@ nacelleGeo.rotateZ(Math.PI / 2);
 
 // Exhaust glow inside nacelle
 export const exhaustGeo = new THREE.SphereGeometry(0.25, 4, 4);
+
+// Outer glow halo (larger, softer)
+export const glowHaloGeo = new THREE.SphereGeometry(0.6, 6, 6);

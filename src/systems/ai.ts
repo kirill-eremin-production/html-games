@@ -135,6 +135,14 @@ function updateFighterAI(
     shootFromFighter(fighter.mesh, dirToTarget, shootTeam, fighter.name, playerPlane);
   }
 
+  // Exhaust glow pulse
+  const pulse = Math.sin(Date.now() * 0.006 + fighter.mesh.id * 1.7) * 0.5 + 0.5;
+  const exh = fighter.mesh.getObjectByName('exhaust') as THREE.Mesh | undefined;
+  if (exh) {
+    (exh.material as THREE.MeshBasicMaterial).opacity = 0.6 + pulse * 0.3;
+    exh.scale.setScalar(0.9 + pulse * 0.2);
+  }
+
   fighter.healthBar.lookAt(camera.position);
   const hpRatio = fighter.health / fighter.maxHealth;
   fighter.healthFill.scale.x = Math.max(0.01, hpRatio);

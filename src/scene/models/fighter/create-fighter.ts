@@ -3,6 +3,7 @@ import {
   canopyGeo,
   exhaustGeo,
   fuselageGeo,
+  glowHaloGeo,
   nacelleGeo,
   noseGeo,
   tailFinGeo,
@@ -10,13 +11,21 @@ import {
   wingGeo,
   wingletGeo,
 } from './geometries';
-import { canopyMat, createAccentMat, createBodyMat, createExhaustMat, noseMat } from './materials';
+import {
+  canopyMat,
+  createAccentMat,
+  createBodyMat,
+  createExhaustMat,
+  createGlowHaloMat,
+  noseMat,
+} from './materials';
 
 export function createFighter(color: number, teamColor: number): THREE.Group {
   const group = new THREE.Group();
   const bodyMat = createBodyMat(color);
   const accentMat = createAccentMat(color);
   const glowMat = createExhaustMat(teamColor);
+  const haloMat = createGlowHaloMat(teamColor);
 
   // 1. Fuselage
   const body = new THREE.Mesh(fuselageGeo, bodyMat);
@@ -92,6 +101,17 @@ export function createFighter(color: number, teamColor: number): THREE.Group {
   const exhaustL = new THREE.Mesh(exhaustGeo, glowMat);
   exhaustL.position.set(-3.3, 0, -1.0);
   group.add(exhaustL);
+
+  // 16. Glow halo R (named 'glow' for player.ts throttle animation)
+  const haloR = new THREE.Mesh(glowHaloGeo, haloMat);
+  haloR.position.set(-3.3, 0, 1.0);
+  haloR.name = 'glow';
+  group.add(haloR);
+
+  // 17. Glow halo L (shares same material instance)
+  const haloL = new THREE.Mesh(glowHaloGeo, haloMat);
+  haloL.position.set(-3.3, 0, -1.0);
+  group.add(haloL);
 
   return group;
 }
