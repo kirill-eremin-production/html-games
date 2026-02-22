@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-
 import { SUBSYSTEM_HP } from '../../constants';
 import type { Subsystem } from '../../types';
 import {
@@ -21,12 +20,7 @@ const loader = new GLTFLoader();
 
 function load(url: string): Promise<THREE.Group> {
   return new Promise((resolve, reject) => {
-    loader.load(
-      url,
-      (gltf) => resolve(gltf.scene),
-      undefined,
-      reject,
-    );
+    loader.load(url, (gltf) => resolve(gltf.scene), undefined, reject);
   });
 }
 
@@ -44,10 +38,7 @@ export async function preloadModels(): Promise<void> {
 const SUBSYSTEM_NAMES = ['engines', 'bridge', 'turrets', 'comms', 'hangar'] as const;
 const SUBSYSTEM_LABELS = ['Двигатели', 'Мостик', 'Турели', 'Связь', 'Ангар'] as const;
 
-export function cloneFighterModel(
-  bodyColor: number,
-  exhaustColor: number,
-): THREE.Group {
+export function cloneFighterModel(bodyColor: number, exhaustColor: number): THREE.Group {
   const group = fighterTemplate!.clone();
 
   const bodyMat = createBodyMat(bodyColor);
@@ -73,10 +64,7 @@ export function cloneFighterModel(
 
 // ─── Capital Ship cloning ───────────────────────────────────────────────────
 
-export function cloneCapitalShipModel(
-  index: number,
-  hullColor: number,
-): THREE.Group {
+export function cloneCapitalShipModel(index: number, hullColor: number): THREE.Group {
   const group = capitalShipTemplate!.clone();
 
   // Apply hull colors to the hull group

@@ -1,4 +1,5 @@
 import { resumeAudio } from '../audio/sound';
+import { exitExplorationMode } from '../campaign/mode-manager';
 import { currentMode } from '../campaign/state';
 import { handleResize } from '../scene/setup';
 import { state } from '../state';
@@ -6,11 +7,19 @@ import { playerPlane } from '../systems/player';
 import { toggleTargetLock } from '../ui/markers';
 import { pauseGame } from './combat';
 
+function isFlightMode(): boolean {
+  return currentMode === 'combat' || currentMode === 'exploration';
+}
+
 export function setupInputListeners(): void {
   window.addEventListener('keydown', (e) => {
-    if (currentMode !== 'combat') return;
+    if (!isFlightMode()) return;
     if (e.code === 'Escape' || e.code === 'KeyP') {
-      pauseGame();
+      if (currentMode === 'exploration') {
+        exitExplorationMode();
+      } else {
+        pauseGame();
+      }
       return;
     }
     state.keys[e.code] = true;
@@ -18,13 +27,13 @@ export function setupInputListeners(): void {
   });
 
   window.addEventListener('keyup', (e) => {
-    if (currentMode !== 'combat') return;
+    if (!isFlightMode()) return;
     state.keys[e.code] = false;
     e.preventDefault();
   });
 
   window.addEventListener('mousemove', (e) => {
-    if (currentMode !== 'combat') return;
+    if (!isFlightMode()) return;
     state.mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
     state.mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
     state.mouseActive = true;

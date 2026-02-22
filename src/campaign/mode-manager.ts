@@ -1,9 +1,20 @@
 import { applyCombatConfig } from '../constants';
-import { scene } from '../scene/setup';
-import { playerPlane } from '../systems/player';
+import { refs } from '../main/refs';
+import { camera, scene } from '../scene/setup';
+import { setStarfieldVisible } from '../scene/starfield';
+import { state } from '../state';
+import { playerPlane, playerRotation } from '../systems/player';
 import { hideHUD, showHUD } from '../ui/hud';
 import { DIFFICULTY_CONFIGS } from './balance';
 import { hideCombatResult, showCombatQuitResult, showCombatResult } from './combat-result';
+import { hideExplorationHud, setupExplorationHud } from './exploration-scene/hud';
+import {
+  buildExplorationScene,
+  clearExplorationScene,
+  hideExploration,
+  showExploration,
+} from './exploration-scene/index';
+import { explorationGroup } from './exploration-scene/refs';
 import { disableGalaxyControls, enableGalaxyControls } from './galaxy-controls';
 import {
   buildGalaxyScene,
@@ -42,12 +53,20 @@ export function registerCombatCallbacks(
 // ── Init ─────────────────────────────────────────────────────────────────────
 
 let galaxyBuilt = false;
+let explorationAdded = false;
 
 function ensureGalaxyBuilt(): void {
   if (!galaxyBuilt) {
     buildGalaxyScene();
     scene.add(galaxyGroup);
     galaxyBuilt = true;
+  }
+}
+
+function ensureExplorationGroup(): void {
+  if (!explorationAdded) {
+    scene.add(explorationGroup);
+    explorationAdded = true;
   }
 }
 
@@ -88,6 +107,7 @@ export function enterGalaxyMode(resetCamera = true): void {
   enableGalaxyControls(
     () => enterStationMode(),
     () => enterCombatFromContract(),
+    () => enterExplorationMode(),
     resetCamera,
   );
 }
@@ -100,6 +120,50 @@ export function enterStationMode(): void {
   hideAllGameScreens();
 
   showStation(() => enterGalaxyMode(false));
+}
+
+export function enterExplorationMode(): void {
+  setMode('exploration');
+  disableGalaxyControls();
+  hideGalaxy();
+  hideStation();
+  hideCombatResult();
+  hideHUD();
+  hideAllGameScreens();
+
+  ensureExplorationGroup();
+  buildExplorationScene(campaign.currentSystemId);
+  showExploration();
+  setStarfieldVisible(true);
+
+  // Position player at edge of system
+  playerPlane.position.set(50, 0, 0);
+  playerPlane.quaternion.identity();
+  playerRotation.pitch = 0;
+  playerRotation.yaw = 0;
+  playerRotation.roll = 0;
+  playerPlane.visible = true;
+
+  // Reset flight state
+  state.speed = state.baseSpeed;
+  state.mouseX = 0;
+  state.mouseY = 0;
+  refs.explorationTime = 0;
+
+  // Set camera near plane for exploration (same as combat)
+  camera.near = 1;
+  camera.updateProjectionMatrix();
+
+  setupExplorationHud(() => exitExplorationMode());
+}
+
+export function exitExplorationMode(): void {
+  hideExplorationHud();
+  hideExploration();
+  clearExplorationScene();
+  playerPlane.visible = false;
+
+  enterGalaxyMode(false);
 }
 
 function enterCombatFromContract(): void {

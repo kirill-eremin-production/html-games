@@ -18,16 +18,21 @@ export { updateTravelAnimation } from './travel';
 export function enableGalaxyControls(
   stationCb: () => void,
   combatCb: () => void,
+  exploreCb: () => void,
   resetCamera = true,
 ): void {
   ensureUI();
   setInputEnabled(true);
   setOnStartCombat(combatCb);
 
-  setHudCallbacks((targetId) => {
-    if (isTraveling()) return;
-    startTravelAnimation(targetId);
-  }, stationCb);
+  setHudCallbacks(
+    (targetId) => {
+      if (isTraveling()) return;
+      startTravelAnimation(targetId);
+    },
+    stationCb,
+    exploreCb,
+  );
 
   addInputListeners();
 

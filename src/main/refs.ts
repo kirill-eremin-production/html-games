@@ -8,4 +8,5 @@ export const refs = {
   playerModel: null as THREE.Group | null,
   hudFrameCounter: 0,
   lastFrameTime: 0,
+  explorationTime: 0,
 };

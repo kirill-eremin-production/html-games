@@ -1,5 +1,5 @@
 import { isTouchDevice } from '../../ui/touch-controls';
-import { getFuelCost, getSystem } from '../data';
+import { getFuelCost, getSystem, systemHasStation } from '../data';
 import { selectSystem, setGalaxyBrightness } from '../galaxy-scene';
 import { campaign, spendFuel } from '../state';
 import { GALAXY_TEMPLATES } from './templates';
@@ -15,6 +15,7 @@ let selectedSystemId: string | null = null;
 
 let onTravelRequest: ((targetId: string) => void) | null = null;
 let onStationRequest: (() => void) | null = null;
+let onExploreRequest: (() => void) | null = null;
 
 const LS_BRIGHTNESS_KEY = 'galaxyBrightness';
 
@@ -30,9 +31,14 @@ export function setSelectedSystemId(id: string | null): void {
 
 // ── Callbacks (set by index.ts orchestrator) ─────────────────────────────────
 
-export function setHudCallbacks(travelCb: (targetId: string) => void, stationCb: () => void): void {
+export function setHudCallbacks(
+  travelCb: (targetId: string) => void,
+  stationCb: () => void,
+  exploreCb: () => void,
+): void {
   onTravelRequest = travelCb;
   onStationRequest = stationCb;
+  onExploreRequest = exploreCb;
 }
 
 // ── UI creation ──────────────────────────────────────────────────────────────
@@ -97,6 +103,8 @@ export function updateInfoPanel(): void {
   const canTravel = isConnected && !isCurrent && campaign.fuel >= fuelCost;
   const isContractTarget = campaign.activeContract?.targetSystemId === selectedSystemId;
 
+  const hasStation = systemHasStation(selectedSystemId);
+
   infoPanel.innerHTML = GALAXY_TEMPLATES.infoPanel({
     name: sys.name,
     isCurrent,
@@ -104,6 +112,7 @@ export function updateInfoPanel(): void {
     fuelCost,
     canTravel,
     isContractTarget: !!isContractTarget,
+    hasStation,
   });
   infoPanel.style.display = 'block';
 
@@ -111,6 +120,13 @@ export function updateInfoPanel(): void {
   if (stationBtn) {
     stationBtn.addEventListener('click', () => {
       if (onStationRequest) onStationRequest();
+    });
+  }
+
+  const exploreBtn = document.getElementById('gal-explore-btn');
+  if (exploreBtn) {
+    exploreBtn.addEventListener('click', () => {
+      if (onExploreRequest) onExploreRequest();
     });
   }
 

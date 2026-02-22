@@ -1223,6 +1223,73 @@ body.galaxy-mode canvas {
   letter-spacing: 2px;
 }
 
+/* ── Exploration Mode ──────────────────────────────────────────────────────── */
+
+#exploration-hud {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 30;
+  display: none;
+  pointer-events: auto;
+}
+.expl-system-name {
+  font-size: 24px;
+  color: #0ff;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+  margin-bottom: 15px;
+}
+.expl-return-btn {
+  padding: 8px 20px;
+  font-size: 14px;
+  width: auto;
+}
+
+#exploration-planet-info {
+  position: fixed;
+  top: 50%;
+  right: 30px;
+  transform: translateY(-50%);
+  z-index: 30;
+  display: none;
+  pointer-events: none;
+}
+.expl-planet-card {
+  background: rgba(0, 10, 20, 0.85);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 20px;
+  min-width: 200px;
+  color: #fff;
+}
+.expl-planet-card h3 {
+  font-size: 18px;
+  color: #0ff;
+  margin: 0 0 10px;
+}
+.expl-planet-type {
+  font-size: 13px;
+  color: #8cf;
+  margin-bottom: 8px;
+}
+.expl-planet-stat {
+  font-size: 13px;
+  color: #aaa;
+  margin-bottom: 4px;
+}
+.expl-hint {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  text-align: center;
+}
+
+.gal-btn-explore {
+  background: linear-gradient(135deg, #0a8, #086);
+}
+.gal-btn-explore:hover {
+  box-shadow: 0 0 20px rgba(0, 200, 120, 0.5);
+}
+
 @media (max-width: 768px) {
   .station-body {
     flex-direction: column;
@@ -1237,5 +1304,11 @@ body.galaxy-mode canvas {
   .start-buttons {
     flex-direction: column;
     align-items: center;
+  }
+  #exploration-planet-info {
+    right: 10px;
+    top: auto;
+    bottom: 80px;
+    transform: none;
   }
 }

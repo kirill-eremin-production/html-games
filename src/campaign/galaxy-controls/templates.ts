@@ -28,11 +28,15 @@ export const GALAXY_TEMPLATES = {
     fuelCost: number;
     canTravel: boolean;
     isContractTarget: boolean;
+    hasStation: boolean;
   }): string {
     let html = `<h3>${data.name}</h3>`;
     if (data.isCurrent) {
       html += '<div class="gal-info-line">Вы здесь</div>';
-      html += '<button class="gal-btn" id="gal-station-btn">НА СТАНЦИЮ</button>';
+      if (data.hasStation) {
+        html += '<button class="gal-btn" id="gal-station-btn">НА СТАНЦИЮ</button>';
+      }
+      html += '<button class="gal-btn gal-btn-explore" id="gal-explore-btn">ИССЛЕДОВАТЬ</button>';
     } else if (data.isConnected) {
       html += `<div class="gal-info-line">Топливо: ${data.fuelCost} ед.</div>`;
       if (data.isContractTarget) {

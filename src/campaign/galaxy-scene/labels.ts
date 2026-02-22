@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { getSystem } from '../data';
+import { getSystem, systemHasStation } from '../data';
 import { campaign } from '../state';
 import { labelElements, nearbySystemIds, projVec, refs, starMeshes } from './refs';
 
@@ -17,7 +17,7 @@ export function rebuildLabels(): void {
     if (!sys) continue;
     const label = document.createElement('div');
     label.className = 'galaxy-label';
-    label.textContent = sys.name;
+    label.textContent = sys.name + (systemHasStation(id) ? ' \u2302' : '');
     refs.labelsContainer.appendChild(label);
     labelElements.set(sys.id, label);
   }

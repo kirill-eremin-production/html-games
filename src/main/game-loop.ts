@@ -1,4 +1,7 @@
 import { stopEngineHum, stopProximityHum, updateProximityHum } from '../audio/sound';
+import { updateExplorationPlayer } from '../campaign/exploration-scene/controls';
+import { updateExplorationHud } from '../campaign/exploration-scene/hud';
+import { updateExplorationScene } from '../campaign/exploration-scene/update';
 import { updateTravelAnimation } from '../campaign/galaxy-controls';
 import { updateGalaxyLabels, updateGalaxyScene } from '../campaign/galaxy-scene';
 import { onCombatEnd } from '../campaign/mode-manager';
@@ -75,6 +78,16 @@ export function gameLoop(timestamp = 0): void {
     updateGalaxyScene(dt);
     updateTravelAnimation(dt);
     updateGalaxyLabels(camera);
+    renderer.render(scene, camera);
+    return;
+  }
+
+  // Exploration mode: fly around star system
+  if (currentMode === 'exploration') {
+    refs.explorationTime += dt;
+    updateExplorationPlayer(dt);
+    updateExplorationScene(dt, refs.explorationTime);
+    updateExplorationHud();
     renderer.render(scene, camera);
     return;
   }

@@ -1,8 +1,8 @@
-import type { StarSystem } from './types';
+import type { Planet, PlanetType, StarSystem, SystemDetail } from './types';
 
 // ── Seeded PRNG (mulberry32) ────────────────────────────────────────────────
 
-function mulberry32(seed: number): () => number {
+export function mulberry32(seed: number): () => number {
   let s = seed | 0;
   return () => {
     s = (s + 0x6d2b79f5) | 0;
@@ -454,6 +454,101 @@ function findNearbySystemIds(startId: string, maxHops: number): string[] {
   visited.delete(startId);
   return Array.from(visited);
 }
+
+// ── System detail (planets, station, asteroids) ─────────────────────────────
+
+const PLANET_TYPES: PlanetType[] = [
+  'rocky',
+  'gas_giant',
+  'ice',
+  'desert',
+  'ocean',
+  'volcanic',
+  'barren',
+];
+
+const PLANET_NAMES: Record<PlanetType, string[]> = {
+  rocky: ['Ферра', 'Кремния', 'Петрос', 'Литос', 'Терракс'],
+  gas_giant: ['Грандис', 'Колосс', 'Титанис', 'Нимбус', 'Циклон'],
+  ice: ['Криос', 'Глация', 'Морозия', 'Фростис', 'Зимара'],
+  desert: ['Арида', 'Дюна', 'Сирокко', 'Пустыня', 'Сахарис'],
+  ocean: ['Аквария', 'Океания', 'Волна', 'Пелагос', 'Маринис'],
+  volcanic: ['Вулкан', 'Магма', 'Пепельная', 'Инферно', 'Лавия'],
+  barren: ['Пустошь', 'Серая', 'Нихиль', 'Дезола', 'Пепел'],
+};
+
+const PLANET_COLORS: Record<PlanetType, number[]> = {
+  rocky: [0x8b7355, 0xa0522d, 0xcd853f],
+  gas_giant: [0xdaa520, 0xe8a040, 0xc19a6b],
+  ice: [0xadd8e6, 0xb0e0e6, 0x87ceeb],
+  desert: [0xd2b48c, 0xf4a460, 0xedc9af],
+  ocean: [0x1e90ff, 0x4169e1, 0x0077be],
+  volcanic: [0x8b0000, 0xff4500, 0xcc3300],
+  barren: [0x696969, 0x808080, 0xa9a9a9],
+};
+
+const STAR_COLOR_OPTIONS = [0xffff00, 0xffaa00, 0xff6600, 0xaaaaff, 0xffffff, 0xff4444];
+
+function getSystemIndex(systemId: string): number {
+  if (systemId === 'solaris') return 0;
+  return parseInt(systemId.split('-')[1], 10);
+}
+
+const systemDetailCache = new Map<string, SystemDetail>();
+
+export function getSystemDetail(systemId: string): SystemDetail {
+  const cached = systemDetailCache.get(systemId);
+  if (cached) return cached;
+
+  const idx = getSystemIndex(systemId);
+  const rng = mulberry32(GALAXY_SEED * 1000 + idx + 7919);
+
+  const planetCount = 2 + Math.floor(rng() * 7); // 2-8
+  const hasStation = systemId === 'solaris' || rng() < 0.25;
+  const starColor = STAR_COLOR_OPTIONS[Math.floor(rng() * STAR_COLOR_OPTIONS.length)];
+  const starSize = 0.8 + rng() * 1.2;
+  const asteroidBeltDistance = rng() < 0.4 ? 80 + rng() * 120 : null;
+
+  const planets: Planet[] = [];
+  for (let i = 0; i < planetCount; i++) {
+    const type = PLANET_TYPES[Math.floor(rng() * PLANET_TYPES.length)];
+    const orbitalDistance = 30 + i * 40 + rng() * 20;
+    const size = type === 'gas_giant' ? 2.0 + rng() * 2.0 : 0.3 + rng() * 1.5;
+    const names = PLANET_NAMES[type];
+    const name = `${names[Math.floor(rng() * names.length)]}-${i + 1}`;
+    const colors = PLANET_COLORS[type];
+    const color = colors[Math.floor(rng() * colors.length)];
+
+    planets.push({
+      name,
+      type,
+      orbitalDistance,
+      size,
+      orbitalSpeed: (0.02 + rng() * 0.08) / (1 + i * 0.3),
+      initialAngle: rng() * Math.PI * 2,
+      hasLiquidWater: type === 'ocean' || (type === 'rocky' && rng() < 0.2),
+      hasOxygen: (type === 'ocean' || type === 'rocky') && rng() < 0.3,
+      radiationLevel: type === 'volcanic' ? 0.6 + rng() * 0.4 : rng() * 0.5,
+      color,
+      ringColor: type === 'gas_giant' && rng() < 0.5 ? 0xccaa88 : null,
+    });
+  }
+
+  const detail: SystemDetail = { planets, hasStation, asteroidBeltDistance, starColor, starSize };
+  systemDetailCache.set(systemId, detail);
+  return detail;
+}
+
+export function systemHasStation(systemId: string): boolean {
+  if (systemId === 'solaris') return true;
+  const idx = getSystemIndex(systemId);
+  const rng = mulberry32(GALAXY_SEED * 1000 + idx + 7919);
+  // Skip planetCount (same rng call sequence as getSystemDetail)
+  rng(); // planetCount
+  return rng() < 0.25;
+}
+
+// ── Contracts ───────────────────────────────────────────────────────────────
 
 export function generateContracts(currentSystemId: string): {
   difficulty: 'easy' | 'medium' | 'hard';

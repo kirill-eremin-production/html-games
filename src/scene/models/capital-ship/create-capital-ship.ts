@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-
 import { cloneCapitalShipModel } from '../loader';
 
 export function createCapitalShip(index: number, hullColor?: number): THREE.Group {
