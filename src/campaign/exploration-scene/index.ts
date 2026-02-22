@@ -1,10 +1,20 @@
 import * as THREE from 'three';
 import { EXPLORATION_CONFIG } from '../../config/exploration';
+import { scene } from '../../scene/setup';
 import { getSystemDetail, mulberry32 } from '../data';
 import type { SystemDetail } from '../types';
 import { asteroidMeshes, explorationGroup, explorationRefs, planetMeshes } from './refs';
 
 const GALAXY_SEED = 42;
+
+let explorationAdded = false;
+
+export function ensureExplorationGroup(): void {
+  if (!explorationAdded) {
+    scene.add(explorationGroup);
+    explorationAdded = true;
+  }
+}
 
 // Shared geometries
 const planetGeo = new THREE.SphereGeometry(1, 32, 32);

@@ -13,35 +13,35 @@ import {
 import {
   buildExplorationScene,
   clearExplorationScene,
+  ensureExplorationGroup,
   hideExploration,
   showExploration,
 } from '../campaign/exploration-scene/index';
-import { explorationGroup } from '../campaign/exploration-scene/refs';
 import { updateExplorationScene } from '../campaign/exploration-scene/update';
 import { EXPLORATION_CONFIG } from '../config/exploration';
 import { updateActions } from '../input';
 import { refs } from '../main/refs';
-import { camera, scene } from '../scene/setup';
+import { camera } from '../scene/setup';
 import { setStarfieldVisible } from '../scene/starfield';
 import { state } from '../state';
+import { bulletSystem } from '../systems/bullets';
 import {
   updateFlightHUD,
   updateFlightSystems,
   updateMessageTimer,
 } from '../systems/common-updates';
+import { explosionSystem } from '../systems/explosions';
 import { playerPlane, playerRotation } from '../systems/player';
+import type { GameSystem } from '../systems/types';
+import { cleanupSystems } from '../systems/types';
 import { hideHUD, showHUD } from '../ui/hud';
 import { hidePlanetMarkers } from '../ui/planet-markers';
 import type { GameModeHandler, ModeContext } from './types';
 
-let explorationAdded = false;
+// ── Exploration systems ─────────────────────────────────────────────────────
+// No AI, no capital ships, no spawner, no damage — just flight + visuals
 
-function ensureExplorationGroup(): void {
-  if (!explorationAdded) {
-    scene.add(explorationGroup);
-    explorationAdded = true;
-  }
-}
+const explorationSystems: GameSystem[] = [bulletSystem, explosionSystem];
 
 function setHudExplorationMode(on: boolean): void {
   const hud = document.getElementById('hud');
@@ -123,6 +123,7 @@ export const explorationMode: GameModeHandler = {
     setHudExplorationMode(false);
     hideHUD();
     stopEngineHum();
+    cleanupSystems(explorationSystems);
     playerPlane.visible = false;
   },
 };

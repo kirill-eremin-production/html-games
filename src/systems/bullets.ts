@@ -9,6 +9,7 @@ import type { Fighter, LaserData } from '../types';
 import { destroyFighter, destroySubsystem } from './damage';
 import { createExplosion } from './explosions';
 import { playerPlane } from './player';
+import type { GameSystem } from './types';
 import { cleanupExcessBullets } from './weapons';
 
 const C = COMBAT_CONSTANTS;
@@ -118,3 +119,24 @@ export function updateBullets(dt: number): void {
 
   cleanupExcessBullets();
 }
+
+// ── GameSystem adapter ──────────────────────────────────────────────────────
+
+function clearAllBullets(): void {
+  for (const b of state.bullets) scene.remove(b.mesh);
+  for (const b of state.allyBullets) scene.remove(b.mesh);
+  for (const b of state.enemyBullets) scene.remove(b.mesh);
+  state.bullets = [];
+  state.allyBullets = [];
+  state.enemyBullets = [];
+}
+
+export const bulletSystem: GameSystem = {
+  id: 'bullets',
+  update(dt) {
+    updateBullets(dt);
+  },
+  cleanup() {
+    clearAllBullets();
+  },
+};

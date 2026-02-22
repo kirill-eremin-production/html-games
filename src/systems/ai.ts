@@ -4,6 +4,9 @@ import { PLAYER_NAME } from '../constants';
 import { camera } from '../scene/setup';
 import { state } from '../state';
 import type { Fighter } from '../types';
+import { disposeObject } from '../utils/dispose';
+import { playerPlane } from './player';
+import type { GameSystem } from './types';
 import { shootFromFighter } from './weapons';
 
 const A = AI_CONFIG;
@@ -167,3 +170,19 @@ export function updateEnemies(dt: number, playerPlane: THREE.Group): void {
     updateFighterAI(e, dt, state.allies, 'enemy', playerPlane.position, true, playerPlane);
   }
 }
+
+// ── GameSystem adapter ──────────────────────────────────────────────────────
+
+export const aiSystem: GameSystem = {
+  id: 'ai',
+  update(dt) {
+    updateAllies(dt, playerPlane);
+    updateEnemies(dt, playerPlane);
+  },
+  cleanup() {
+    for (const a of state.allies) disposeObject(a.mesh);
+    for (const e of state.enemies) disposeObject(e.mesh);
+    state.allies = [];
+    state.enemies = [];
+  },
+};

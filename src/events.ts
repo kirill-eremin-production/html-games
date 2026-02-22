@@ -37,7 +37,13 @@ export function off<K extends keyof EventMap>(event: K, listener: Listener<Event
 export function emit<K extends keyof EventMap>(event: K, data: EventMap[K]): void {
   const set = listeners.get(event);
   if (set) {
-    for (const fn of set) fn(data);
+    for (const fn of set) {
+      try {
+        fn(data);
+      } catch (e) {
+        console.error(`Event "${event}" handler error:`, e);
+      }
+    }
   }
 }
 

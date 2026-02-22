@@ -13,11 +13,14 @@
 See [structure.md](structure.md) for full file tree and module responsibilities.
 
 ## Architecture (after refactoring)
-- **Event bus** (`src/events.ts`): typed `on()/off()/emit()` — decouples systems
+- **GameSystem interface** (`src/systems/types.ts`): `{ id, init?, update, cleanup? }` — each mechanic is a self-contained system with lifecycle; modes compose systems via arrays; `initSystems()`/`updateSystems()`/`cleanupSystems()` runners
+- **System adapters**: `damageSystem`, `bulletSystem`, `explosionSystem`, `aiSystem`, `capitalShipSystem`, `spawnerSystem` — each exports a `GameSystem` object alongside existing functions
+- **Event bus** (`src/events.ts`): typed `on()/off()/emit()` with try-catch error protection — decouples systems
 - **Damage system** (`src/systems/damage.ts`): handles fighter/subsystem/ship destruction via events; `bullets.ts` only does hit detection + emits
-- **Input actions** (`src/input.ts`): `actions.thrust`, `actions.fire`, `aim.x/y` — abstracts raw key codes from game logic
-- **Mode lifecycle**: `enter(context?)`/`exit()` in each mode; `switchMode('combat', { combatConfig })` passes data
+- **Input actions** (`src/input.ts`): configurable keymap from `config/input.ts`; `setKeyMap()`/`getKeyMap()` for runtime changes
+- **Mode lifecycle**: `enter(context?)`/`exit()` in each mode; modes use `combatSystems`/`explorationSystems` arrays for init/cleanup
 - **Common updates** (`src/systems/common-updates.ts`): `updateFlightSystems()`, `updateFlightHUD()`, `updateMessageTimer()` — shared by combat & exploration
+- **Dispose utility** (`src/utils/dispose.ts`): `disposeObject()` recursively disposes geometry+materials — used by system cleanup
 - **mode-manager.ts** is now a thin orchestrator — delegates init/cleanup to mode handlers
 
 ## Key Decisions

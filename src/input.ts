@@ -1,17 +1,17 @@
+import { defaultKeyMap } from './config/input';
 import { state } from './state';
 
 export type Action = 'thrust' | 'brake' | 'boost' | 'fire' | 'rollLeft' | 'rollRight';
 
-const keyMap: Record<string, Action> = {
-  KeyW: 'thrust',
-  ShiftLeft: 'boost',
-  ShiftRight: 'boost',
-  KeyS: 'brake',
-  KeyA: 'rollLeft',
-  KeyD: 'rollRight',
-  Space: 'fire',
-  MouseLeft: 'fire',
-};
+let keyMap: Record<string, Action> = { ...defaultKeyMap };
+
+export function setKeyMap(map: Record<string, Action>): void {
+  keyMap = { ...map };
+}
+
+export function getKeyMap(): Readonly<Record<string, Action>> {
+  return keyMap;
+}
 
 export const actions: Record<Action, boolean> = {
   thrust: false,

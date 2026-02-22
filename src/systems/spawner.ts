@@ -6,6 +6,7 @@ import { scene } from '../scene/setup';
 import { parseHexColor, settings } from '../settings';
 import { nextAllyName, nextEnemyName, state } from '../state';
 import { playerPlane } from './player';
+import type { GameSystem } from './types';
 
 const C = COMBAT_CONSTANTS;
 
@@ -91,3 +92,15 @@ export function updateRespawnQueue(dt: number): void {
     }
   }
 }
+
+// ── GameSystem adapter ──────────────────────────────────────────────────────
+
+export const spawnerSystem: GameSystem = {
+  id: 'spawner',
+  update(dt) {
+    updateRespawnQueue(dt);
+  },
+  cleanup() {
+    state.respawnQueue = [];
+  },
+};

@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import {
   initAudio,
   isAudioInitialized,
@@ -18,57 +17,47 @@ import { applyCombatConfig, combatConfig } from '../constants';
 import { updateActions } from '../input';
 import { refs } from '../main/refs';
 import { createFighter } from '../scene/models';
-import { camera, renderer, scene } from '../scene/setup';
+import { camera, renderer } from '../scene/setup';
 import { parseHexColor, settings } from '../settings';
 import { resetNameCounters, state } from '../state';
-import { updateAllies, updateEnemies } from '../systems/ai';
-import { spawnCapitalShips, updateCapitalShips } from '../systems/capital-ships';
+import { aiSystem } from '../systems/ai';
+import { bulletSystem } from '../systems/bullets';
+import { capitalShipSystem, spawnCapitalShips } from '../systems/capital-ships';
 import {
   updateFlightHUD,
   updateFlightSystems,
   updateMessageTimer,
 } from '../systems/common-updates';
-import { setupDamageHandlers, teardownDamageHandlers } from '../systems/damage';
+import { damageSystem } from '../systems/damage';
+import { explosionSystem } from '../systems/explosions';
 import { playerDeath as playerDeathOriginal, playerPlane, playerRotation } from '../systems/player';
-import { spawnAlly, spawnEnemy } from '../systems/spawner';
-import { updateRespawnQueue } from '../systems/spawner';
+import { spawnAlly, spawnEnemy, spawnerSystem } from '../systems/spawner';
+import type { GameSystem } from '../systems/types';
+import { cleanupSystems, initSystems } from '../systems/types';
 import { hideHUD, resetCachedShipHTML, showHUD, showMessage } from '../ui/hud';
 import { updateEnemyIndicators } from '../ui/indicators';
 import { clearKillFeed, updateKillFeed } from '../ui/kill-feed';
 import { updateTargetMarkers } from '../ui/markers';
 import type { GameModeHandler, ModeContext } from './types';
 
-// ── Combat objects cleanup ───────────────────────────────────────────────────
+// ── Combat systems ──────────────────────────────────────────────────────────
+// Add new combat mechanics here — each system handles its own init/update/cleanup
 
-function clearCombatObjects(): void {
-  for (const b of state.bullets) scene.remove(b.mesh);
-  for (const b of state.allyBullets) scene.remove(b.mesh);
-  for (const b of state.enemyBullets) scene.remove(b.mesh);
-  for (const a of state.allies) scene.remove(a.mesh);
-  for (const e of state.enemies) scene.remove(e.mesh);
-  for (const cs of state.capitalShips) scene.remove(cs.mesh);
-  for (const exp of state.explosions) {
-    for (const p of exp.particles) {
-      scene.remove(p.mesh);
-      p.mesh.geometry.dispose();
-      (p.mesh.material as THREE.Material).dispose();
-    }
-  }
+const combatSystems: GameSystem[] = [
+  damageSystem,
+  bulletSystem,
+  explosionSystem,
+  aiSystem,
+  capitalShipSystem,
+  spawnerSystem,
+];
 
-  state.bullets = [];
-  state.allyBullets = [];
-  state.enemyBullets = [];
-  state.allies = [];
-  state.enemies = [];
-  state.capitalShips = [];
-  state.explosions = [];
-  state.respawnQueue = [];
-}
+// Systems that update every frame (subset used in the game loop)
+const coreUpdateSystems: GameSystem[] = [aiSystem, capitalShipSystem, spawnerSystem];
 
-// ── Reset ────────────────────────────────────────────────────────────────────
+// ── State reset ─────────────────────────────────────────────────────────────
 
-function resetGame(): void {
-  clearCombatObjects();
+function resetCombatState(): void {
   state.killFeed = [];
   state.phase = 1;
   state.score = 0;
@@ -109,8 +98,9 @@ function resetGame(): void {
     parseHexColor(settings.colors.playerExhaust),
   );
   playerPlane.add(refs.playerModel);
+}
 
-  // Use combatConfig for counts (overridden in campaign mode)
+function spawnCombatEntities(): void {
   const csCount = Math.min(combatConfig.capitalShips, 5);
   settings.counts.capitalShips = csCount;
   spawnCapitalShips();
@@ -125,7 +115,7 @@ function resetGame(): void {
   }
 }
 
-// ── Update helpers ───────────────────────────────────────────────────────────
+// ── Update helpers ──────────────────────────────────────────────────────────
 
 function updateDamageEffect(dt: number): void {
   const D = UI_CONFIG.damageEffect;
@@ -163,7 +153,7 @@ function playerDeath(): void {
   }
 }
 
-// ── Mode handler ─────────────────────────────────────────────────────────────
+// ── Mode handler ────────────────────────────────────────────────────────────
 
 export const combatMode: GameModeHandler = {
   update(dt: number) {
@@ -171,10 +161,9 @@ export const combatMode: GameModeHandler = {
 
     updateActions();
     updateFlightSystems(dt);
-    updateAllies(dt, playerPlane);
-    updateEnemies(dt, playerPlane);
-    updateCapitalShips(dt);
-    updateRespawnQueue(dt);
+
+    // Core combat systems: AI, capital ships, spawner
+    for (const sys of coreUpdateSystems) sys.update(dt);
 
     refs.explorationTime += dt;
     updateExplorationScene(dt, refs.explorationTime);
@@ -218,8 +207,10 @@ export const combatMode: GameModeHandler = {
     if (!isAudioInitialized()) initAudio();
     resumeAudio();
 
-    setupDamageHandlers();
-    resetGame();
+    initSystems(combatSystems);
+    resetCombatState();
+    spawnCombatEntities();
+
     showHUD();
     startEngineHum();
     startProximityHum();
@@ -232,8 +223,7 @@ export const combatMode: GameModeHandler = {
     stopEngineHum();
     stopProximityHum();
     hideHUD();
-    clearCombatObjects();
-    teardownDamageHandlers();
+    cleanupSystems(combatSystems);
     renderer.domElement.style.boxShadow = 'none';
   },
 };

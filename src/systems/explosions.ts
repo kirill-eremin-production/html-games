@@ -3,6 +3,7 @@ import { playExplosionSound } from '../audio/sound';
 import { COMBAT_CONSTANTS } from '../config/combat';
 import { scene } from '../scene/setup';
 import { state } from '../state';
+import type { GameSystem } from './types';
 
 const C = COMBAT_CONSTANTS;
 
@@ -88,3 +89,18 @@ export function updateExplosions(dt: number): void {
     }
   }
 }
+
+// ── GameSystem adapter ──────────────────────────────────────────────────────
+
+export const explosionSystem: GameSystem = {
+  id: 'explosions',
+  update(dt) {
+    updateExplosions(dt);
+  },
+  cleanup() {
+    for (const exp of state.explosions) {
+      for (const p of exp.particles) releaseParticle(p.mesh);
+    }
+    state.explosions = [];
+  },
+};

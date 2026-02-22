@@ -9,7 +9,9 @@ import { state } from '../state';
 import type { CapitalShip, Fighter, Subsystem } from '../types';
 import { showMessage } from '../ui/hud';
 import { addKillFeedEntry } from '../ui/kill-feed';
+import { disposeObject } from '../utils/dispose';
 import { createExplosion } from './explosions';
+import type { GameSystem } from './types';
 
 const C = COMBAT_CONSTANTS;
 
@@ -19,9 +21,7 @@ function handleFighterKilled(e: EventMap['fighter-killed']): void {
   const { victim, killerName, killerTeam, victimTeam, isPlayerKill } = e;
 
   createExplosion(victim.mesh.position.clone(), 3);
-  scene.remove(victim.mesh);
-  if (victim.healthFill?.geometry) victim.healthFill.geometry.dispose();
-  if (victim.healthFill?.material) (victim.healthFill.material as THREE.Material).dispose();
+  disposeObject(victim.mesh);
 
   // Remove from array
   const arr = victimTeam === 'enemy' ? state.enemies : state.allies;
@@ -139,3 +139,16 @@ export function teardownDamageHandlers(): void {
   off('subsystem-destroyed', handleSubsystemDestroyed);
   off('capital-ship-destroyed', handleCapitalShipDestroyed);
 }
+
+// ── GameSystem adapter ──────────────────────────────────────────────────────
+
+export const damageSystem: GameSystem = {
+  id: 'damage',
+  init() {
+    setupDamageHandlers();
+  },
+  update() {},
+  cleanup() {
+    teardownDamageHandlers();
+  },
+};

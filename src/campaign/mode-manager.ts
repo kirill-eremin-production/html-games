@@ -1,6 +1,5 @@
 import { refs } from '../main/refs';
 import { switchMode } from '../modes/registry';
-import { scene } from '../scene/setup';
 import { setStarfieldVisible } from '../scene/starfield';
 import { hidePlanetMarkers } from '../ui/planet-markers';
 import { DIFFICULTY_CONFIGS } from './balance';
@@ -8,10 +7,10 @@ import { hideCombatResult, showCombatQuitResult, showCombatResult } from './comb
 import {
   buildExplorationScene,
   clearExplorationScene,
+  ensureExplorationGroup,
   hideExploration,
   showExploration,
 } from './exploration-scene/index';
-import { explorationGroup } from './exploration-scene/refs';
 import {
   campaign,
   failContract,
@@ -33,15 +32,6 @@ export function registerCombatCallbacks(
 ): void {
   startCombatFn = start;
   stopCombatFn = stop;
-}
-
-let explorationAdded = false;
-
-function ensureExplorationGroup(): void {
-  if (!explorationAdded) {
-    scene.add(explorationGroup);
-    explorationAdded = true;
-  }
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

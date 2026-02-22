@@ -6,9 +6,11 @@ import { createCapitalShip } from '../scene/models';
 import { scene } from '../scene/setup';
 import { parseHexColor, settings } from '../settings';
 import { state } from '../state';
+import { disposeObject } from '../utils/dispose';
 import { addDirectionNoise } from '../utils/math';
 import { destroyedSubMat } from './explosions';
 import { playerPlane } from './player';
+import type { GameSystem } from './types';
 import { createLaser } from './weapons';
 
 const C = COMBAT_CONSTANTS;
@@ -103,3 +105,16 @@ export function updateCapitalShips(dt: number): void {
     updateCapitalShipVisuals(cs, dt);
   }
 }
+
+// ── GameSystem adapter ──────────────────────────────────────────────────────
+
+export const capitalShipSystem: GameSystem = {
+  id: 'capital-ships',
+  update(dt) {
+    updateCapitalShips(dt);
+  },
+  cleanup() {
+    for (const cs of state.capitalShips) disposeObject(cs.mesh);
+    state.capitalShips = [];
+  },
+};
