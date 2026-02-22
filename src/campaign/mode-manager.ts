@@ -1,14 +1,10 @@
-import { refs } from '../main/refs';
 import { switchMode } from '../modes/registry';
 import { setStarfieldVisible } from '../scene/starfield';
-import { hidePlanetMarkers } from '../ui/planet-markers';
 import { DIFFICULTY_CONFIGS } from './balance';
 import { hideCombatResult, showCombatQuitResult, showCombatResult } from './combat-result';
 import {
   buildExplorationScene,
-  clearExplorationScene,
   ensureExplorationGroup,
-  hideExploration,
   showExploration,
 } from './exploration-scene/index';
 import {
@@ -61,9 +57,7 @@ export function enterCampaignFromMenu(): void {
 export function enterGalaxyMode(resetCamera = true): void {
   hideAllGameScreens();
   hideCombatResult();
-  hidePlanetMarkers();
-  clearExplorationScene();
-  hideExploration();
+  // Previous mode's exit() handles its own cleanup (exploration scene, planet markers, etc.)
 
   switchMode('galaxy', {
     resetCamera,
@@ -107,7 +101,6 @@ function enterCombatFromContract(): void {
   buildExplorationScene(campaign.currentSystemId);
   showExploration();
   setStarfieldVisible(true);
-  refs.explorationTime = 0;
 
   if (startCombatFn) startCombatFn(config);
 }
@@ -116,9 +109,7 @@ export function onCombatEnd(victory: boolean, score: number): void {
   if (!isCampaignActive) return;
 
   if (stopCombatFn) stopCombatFn();
-  hidePlanetMarkers();
-  clearExplorationScene();
-  hideExploration();
+  // Combat mode's exit() cleans up exploration scene, planet markers, etc.
 
   switchMode('result');
   showCombatResult(victory, score, () => {
@@ -132,9 +123,7 @@ export function onCombatQuit(): void {
   if (!isCampaignActive) return;
 
   if (stopCombatFn) stopCombatFn();
-  hidePlanetMarkers();
-  clearExplorationScene();
-  hideExploration();
+  // Combat mode's exit() cleans up exploration scene, planet markers, etc.
 
   switchMode('result');
   const penalty = failContract();

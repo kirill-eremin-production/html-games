@@ -6,7 +6,4 @@ export const pauseScreen = document.getElementById('pause-screen')! as HTMLEleme
 export const refs = {
   paused: false,
   playerModel: null as THREE.Group | null,
-  hudFrameCounter: 0,
-  lastFrameTime: 0,
-  explorationTime: 0,
 };

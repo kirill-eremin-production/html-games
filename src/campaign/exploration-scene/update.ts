@@ -47,7 +47,7 @@ export function updateExplorationScene(dt: number, elapsed: number): void {
     minDist < EXPLORATION_CONFIG.planetInfoDistance ? nearestIdx : -1;
 
   // Slow down near planets (exploration only)
-  if (nearestIdx >= 0 && !state.speedDecay) {
+  if (nearestIdx >= 0 && state.flightModel === 'exploration') {
     const planetRadius = planetMeshes[nearestIdx].scale.x;
     const slowdownDist = planetRadius * EXPLORATION_CONFIG.planetSlowdownMultiplier;
     if (minDist < slowdownDist) {

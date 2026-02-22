@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { FlightModelId } from './config/flight-models';
 
 export interface FighterAI {
   state: 'chase' | 'evade' | 'orbit';
@@ -101,7 +102,9 @@ export interface GameState {
   messageTimer: number;
   damageFlash: number;
   noDamageTimer: number;
-  speedDecay: boolean;
+  flightModel: FlightModelId;
   respawnQueue: RespawnEntry[];
   lockedTarget: LockedTarget | null;
+  hudFrameCounter: number;
+  explorationTime: number;
 }

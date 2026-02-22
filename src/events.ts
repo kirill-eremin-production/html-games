@@ -21,13 +21,19 @@ type Listener<T> = (data: T) => void;
 
 const listeners = new Map<string, Set<Listener<unknown>>>();
 
-export function on<K extends keyof EventMap>(event: K, listener: Listener<EventMap[K]>): void {
+export type Unsubscribe = () => void;
+
+export function on<K extends keyof EventMap>(
+  event: K,
+  listener: Listener<EventMap[K]>,
+): Unsubscribe {
   let set = listeners.get(event);
   if (!set) {
     set = new Set();
     listeners.set(event, set);
   }
   set.add(listener as Listener<unknown>);
+  return () => off(event, listener);
 }
 
 export function off<K extends keyof EventMap>(event: K, listener: Listener<EventMap[K]>): void {

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { COMBAT_CONSTANTS } from '../config/combat';
+import { combatConfig } from '../config/combat-session';
 import { PLAYER_CONFIG } from '../config/player';
-import { combatConfig } from '../constants';
 import { emit, off, on } from '../events';
 import type { EventMap } from '../events';
 import { scene } from '../scene/setup';

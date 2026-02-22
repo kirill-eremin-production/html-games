@@ -6,31 +6,32 @@ import {
   startProximityHum,
   stopEngineHum,
   stopProximityHum,
-  updateProximityHum,
 } from '../audio/sound';
+import { clearExplorationScene, hideExploration } from '../campaign/exploration-scene/index';
 import { updateExplorationScene } from '../campaign/exploration-scene/update';
 import { onCombatEnd } from '../campaign/mode-manager';
 import { isCampaignActive } from '../campaign/state';
-import { UI_CONFIG } from '../config/ui';
-import { applyCombatConfig, combatConfig } from '../constants';
+import { applyCombatConfig, combatConfig } from '../config/combat-session';
 import { refs } from '../main/refs';
 import { createFighter } from '../scene/models';
-import { camera, renderer } from '../scene/setup';
+import { camera } from '../scene/setup';
 import { parseHexColor, settings } from '../settings';
 import { resetNameCounters, state } from '../state';
 import { aiSystem } from '../systems/ai';
 import { capitalShipSystem, spawnCapitalShips } from '../systems/capital-ships';
-import { updateFlightHUD, updateMessageTimer } from '../systems/common-updates';
+import { combatHudSystem, damageEffectSystem, proximityAudioSystem } from '../systems/combat-ui';
 import { damageSystem } from '../systems/damage';
-import { playerDeath as playerDeathOriginal, playerPlane, playerRotation } from '../systems/player';
+import {
+  playerDeath as playerDeathOriginal,
+  playerPlane,
+  resetPlayerTransform,
+} from '../systems/player';
 import { flightCoreSystems, weaponSystems } from '../systems/presets';
 import { spawnAlly, spawnEnemy, spawnerSystem } from '../systems/spawner';
 import type { GameSystem } from '../systems/types';
 import { cleanupSystems, initSystems, updateSystems } from '../systems/types';
 import { hideHUD, resetCachedShipHTML, showHUD, showMessage } from '../ui/hud';
-import { updateEnemyIndicators } from '../ui/indicators';
-import { clearKillFeed, updateKillFeed } from '../ui/kill-feed';
-import { updateTargetMarkers } from '../ui/markers';
+import { clearKillFeed } from '../ui/kill-feed';
 import type { CombatModeContext, GameModeHandler } from './types';
 
 // ── Combat systems ──────────────────────────────────────────────────────────
@@ -48,6 +49,10 @@ const combatSystems: GameSystem[] = [
   spawnerSystem,
   // Event-driven (no update, just init/cleanup for event handlers)
   damageSystem,
+  // UI feedback systems
+  proximityAudioSystem,
+  damageEffectSystem,
+  combatHudSystem,
 ];
 
 // ── State reset ─────────────────────────────────────────────────────────────
@@ -62,7 +67,7 @@ function resetCombatState(): void {
   state.lastAttacker = '';
   state.baseSpeed = 80;
   state.boostSpeed = 160;
-  state.speedDecay = true;
+  state.flightModel = 'combat';
   state.speed = state.baseSpeed;
   state.shootCooldown = 0;
   state.messageTimer = 0;
@@ -73,16 +78,12 @@ function resetCombatState(): void {
   state.mouseX = 0;
   state.mouseY = 0;
   state.lockedTarget = null;
+  state.explorationTime = 0;
   resetCachedShipHTML();
   resetNameCounters();
   clearKillFeed();
 
-  playerPlane.position.set(0, 0, 0);
-  playerPlane.quaternion.identity();
-  playerPlane.visible = true;
-  playerRotation.pitch = 0;
-  playerRotation.yaw = 0;
-  playerRotation.roll = 0;
+  resetPlayerTransform();
   camera.position.set(-10.5, 3.75, 0);
   camera.lookAt(playerPlane.position);
 
@@ -110,49 +111,7 @@ function spawnCombatEntities(): void {
   }
 }
 
-// ── Combat UI updates (not game systems — visual feedback only) ─────────────
-
-function updateDamageEffect(dt: number): void {
-  const D = UI_CONFIG.damageEffect;
-  if (state.damageFlash > 0) {
-    state.damageFlash -= dt;
-    renderer.domElement.style.boxShadow = `inset 0 0 ${D.flashGlowSize * state.damageFlash}px rgba(255,0,0,${state.damageFlash})`;
-  } else {
-    renderer.domElement.style.boxShadow = 'none';
-  }
-  if (state.playerHealth < D.lowHealthThreshold && state.running) {
-    const pulse = Math.sin(Date.now() * D.lowHealthPulseSpeed) * 0.5 + 0.5;
-    renderer.domElement.style.boxShadow = `inset 0 0 ${D.lowHealthGlowSize * pulse}px rgba(255,0,0,${D.lowHealthGlowOpacity * pulse})`;
-  }
-}
-
-function updateProximityAudio(): void {
-  let minDistSq = Infinity;
-  for (const a of state.allies) {
-    const dSq = playerPlane.position.distanceToSquared(a.mesh.position);
-    if (dSq < minDistSq) minDistSq = dSq;
-  }
-  for (const e of state.enemies) {
-    const dSq = playerPlane.position.distanceToSquared(e.mesh.position);
-    if (dSq < minDistSq) minDistSq = dSq;
-  }
-  updateProximityHum(minDistSq);
-}
-
-function updateCombatUI(dt: number): void {
-  updateProximityAudio();
-  updateDamageEffect(dt);
-  updateKillFeed(dt);
-
-  refs.hudFrameCounter++;
-  if (refs.hudFrameCounter % 2 === 0) {
-    updateFlightHUD();
-    updateEnemyIndicators(playerPlane);
-    updateTargetMarkers(playerPlane);
-  }
-
-  updateMessageTimer(dt);
-}
+// ── Win/lose checks ──────────────────────────────────────────────────────────
 
 function checkVictory(): void {
   if (state.phase === 1) return;
@@ -182,15 +141,12 @@ export const combatMode: GameModeHandler = {
   update(dt: number) {
     if (!state.running || refs.paused) return;
 
-    // All game-logic systems in declared order
+    // All game-logic + UI systems in declared order
     updateSystems(combatSystems, dt);
 
     // Exploration scene backdrop (animated star system)
-    refs.explorationTime += dt;
-    updateExplorationScene(dt, refs.explorationTime);
-
-    // UI feedback & HUD
-    updateCombatUI(dt);
+    state.explorationTime += dt;
+    updateExplorationScene(dt, state.explorationTime);
 
     // Win/lose checks
     if (state.playerHealth <= 0) playerDeath();
@@ -225,6 +181,8 @@ export const combatMode: GameModeHandler = {
     stopProximityHum();
     hideHUD();
     cleanupSystems(combatSystems);
-    renderer.domElement.style.boxShadow = 'none';
+    // Clean up exploration scene backdrop
+    clearExplorationScene();
+    hideExploration();
   },
 };

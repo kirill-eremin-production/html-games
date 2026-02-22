@@ -1,5 +1,3 @@
-import type { CombatConfig } from './campaign/types';
-
 export const ALLY_COUNT = 32;
 export const ENEMY_COUNT = 32;
 export const CAPITAL_SHIP_COUNT = 3;
@@ -8,32 +6,6 @@ export const FIGHTER_HP = 50;
 export const RESPAWN_DELAY = 5;
 export const KILL_TARGET = 100;
 export const KILL_FEED_MAX = 7;
-
-// Mutable combat config — overridden per-battle in campaign mode
-export const combatConfig: CombatConfig = {
-  enemies: 32,
-  allies: 32,
-  capitalShips: 3,
-  killTarget: 100,
-  fighterHP: 50,
-  subsystemHP: 200,
-  enemySpeedMin: 45,
-  enemySpeedMax: 65,
-  enemyFireRateMin: 2,
-  enemyFireRateMax: 5,
-  allySpeedMin: 55,
-  allySpeedMax: 75,
-  allyFireRateMin: 1,
-  allyFireRateMax: 3,
-  turretFireRateMin: 3,
-  turretFireRateMax: 5,
-  turretAccuracy: 0.15,
-  respawnDelay: 5,
-};
-
-export function applyCombatConfig(cfg: CombatConfig): void {
-  Object.assign(combatConfig, cfg);
-}
 export const KILL_FEED_DURATION = 6;
 export const CURSOR_PROXIMITY_FACTOR = 0.3;
 export const CAPITAL_CLOSE_RANGE_SQ = 550 * 550;

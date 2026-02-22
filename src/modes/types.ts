@@ -30,8 +30,9 @@ export type ModeContext =
   | GalaxyModeContext
   | StationModeContext;
 
-export interface GameModeHandler {
+/** Generic handler — each mode specifies its own context type */
+export interface GameModeHandler<TCtx = ModeContext> {
   update(dt: number): void;
-  enter(context?: ModeContext): void;
+  enter(context?: TCtx): void;
   exit(): void;
 }

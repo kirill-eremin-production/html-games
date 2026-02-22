@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { playLaserSound, updateEngineHum } from '../audio/sound';
+import { flightModels } from '../config/flight-models';
 import { PLAYER_CONFIG } from '../config/player';
 import { PLAYER_NAME } from '../constants';
 import { actions, aim } from '../input';
@@ -43,24 +44,9 @@ export function updatePlayer(dt: number): void {
   if (actions.rollLeft) rollInput -= P.keyRollStrength;
   if (actions.rollRight) rollInput += P.keyRollStrength;
 
-  if (state.speedDecay) {
-    // Combat: accelerate/decelerate with decay to baseSpeed
-    if (actions.thrust || actions.boost) {
-      state.speed = Math.min(state.speed + P.accelerateRate * dt, state.boostSpeed);
-    } else if (actions.brake) {
-      state.speed = Math.max(state.speed - P.decelerateRate * dt, P.minSpeed);
-    } else {
-      state.speed += (state.baseSpeed - state.speed) * P.speedDecayRate * dt;
-    }
-  } else {
-    // Exploration: speed maintained, no decay
-    const accelRate = state.boostSpeed * P.explorationAccelFraction;
-    if (actions.thrust || actions.boost) {
-      state.speed = Math.min(state.speed + accelRate * dt, state.boostSpeed);
-    } else if (actions.brake) {
-      state.speed = Math.max(state.speed - accelRate * dt, 0);
-    }
-  }
+  const fm = flightModels[state.flightModel];
+  const speedInput = actions.thrust || actions.boost ? 'thrust' : actions.brake ? 'brake' : 'none';
+  state.speed = fm.updateSpeed(state.speed, state.baseSpeed, state.boostSpeed, speedInput, dt);
 
   playerRotation.pitch += pitchInput * P.pitchSpeed * dt;
   playerRotation.roll += rollInput * P.rollSpeed * dt;
@@ -104,17 +90,7 @@ export function updatePlayer(dt: number): void {
   }
   updateEngineHum(speedRatio);
 
-  let camBack: number, camUp: number, lookAhead: number;
-  if (state.speedDecay) {
-    camBack = P.combatCamBack;
-    camUp = P.combatCamUp;
-    lookAhead = P.combatLookAhead;
-  } else {
-    const t = state.boostSpeed > 0 ? state.speed / state.boostSpeed : 0;
-    camBack = P.explCamBackBase + t * P.explCamBackRange;
-    camUp = P.explCamUpBase + t * P.explCamUpRange;
-    lookAhead = P.explLookBase + t * P.explLookRange;
-  }
+  const { back: camBack, up: camUp, lookAhead } = fm.cameraOffset(state.speed, state.boostSpeed);
   const camOffset = _tmpVec2.set(camBack, camUp, 0).applyQuaternion(playerPlane.quaternion);
   const camTarget = _tmpVec3.copy(playerPlane.position).add(camOffset);
   const cameraSmoothing = Math.max(
@@ -170,6 +146,15 @@ export const playerSystem: GameSystem = {
   },
 };
 
+export function resetPlayerTransform(x = 0, y = 0, z = 0): void {
+  playerPlane.position.set(x, y, z);
+  playerPlane.quaternion.identity();
+  playerRotation.pitch = 0;
+  playerRotation.yaw = 0;
+  playerRotation.roll = 0;
+  playerPlane.visible = true;
+}
+
 export function playerDeath(): void {
   const P = PLAYER_CONFIG;
   createExplosion(playerPlane.position.clone(), P.deathExplosionSize);
@@ -184,11 +169,7 @@ export function playerDeath(): void {
   }
 
   showMessage(`СБИТ! Жизней: ${state.lives}`, 2);
-  playerPlane.position.set(0, 0, 0);
-  playerPlane.quaternion.identity();
-  playerRotation.pitch = 0;
-  playerRotation.yaw = 0;
-  playerRotation.roll = 0;
+  resetPlayerTransform();
   state.playerHealth = state.maxHealth;
   state.speed = state.baseSpeed;
   state.invulnTimer = P.invulnDuration;

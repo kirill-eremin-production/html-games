@@ -13,25 +13,25 @@
 See [structure.md](structure.md) for full file tree and module responsibilities.
 
 ## Architecture (after refactoring)
-- **GameSystem interface** (`src/systems/types.ts`): `{ id, init?, update, cleanup? }` — each mechanic is a self-contained system with lifecycle; modes compose systems via arrays; `initSystems()`/`updateSystems()`/`cleanupSystems()` runners
-- **System adapters**: `playerSystem`, `inputSystem`, `starfieldSystem`, `damageSystem`, `bulletSystem`, `explosionSystem`, `aiSystem`, `capitalShipSystem`, `spawnerSystem` — each exports a `GameSystem` object alongside existing functions
-- **System presets** (`src/systems/presets.ts`): `flightCoreSystems` (input+player+starfield), `weaponSystems` (bullets+explosions) — reusable building blocks for modes
-- **Event bus** (`src/events.ts`): typed `on()/off()/emit()` with try-catch error protection — decouples systems
-- **Damage system** (`src/systems/damage.ts`): handles fighter/subsystem/ship destruction via events; `bullets.ts` only does hit detection + emits
-- **Input actions** (`src/input.ts`): configurable keymap from `config/input.ts`; `setKeyMap()`/`getKeyMap()` for runtime changes; exports `inputSystem`
-- **Mode lifecycle**: `enter(context?)`/`exit()` in each mode; modes compose systems via `updateSystems(allSystems, dt)`
-- **Typed ModeContext** (`src/modes/types.ts`): `CombatModeContext`, `ExplorationModeContext`, `GalaxyModeContext`, `StationModeContext` — type-safe context per mode
-- **Common updates** (`src/systems/common-updates.ts`): `updateFlightHUD()`, `updateMessageTimer()` — shared UI helpers
-- **Dispose utility** (`src/utils/dispose.ts`): `disposeObject()` recursively disposes geometry+materials — used by system cleanup
-- **mode-manager.ts** is now a thin orchestrator — delegates init/cleanup to mode handlers
+- **GameSystem interface** (`src/systems/types.ts`): `{ id, init?, update, cleanup? }` — each mechanic is a self-contained system with lifecycle
+- **FlightModel strategy** (`src/config/flight-models.ts`): `FlightModelId = 'combat' | 'exploration'` — pluggable speed/camera behavior per mode, eliminates if/else branching in player.ts
+- **Combat session config** (`src/config/combat-session.ts`): mutable `combatConfig` separated from true constants
+- **System presets** (`src/systems/presets.ts`): `flightCoreSystems`, `weaponSystems` — reusable building blocks
+- **Combat UI systems** (`src/systems/combat-ui.ts`): `damageEffectSystem`, `proximityAudioSystem`, `combatHudSystem` — reusable across combat-like modes
+- **Exploration systems** (`src/systems/exploration-hud.ts`): `explorationSceneSystem`, `explorationHudSystem`
+- **Event bus** (`src/events.ts`): typed `on()/off()/emit()` with `Unsubscribe` returns — `on()` returns disposer function
+- **Generic GameModeHandler** (`src/modes/types.ts`): `GameModeHandler<TCtx>` — type-safe context per mode
+- **Player utilities** (`src/systems/player.ts`): `resetPlayerTransform()` eliminates transform reset duplication
+- **Mode cleanup**: each mode's `exit()` owns full cleanup (exploration scene, HUD, audio, etc.)
+- **Thin refs** (`src/main/refs.ts`): only `paused` + `playerModel`; `hudFrameCounter`/`explorationTime` moved to state
 
 ## Key Decisions
 - `state.ts` exports a single mutable `state` object (not a class/store) — simple singleton pattern
 - `playerPlane` is a `THREE.Group` (exported from `systems/player.ts`), the fighter model is added as a child in `main.ts`
-- Shared geometries for fighters are created once at module level in `scene/models.ts`
+- `constants.ts` is pure constants only — mutable config is in `config/combat-session.ts`
+- Each mode composes systems as arrays and delegates all per-frame work to `updateSystems()`
 - Sound is procedural (Web Audio API oscillators + noise buffers), no audio files
-- Game loop is capped at 60 FPS via `requestAnimationFrame` + frame interval check
-- HUD updates every 2nd frame for performance
+- Game loop is capped at 60 FPS; HUD updates every 2nd frame for performance
 
 ## Commands
 - `npm run dev` — dev server with HMR

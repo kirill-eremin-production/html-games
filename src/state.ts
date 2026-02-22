@@ -53,9 +53,11 @@ export function createInitialState(): GameState {
     messageTimer: 0,
     damageFlash: 0,
     noDamageTimer: 0,
-    speedDecay: true,
+    flightModel: 'combat',
     respawnQueue: [],
     lockedTarget: null,
+    hudFrameCounter: 0,
+    explorationTime: 0,
   };
 }
 

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { playLaserSound } from '../audio/sound';
 import { COMBAT_CONSTANTS } from '../config/combat';
-import { combatConfig } from '../constants';
+import { combatConfig } from '../config/combat-session';
 import { createCapitalShip } from '../scene/models';
 import { scene } from '../scene/setup';
 import { parseHexColor, settings } from '../settings';
