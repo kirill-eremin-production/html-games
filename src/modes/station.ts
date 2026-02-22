@@ -1,11 +1,11 @@
 import { hideStation, showStation } from '../campaign/station-ui';
-import type { GameModeHandler, ModeContext } from './types';
+import type { GameModeHandler, StationModeContext } from './types';
 
 export const stationMode: GameModeHandler = {
   update() {},
 
-  enter(context?: ModeContext) {
-    const onBack = context?.onBack as (() => void) | undefined;
+  enter(context?: StationModeContext) {
+    const onBack = context?.onBack;
     if (onBack) showStation(onBack);
   },
 

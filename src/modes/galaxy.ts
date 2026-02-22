@@ -13,7 +13,7 @@ import {
 } from '../campaign/galaxy-scene';
 import { camera, scene } from '../scene/setup';
 import { playerPlane } from '../systems/player';
-import type { GameModeHandler, ModeContext } from './types';
+import type { GalaxyModeContext, GameModeHandler } from './types';
 
 let galaxyBuilt = false;
 
@@ -32,11 +32,11 @@ export const galaxyMode: GameModeHandler = {
     updateGalaxyLabels(camera);
   },
 
-  enter(context?: ModeContext) {
+  enter(context?: GalaxyModeContext) {
     const resetCamera = context?.resetCamera !== false;
-    const onStation = context?.onStation as (() => void) | undefined;
-    const onCombat = context?.onCombat as (() => void) | undefined;
-    const onExploration = context?.onExploration as (() => void) | undefined;
+    const onStation = context?.onStation;
+    const onCombat = context?.onCombat;
+    const onExploration = context?.onExploration;
 
     ensureGalaxyBuilt();
     playerPlane.visible = false;

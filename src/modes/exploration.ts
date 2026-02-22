@@ -19,29 +19,23 @@ import {
 } from '../campaign/exploration-scene/index';
 import { updateExplorationScene } from '../campaign/exploration-scene/update';
 import { EXPLORATION_CONFIG } from '../config/exploration';
-import { updateActions } from '../input';
 import { refs } from '../main/refs';
 import { camera } from '../scene/setup';
 import { setStarfieldVisible } from '../scene/starfield';
 import { state } from '../state';
-import { bulletSystem } from '../systems/bullets';
-import {
-  updateFlightHUD,
-  updateFlightSystems,
-  updateMessageTimer,
-} from '../systems/common-updates';
-import { explosionSystem } from '../systems/explosions';
+import { updateFlightHUD, updateMessageTimer } from '../systems/common-updates';
 import { playerPlane, playerRotation } from '../systems/player';
+import { flightCoreSystems, weaponSystems } from '../systems/presets';
 import type { GameSystem } from '../systems/types';
-import { cleanupSystems } from '../systems/types';
+import { cleanupSystems, updateSystems } from '../systems/types';
 import { hideHUD, showHUD } from '../ui/hud';
 import { hidePlanetMarkers } from '../ui/planet-markers';
-import type { GameModeHandler, ModeContext } from './types';
+import type { ExplorationModeContext, GameModeHandler } from './types';
 
 // ── Exploration systems ─────────────────────────────────────────────────────
 // No AI, no capital ships, no spawner, no damage — just flight + visuals
 
-const explorationSystems: GameSystem[] = [bulletSystem, explosionSystem];
+const explorationSystems: GameSystem[] = [...flightCoreSystems, ...weaponSystems];
 
 function setHudExplorationMode(on: boolean): void {
   const hud = document.getElementById('hud');
@@ -53,9 +47,11 @@ function setHudExplorationMode(on: boolean): void {
 
 export const explorationMode: GameModeHandler = {
   update(dt: number) {
-    updateActions();
+    // All game-logic systems in declared order
+    updateSystems(explorationSystems, dt);
+
+    // Exploration scene (planet orbits, star glow, proximity slowdown)
     refs.explorationTime += dt;
-    updateFlightSystems(dt);
     updateExplorationScene(dt, refs.explorationTime);
     updateExplorationHud();
 
@@ -67,9 +63,9 @@ export const explorationMode: GameModeHandler = {
     updateMessageTimer(dt);
   },
 
-  enter(context?: ModeContext) {
-    const systemId = context?.systemId as string | undefined;
-    const exitCallback = context?.exitCallback as (() => void) | undefined;
+  enter(context?: ExplorationModeContext) {
+    const systemId = context?.systemId;
+    const exitCallback = context?.exitCallback;
 
     ensureExplorationGroup();
     if (systemId) buildExplorationScene(systemId);

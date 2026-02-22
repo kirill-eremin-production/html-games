@@ -1,5 +1,6 @@
 import { defaultKeyMap } from './config/input';
 import { state } from './state';
+import type { GameSystem } from './systems/types';
 
 export type Action = 'thrust' | 'brake' | 'boost' | 'fire' | 'rollLeft' | 'rollRight';
 
@@ -34,3 +35,12 @@ export function updateActions(): void {
   aim.x = state.mouseX;
   aim.y = state.mouseY;
 }
+
+// ── GameSystem adapter ──────────────────────────────────────────────────────
+
+export const inputSystem: GameSystem = {
+  id: 'input',
+  update() {
+    updateActions();
+  },
+};

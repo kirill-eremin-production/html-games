@@ -11,49 +11,44 @@ import {
 import { updateExplorationScene } from '../campaign/exploration-scene/update';
 import { onCombatEnd } from '../campaign/mode-manager';
 import { isCampaignActive } from '../campaign/state';
-import type { CombatConfig } from '../campaign/types';
 import { UI_CONFIG } from '../config/ui';
 import { applyCombatConfig, combatConfig } from '../constants';
-import { updateActions } from '../input';
 import { refs } from '../main/refs';
 import { createFighter } from '../scene/models';
 import { camera, renderer } from '../scene/setup';
 import { parseHexColor, settings } from '../settings';
 import { resetNameCounters, state } from '../state';
 import { aiSystem } from '../systems/ai';
-import { bulletSystem } from '../systems/bullets';
 import { capitalShipSystem, spawnCapitalShips } from '../systems/capital-ships';
-import {
-  updateFlightHUD,
-  updateFlightSystems,
-  updateMessageTimer,
-} from '../systems/common-updates';
+import { updateFlightHUD, updateMessageTimer } from '../systems/common-updates';
 import { damageSystem } from '../systems/damage';
-import { explosionSystem } from '../systems/explosions';
 import { playerDeath as playerDeathOriginal, playerPlane, playerRotation } from '../systems/player';
+import { flightCoreSystems, weaponSystems } from '../systems/presets';
 import { spawnAlly, spawnEnemy, spawnerSystem } from '../systems/spawner';
 import type { GameSystem } from '../systems/types';
-import { cleanupSystems, initSystems } from '../systems/types';
+import { cleanupSystems, initSystems, updateSystems } from '../systems/types';
 import { hideHUD, resetCachedShipHTML, showHUD, showMessage } from '../ui/hud';
 import { updateEnemyIndicators } from '../ui/indicators';
 import { clearKillFeed, updateKillFeed } from '../ui/kill-feed';
 import { updateTargetMarkers } from '../ui/markers';
-import type { GameModeHandler, ModeContext } from './types';
+import type { CombatModeContext, GameModeHandler } from './types';
 
 // ── Combat systems ──────────────────────────────────────────────────────────
-// Add new combat mechanics here — each system handles its own init/update/cleanup
+// Add new combat mechanics here — each system handles its own init/update/cleanup.
+// Order defines execution sequence within a single frame.
 
 const combatSystems: GameSystem[] = [
-  damageSystem,
-  bulletSystem,
-  explosionSystem,
+  // Flight core: input → player movement → starfield parallax
+  ...flightCoreSystems,
+  // Weapons: bullet physics + hit detection, explosions
+  ...weaponSystems,
+  // Combat AI & entities
   aiSystem,
   capitalShipSystem,
   spawnerSystem,
+  // Event-driven (no update, just init/cleanup for event handlers)
+  damageSystem,
 ];
-
-// Systems that update every frame (subset used in the game loop)
-const coreUpdateSystems: GameSystem[] = [aiSystem, capitalShipSystem, spawnerSystem];
 
 // ── State reset ─────────────────────────────────────────────────────────────
 
@@ -115,7 +110,7 @@ function spawnCombatEntities(): void {
   }
 }
 
-// ── Update helpers ──────────────────────────────────────────────────────────
+// ── Combat UI updates (not game systems — visual feedback only) ─────────────
 
 function updateDamageEffect(dt: number): void {
   const D = UI_CONFIG.damageEffect;
@@ -129,6 +124,34 @@ function updateDamageEffect(dt: number): void {
     const pulse = Math.sin(Date.now() * D.lowHealthPulseSpeed) * 0.5 + 0.5;
     renderer.domElement.style.boxShadow = `inset 0 0 ${D.lowHealthGlowSize * pulse}px rgba(255,0,0,${D.lowHealthGlowOpacity * pulse})`;
   }
+}
+
+function updateProximityAudio(): void {
+  let minDistSq = Infinity;
+  for (const a of state.allies) {
+    const dSq = playerPlane.position.distanceToSquared(a.mesh.position);
+    if (dSq < minDistSq) minDistSq = dSq;
+  }
+  for (const e of state.enemies) {
+    const dSq = playerPlane.position.distanceToSquared(e.mesh.position);
+    if (dSq < minDistSq) minDistSq = dSq;
+  }
+  updateProximityHum(minDistSq);
+}
+
+function updateCombatUI(dt: number): void {
+  updateProximityAudio();
+  updateDamageEffect(dt);
+  updateKillFeed(dt);
+
+  refs.hudFrameCounter++;
+  if (refs.hudFrameCounter % 2 === 0) {
+    updateFlightHUD();
+    updateEnemyIndicators(playerPlane);
+    updateTargetMarkers(playerPlane);
+  }
+
+  updateMessageTimer(dt);
 }
 
 function checkVictory(): void {
@@ -159,38 +182,17 @@ export const combatMode: GameModeHandler = {
   update(dt: number) {
     if (!state.running || refs.paused) return;
 
-    updateActions();
-    updateFlightSystems(dt);
+    // All game-logic systems in declared order
+    updateSystems(combatSystems, dt);
 
-    // Core combat systems: AI, capital ships, spawner
-    for (const sys of coreUpdateSystems) sys.update(dt);
-
+    // Exploration scene backdrop (animated star system)
     refs.explorationTime += dt;
     updateExplorationScene(dt, refs.explorationTime);
 
-    // Proximity engine sound — find closest fighter
-    let minDistSq = Infinity;
-    for (const a of state.allies) {
-      const dSq = playerPlane.position.distanceToSquared(a.mesh.position);
-      if (dSq < minDistSq) minDistSq = dSq;
-    }
-    for (const e of state.enemies) {
-      const dSq = playerPlane.position.distanceToSquared(e.mesh.position);
-      if (dSq < minDistSq) minDistSq = dSq;
-    }
-    updateProximityHum(minDistSq);
-    updateDamageEffect(dt);
-    updateKillFeed(dt);
+    // UI feedback & HUD
+    updateCombatUI(dt);
 
-    refs.hudFrameCounter++;
-    if (refs.hudFrameCounter % 2 === 0) {
-      updateFlightHUD();
-      updateEnemyIndicators(playerPlane);
-      updateTargetMarkers(playerPlane);
-    }
-
-    updateMessageTimer(dt);
-
+    // Win/lose checks
     if (state.playerHealth <= 0) playerDeath();
     checkVictory();
 
@@ -200,9 +202,8 @@ export const combatMode: GameModeHandler = {
     }
   },
 
-  enter(context?: ModeContext) {
-    const config = context?.combatConfig as CombatConfig | undefined;
-    if (config) applyCombatConfig(config);
+  enter(context?: CombatModeContext) {
+    if (context?.combatConfig) applyCombatConfig(context.combatConfig);
 
     if (!isAudioInitialized()) initAudio();
     resumeAudio();

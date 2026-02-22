@@ -9,6 +9,7 @@ import { state } from '../state';
 import { showMessage } from '../ui/hud';
 import { addKillFeedEntry } from '../ui/kill-feed';
 import { createExplosion } from './explosions';
+import type { GameSystem } from './types';
 import { createLaser } from './weapons';
 
 export const playerPlane = new THREE.Group();
@@ -159,6 +160,15 @@ export function updatePlayer(dt: number): void {
     playLaserSound(true);
   }
 }
+
+// ── GameSystem adapter ──────────────────────────────────────────────────────
+
+export const playerSystem: GameSystem = {
+  id: 'player',
+  update(dt) {
+    updatePlayer(dt);
+  },
+};
 
 export function playerDeath(): void {
   const P = PLAYER_CONFIG;

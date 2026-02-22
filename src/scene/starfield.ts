@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { playerPlane } from '../systems/player';
+import type { GameSystem } from '../systems/types';
 import { scene } from './setup';
 
 let starfieldPoints: THREE.Points | null = null;
@@ -41,3 +43,12 @@ export function setStarfieldVisible(visible: boolean): void {
 export function updateStarfieldPosition(position: THREE.Vector3): void {
   if (starfieldPoints) starfieldPoints.position.copy(position);
 }
+
+// ── GameSystem adapter ──────────────────────────────────────────────────────
+
+export const starfieldSystem: GameSystem = {
+  id: 'starfield',
+  update() {
+    updateStarfieldPosition(playerPlane.position);
+  },
+};
