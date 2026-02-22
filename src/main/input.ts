@@ -40,9 +40,9 @@ export function setupInputListeners(): void {
   });
 
   window.addEventListener('mousedown', (e) => {
-    if (currentMode === 'combat') {
+    if (isFlightMode()) {
       if (e.button === 0) state.keys['MouseLeft'] = true;
-      if (e.button === 1 && state.running) {
+      if (e.button === 1 && (state.running || currentMode === 'exploration')) {
         e.preventDefault();
         toggleTargetLock(playerPlane);
       }

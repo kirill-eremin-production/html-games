@@ -37,3 +37,7 @@ export function createStarfield(): void {
 export function setStarfieldVisible(visible: boolean): void {
   if (starfieldPoints) starfieldPoints.visible = visible;
 }
+
+export function updateStarfieldPosition(position: THREE.Vector3): void {
+  if (starfieldPoints) starfieldPoints.position.copy(position);
+}

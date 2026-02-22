@@ -101,6 +101,7 @@ export interface GameState {
   messageTimer: number;
   damageFlash: number;
   noDamageTimer: number;
+  speedDecay: boolean;
   respawnQueue: RespawnEntry[];
   lockedTarget: LockedTarget | null;
 }

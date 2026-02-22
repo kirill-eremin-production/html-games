@@ -43,12 +43,23 @@ export function updatePlayer(dt: number): void {
   if (state.keys['KeyA']) rollInput -= 2.0;
   if (state.keys['KeyD']) rollInput += 2.0;
 
-  if (state.keys['KeyW'] || state.keys['ShiftLeft'] || state.keys['ShiftRight']) {
-    state.speed = Math.min(state.speed + 120 * dt, state.boostSpeed);
-  } else if (state.keys['KeyS']) {
-    state.speed = Math.max(state.speed - 100 * dt, 20);
+  if (state.speedDecay) {
+    // Combat: accelerate/decelerate with decay to baseSpeed
+    if (state.keys['KeyW'] || state.keys['ShiftLeft'] || state.keys['ShiftRight']) {
+      state.speed = Math.min(state.speed + 120 * dt, state.boostSpeed);
+    } else if (state.keys['KeyS']) {
+      state.speed = Math.max(state.speed - 100 * dt, 20);
+    } else {
+      state.speed += (state.baseSpeed - state.speed) * 2 * dt;
+    }
   } else {
-    state.speed += (state.baseSpeed - state.speed) * 2 * dt;
+    // Exploration: speed maintained, no decay
+    const accelRate = state.boostSpeed * 0.15;
+    if (state.keys['KeyW'] || state.keys['ShiftLeft'] || state.keys['ShiftRight']) {
+      state.speed = Math.min(state.speed + accelRate * dt, state.boostSpeed);
+    } else if (state.keys['KeyS']) {
+      state.speed = Math.max(state.speed - accelRate * dt, 0);
+    }
   }
 
   playerRotation.pitch += pitchInput * pitchSpeed * dt;
@@ -73,22 +84,44 @@ export function updatePlayer(dt: number): void {
   playerPlane.position.addScaledVector(forward, state.speed * dt);
 
   const speedRatio = state.speed / state.boostSpeed;
-  const exhaust = playerPlane.getObjectByName('exhaust') as THREE.Mesh | undefined;
-  if (exhaust) {
-    (exhaust.material as THREE.MeshBasicMaterial).opacity = 0.4 + speedRatio * 0.6;
-    exhaust.scale.setScalar(0.8 + speedRatio * 0.6);
+  const exhaustOpacity = 0.4 + speedRatio * 0.6;
+  const exhaustScale = 0.8 + speedRatio * 0.6;
+  const glowOpacity = 0.1 + speedRatio * 0.3;
+  const glowScale = 0.7 + speedRatio * 0.8;
+  for (const name of ['exhaust', 'exhaust_L'] as const) {
+    const m = playerPlane.getObjectByName(name) as THREE.Mesh | undefined;
+    if (m) {
+      (m.material as THREE.MeshBasicMaterial).opacity = exhaustOpacity;
+      m.scale.setScalar(exhaustScale);
+    }
   }
-  const glow = playerPlane.getObjectByName('glow') as THREE.Mesh | undefined;
-  if (glow) {
-    (glow.material as THREE.MeshBasicMaterial).opacity = 0.1 + speedRatio * 0.3;
-    glow.scale.setScalar(0.7 + speedRatio * 0.8);
+  for (const name of ['glow', 'glow_L'] as const) {
+    const m = playerPlane.getObjectByName(name) as THREE.Mesh | undefined;
+    if (m) {
+      (m.material as THREE.MeshBasicMaterial).opacity = glowOpacity;
+      m.scale.setScalar(glowScale);
+    }
   }
   updateEngineHum(speedRatio);
 
-  const camOffset = _tmpVec2.set(-10.5, 3.75, 0).applyQuaternion(playerPlane.quaternion);
+  let camBack: number, camUp: number, lookAhead: number;
+  if (state.speedDecay) {
+    // Combat: fixed camera offset
+    camBack = -10.5;
+    camUp = 3.75;
+    lookAhead = 20;
+  } else {
+    // Exploration: camera adapts to speed (closer at 0, farther at max)
+    const t = state.boostSpeed > 0 ? state.speed / state.boostSpeed : 0;
+    camBack = -(16 + t * 14);
+    camUp = 5 + t * 3;
+    lookAhead = 10 + t * 50;
+  }
+  const camOffset = _tmpVec2.set(camBack, camUp, 0).applyQuaternion(playerPlane.quaternion);
   const camTarget = _tmpVec3.copy(playerPlane.position).add(camOffset);
-  camera.position.lerp(camTarget, 5 * dt);
-  const lookTarget = _tmpVec2.copy(playerPlane.position).add(forward.multiplyScalar(20));
+  const cameraSmoothing = Math.max(8, 5 + state.speed * 0.1);
+  camera.position.lerp(camTarget, 1 - Math.exp(-cameraSmoothing * dt));
+  const lookTarget = _tmpVec2.copy(playerPlane.position).add(forward.multiplyScalar(lookAhead));
   const up = _tmpVec3.set(0, 1, 0).applyQuaternion(playerPlane.quaternion);
   camera.up.lerp(up, 3 * dt).normalize();
   camera.lookAt(lookTarget);

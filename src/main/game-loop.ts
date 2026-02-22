@@ -1,5 +1,4 @@
 import { stopEngineHum, stopProximityHum, updateProximityHum } from '../audio/sound';
-import { updateExplorationPlayer } from '../campaign/exploration-scene/controls';
 import { updateExplorationHud } from '../campaign/exploration-scene/hud';
 import { updateExplorationScene } from '../campaign/exploration-scene/update';
 import { updateTravelAnimation } from '../campaign/galaxy-controls';
@@ -8,6 +7,7 @@ import { onCombatEnd } from '../campaign/mode-manager';
 import { currentMode, isCampaignActive } from '../campaign/state';
 import { combatConfig } from '../constants';
 import { camera, renderer, scene } from '../scene/setup';
+import { updateStarfieldPosition } from '../scene/starfield';
 import { state } from '../state';
 import { updateAllies, updateEnemies } from '../systems/ai';
 import { updateBullets } from '../systems/bullets';
@@ -20,6 +20,7 @@ import { updateEnemyIndicators } from '../ui/indicators';
 import { updateKillFeed } from '../ui/kill-feed';
 import { updateTargetMarkers } from '../ui/markers';
 import { drawMinimap } from '../ui/minimap';
+import { updatePlanetMarkers } from '../ui/planet-markers';
 import { clock, refs } from './refs';
 
 const TARGET_FPS = 60;
@@ -82,12 +83,28 @@ export function gameLoop(timestamp = 0): void {
     return;
   }
 
-  // Exploration mode: fly around star system
+  // Exploration mode: fly around star system (reuses combat player with shooting)
   if (currentMode === 'exploration') {
     refs.explorationTime += dt;
-    updateExplorationPlayer(dt);
+    updatePlayer(dt);
+    updateBullets(dt);
+    updateExplosions(dt);
     updateExplorationScene(dt, refs.explorationTime);
     updateExplorationHud();
+    updateStarfieldPosition(playerPlane.position);
+
+    refs.hudFrameCounter++;
+    if (refs.hudFrameCounter % 2 === 0) {
+      updateHUD();
+      updatePlanetMarkers(playerPlane);
+      drawMinimap(playerPlane);
+    }
+
+    if (state.messageTimer > 0) {
+      state.messageTimer -= dt;
+      if (state.messageTimer <= 0) hideMessage();
+    }
+
     renderer.render(scene, camera);
     return;
   }
@@ -112,6 +129,11 @@ export function gameLoop(timestamp = 0): void {
   updateExplosions(dt);
   updateRespawnQueue(dt);
 
+  // Update star system (planets orbiting) in combat too
+  refs.explorationTime += dt;
+  updateExplorationScene(dt, refs.explorationTime);
+  updateStarfieldPosition(playerPlane.position);
+
   // Proximity engine sound — find closest fighter
   let minDistSq = Infinity;
   for (const a of state.allies) {
@@ -131,6 +153,7 @@ export function gameLoop(timestamp = 0): void {
     updateHUD();
     updateEnemyIndicators(playerPlane);
     updateTargetMarkers(playerPlane);
+    updatePlanetMarkers(playerPlane);
     drawMinimap(playerPlane);
   }
 

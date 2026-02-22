@@ -6,7 +6,7 @@ import { asteroidMeshes, explorationGroup, explorationRefs, planetMeshes } from 
 const GALAXY_SEED = 42;
 
 // Shared geometries
-const planetGeo = new THREE.SphereGeometry(1, 24, 24);
+const planetGeo = new THREE.SphereGeometry(1, 32, 32);
 const asteroidGeo = new THREE.IcosahedronGeometry(1, 0);
 
 let currentDetail: SystemDetail | null = null;
@@ -18,20 +18,21 @@ export function buildExplorationScene(systemId: string): void {
 
   const idx = systemId === 'solaris' ? 0 : parseInt(systemId.split('-')[1], 10);
 
-  // Ambient light
+  // Ambient light for the star system
   const ambient = new THREE.AmbientLight(0x222244, 0.3);
   explorationGroup.add(ambient);
 
-  // Central star
+  // Central star — massive
+  const starRadius = detail.starSize * 50000;
   const starMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(detail.starSize * 8, 32, 32),
+    new THREE.SphereGeometry(starRadius, 48, 48),
     new THREE.MeshBasicMaterial({ color: detail.starColor }),
   );
   explorationGroup.add(starMesh);
   explorationRefs.starMesh = starMesh;
 
   // Star point light
-  const starLight = new THREE.PointLight(detail.starColor, 2, 600);
+  const starLight = new THREE.PointLight(detail.starColor, 2, 5000000);
   explorationGroup.add(starLight);
 
   // Star glow sprite
@@ -43,16 +44,17 @@ export function buildExplorationScene(systemId: string): void {
     depthWrite: false,
   });
   const glow = new THREE.Sprite(glowMat);
-  glow.scale.setScalar(detail.starSize * 30);
+  glow.scale.setScalar(detail.starSize * 160000);
   explorationGroup.add(glow);
   explorationRefs.starGlow = glow;
 
-  // Planets
+  // Planets — much larger than the player ship
+  const PLANET_SCALE = 20000;
   for (let i = 0; i < detail.planets.length; i++) {
     const p = detail.planets[i];
     const mat = new THREE.MeshStandardMaterial({ color: p.color, roughness: 0.7 });
     const mesh = new THREE.Mesh(planetGeo, mat);
-    mesh.scale.setScalar(p.size * 3);
+    mesh.scale.setScalar(p.size * PLANET_SCALE);
     mesh.userData.planetIndex = i;
 
     const x = p.orbitalDistance * Math.cos(p.initialAngle);
@@ -64,14 +66,14 @@ export function buildExplorationScene(systemId: string): void {
 
     // Orbit line
     const orbitGeo = new THREE.RingGeometry(
-      p.orbitalDistance - 0.15,
-      p.orbitalDistance + 0.15,
+      p.orbitalDistance - 2000,
+      p.orbitalDistance + 2000,
       128,
     );
     const orbitMat = new THREE.MeshBasicMaterial({
       color: 0x334466,
       transparent: true,
-      opacity: 0.15,
+      opacity: 0.08,
       side: THREE.DoubleSide,
     });
     const orbitLine = new THREE.Mesh(orbitGeo, orbitMat);
@@ -80,17 +82,21 @@ export function buildExplorationScene(systemId: string): void {
 
     // Rings for gas giants
     if (p.ringColor !== null) {
-      const ringGeo = new THREE.RingGeometry(1.5, 2.2, 32);
+      const planetVisualSize = p.size * PLANET_SCALE;
+      const ringGeo = new THREE.RingGeometry(
+        planetVisualSize * 1.4,
+        planetVisualSize * 2.0,
+        64,
+      );
       const ring = new THREE.Mesh(
         ringGeo,
         new THREE.MeshBasicMaterial({
           color: p.ringColor,
           transparent: true,
-          opacity: 0.5,
+          opacity: 0.45,
           side: THREE.DoubleSide,
         }),
       );
-      ring.scale.setScalar(p.size * 3);
       ring.rotation.x = Math.PI / 3;
       mesh.add(ring);
     }
@@ -99,13 +105,13 @@ export function buildExplorationScene(systemId: string): void {
   // Asteroid belt
   if (detail.asteroidBeltDistance !== null) {
     const beltDist = detail.asteroidBeltDistance;
-    const asteroidCount = 200;
+    const asteroidCount = 400;
     const rng = mulberry32(GALAXY_SEED * 2000 + idx);
     for (let i = 0; i < asteroidCount; i++) {
       const angle = (i / asteroidCount) * Math.PI * 2 + (rng() - 0.5) * 0.3;
-      const r = beltDist + (rng() - 0.5) * 15;
-      const y = (rng() - 0.5) * 5;
-      const size = 0.3 + rng() * 1.0;
+      const r = beltDist + (rng() - 0.5) * 100000;
+      const y = (rng() - 0.5) * 40000;
+      const size = 2000 + rng() * 5000;
 
       const mat = new THREE.MeshStandardMaterial({
         color: 0x666666 + Math.floor(rng() * 0x333333),

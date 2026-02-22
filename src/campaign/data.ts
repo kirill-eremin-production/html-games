@@ -507,12 +507,12 @@ export function getSystemDetail(systemId: string): SystemDetail {
   const hasStation = systemId === 'solaris' || rng() < 0.25;
   const starColor = STAR_COLOR_OPTIONS[Math.floor(rng() * STAR_COLOR_OPTIONS.length)];
   const starSize = 0.8 + rng() * 1.2;
-  const asteroidBeltDistance = rng() < 0.4 ? 80 + rng() * 120 : null;
+  const asteroidBeltDistance = rng() < 0.4 ? 1000000 + rng() * 1200000 : null;
 
   const planets: Planet[] = [];
   for (let i = 0; i < planetCount; i++) {
     const type = PLANET_TYPES[Math.floor(rng() * PLANET_TYPES.length)];
-    const orbitalDistance = 30 + i * 40 + rng() * 20;
+    const orbitalDistance = 300000 + i * 300000 + rng() * 150000;
     const size = type === 'gas_giant' ? 2.0 + rng() * 2.0 : 0.3 + rng() * 1.5;
     const names = PLANET_NAMES[type];
     const name = `${names[Math.floor(rng() * names.length)]}-${i + 1}`;
@@ -524,7 +524,7 @@ export function getSystemDetail(systemId: string): SystemDetail {
       type,
       orbitalDistance,
       size,
-      orbitalSpeed: (0.02 + rng() * 0.08) / (1 + i * 0.3),
+      orbitalSpeed: (0.0005 + rng() * 0.002) / (1 + i * 0.3),
       initialAngle: rng() * Math.PI * 2,
       hasLiquidWater: type === 'ocean' || (type === 'rocky' && rng() < 0.2),
       hasOxygen: (type === 'ocean' || type === 'rocky') && rng() < 0.3,

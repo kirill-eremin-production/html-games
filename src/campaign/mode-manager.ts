@@ -1,3 +1,10 @@
+import {
+  initAudio,
+  isAudioInitialized,
+  resumeAudio,
+  startEngineHum,
+  stopEngineHum,
+} from '../audio/sound';
 import { applyCombatConfig } from '../constants';
 import { refs } from '../main/refs';
 import { camera, scene } from '../scene/setup';
@@ -5,6 +12,7 @@ import { setStarfieldVisible } from '../scene/starfield';
 import { state } from '../state';
 import { playerPlane, playerRotation } from '../systems/player';
 import { hideHUD, showHUD } from '../ui/hud';
+import { hidePlanetMarkers } from '../ui/planet-markers';
 import { DIFFICULTY_CONFIGS } from './balance';
 import { hideCombatResult, showCombatQuitResult, showCombatResult } from './combat-result';
 import { hideExplorationHud, setupExplorationHud } from './exploration-scene/hud';
@@ -70,6 +78,17 @@ function ensureExplorationGroup(): void {
   }
 }
 
+function setHudExplorationMode(on: boolean): void {
+  const hud = document.getElementById('hud');
+  if (hud) {
+    if (on) {
+      hud.classList.add('exploration-mode');
+    } else {
+      hud.classList.remove('exploration-mode');
+    }
+  }
+}
+
 // ── Mode transitions ─────────────────────────────────────────────────────────
 
 export function enterCampaignFromMenu(): void {
@@ -94,7 +113,14 @@ export function enterGalaxyMode(resetCamera = true): void {
   hideStation();
   hideCombatResult();
   hideHUD();
+  hideExplorationHud();
   hideAllGameScreens();
+  hidePlanetMarkers();
+  setHudExplorationMode(false);
+
+  // Clean up star system from previous mode
+  clearExplorationScene();
+  hideExploration();
 
   // Hide combat player model on galaxy map
   playerPlane.visible = false;
@@ -128,7 +154,6 @@ export function enterExplorationMode(): void {
   hideGalaxy();
   hideStation();
   hideCombatResult();
-  hideHUD();
   hideAllGameScreens();
 
   ensureExplorationGroup();
@@ -136,31 +161,51 @@ export function enterExplorationMode(): void {
   showExploration();
   setStarfieldVisible(true);
 
-  // Position player at edge of system
-  playerPlane.position.set(50, 0, 0);
+  // Position player outside the star (star radius up to ~100000)
+  playerPlane.position.set(250000, 0, 0);
   playerPlane.quaternion.identity();
   playerRotation.pitch = 0;
   playerRotation.yaw = 0;
   playerRotation.roll = 0;
   playerPlane.visible = true;
 
-  // Reset flight state
-  state.speed = state.baseSpeed;
+  // Exploration speed: 0 (full stop) to 50000, no decay
+  state.baseSpeed = 0;
+  state.boostSpeed = 50000;
+  state.speedDecay = false;
+  state.speed = 5000;
   state.mouseX = 0;
   state.mouseY = 0;
+  state.shootCooldown = 0;
+  state.damageFlash = 0;
+  state.playerHealth = 100;
   refs.explorationTime = 0;
 
   // Set camera near plane for exploration (same as combat)
   camera.near = 1;
   camera.updateProjectionMatrix();
+  camera.position.set(250000 - 10.5, 3.75, 0);
+  camera.lookAt(playerPlane.position);
 
+  // Show flight HUD with exploration overlay
+  showHUD();
+  setHudExplorationMode(true);
   setupExplorationHud(() => exitExplorationMode());
+
+  // Start engine sound
+  if (!isAudioInitialized()) initAudio();
+  resumeAudio();
+  startEngineHum();
 }
 
 export function exitExplorationMode(): void {
   hideExplorationHud();
   hideExploration();
   clearExplorationScene();
+  hidePlanetMarkers();
+  setHudExplorationMode(false);
+  hideHUD();
+  stopEngineHum();
   playerPlane.visible = false;
 
   enterGalaxyMode(false);
@@ -177,6 +222,15 @@ function enterCombatFromContract(): void {
   hideStation();
   hideCombatResult();
   hideAllGameScreens();
+  setHudExplorationMode(false);
+
+  // Build star system as combat backdrop
+  ensureExplorationGroup();
+  buildExplorationScene(campaign.currentSystemId);
+  showExploration();
+  setStarfieldVisible(true);
+  refs.explorationTime = 0;
+
   showHUD();
   playerPlane.visible = true;
 
@@ -189,7 +243,12 @@ export function onCombatEnd(victory: boolean, score: number): void {
 
   setMode('result');
   hideHUD();
+  hidePlanetMarkers();
   if (stopCombatFn) stopCombatFn();
+
+  // Clean up star system
+  clearExplorationScene();
+  hideExploration();
 
   showCombatResult(victory, score, () => {
     hideCombatResult();
@@ -203,7 +262,12 @@ export function onCombatQuit(): void {
 
   setMode('result');
   hideHUD();
+  hidePlanetMarkers();
   if (stopCombatFn) stopCombatFn();
+
+  // Clean up star system
+  clearExplorationScene();
+  hideExploration();
 
   const penalty = failContract();
   showCombatQuitResult(penalty, () => {

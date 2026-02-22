@@ -94,6 +94,9 @@ function resetGame(): void {
   state.playerHealth = 100;
   state.totalEnemyKills = 0;
   state.lastAttacker = '';
+  state.baseSpeed = 80;
+  state.boostSpeed = 160;
+  state.speedDecay = true;
   state.speed = state.baseSpeed;
   state.shootCooldown = 0;
   state.messageTimer = 0;
