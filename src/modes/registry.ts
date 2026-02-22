@@ -1,5 +1,5 @@
 import type { GameMode } from '../campaign/types';
-import type { GameModeHandler } from './types';
+import type { GameModeHandler, ModeContext } from './types';
 
 const modes = new Map<string, GameModeHandler>();
 let currentHandler: GameModeHandler | null = null;
@@ -9,11 +9,11 @@ export function registerMode(name: string, handler: GameModeHandler): void {
   modes.set(name, handler);
 }
 
-export function switchMode(name: GameMode): void {
+export function switchMode(name: GameMode, context?: ModeContext): void {
   if (currentHandler) currentHandler.exit();
   currentName = name;
   currentHandler = modes.get(name) ?? null;
-  if (currentHandler) currentHandler.enter();
+  if (currentHandler) currentHandler.enter(context);
 }
 
 export function getCurrentModeName(): GameMode {

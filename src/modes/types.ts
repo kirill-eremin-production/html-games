@@ -1,5 +1,9 @@
+export interface ModeContext {
+  [key: string]: unknown;
+}
+
 export interface GameModeHandler {
   update(dt: number): void;
-  enter(): void;
+  enter(context?: ModeContext): void;
   exit(): void;
 }

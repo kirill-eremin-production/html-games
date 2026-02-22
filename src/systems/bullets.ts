@@ -2,12 +2,11 @@ import * as THREE from 'three';
 import { playHitSound } from '../audio/sound';
 import { COMBAT_CONSTANTS } from '../config/combat';
 import { PLAYER_CONFIG } from '../config/player';
-import { combatConfig } from '../constants';
+import { emit } from '../events';
 import { scene } from '../scene/setup';
 import { state } from '../state';
 import type { Fighter, LaserData } from '../types';
-import { showMessage } from '../ui/hud';
-import { addKillFeedEntry } from '../ui/kill-feed';
+import { destroyFighter, destroySubsystem } from './damage';
 import { createExplosion } from './explosions';
 import { playerPlane } from './player';
 import { cleanupExcessBullets } from './weapons';
@@ -24,40 +23,11 @@ function hitTestFighters(laser: LaserData, fighters: Fighter[], isPlayerLaser: b
       createExplosion(laser.mesh.position.clone(), C.hitExplosionSize);
 
       if (f.health <= 0) {
-        createExplosion(f.mesh.position.clone(), 3);
-        scene.remove(f.mesh);
-        if (f.healthFill && f.healthFill.geometry) f.healthFill.geometry.dispose();
-        if (f.healthFill && f.healthFill.material)
-          (f.healthFill.material as THREE.Material).dispose();
-
-        const victimName = f.name;
         const killerName = laser.shooterName || '?';
-        const isEnemyVictim = fighters === state.enemies;
-
-        fighters.splice(j, 1);
-
         const killerTeam =
           laser.team === 'player' ? 'player' : laser.team === 'ally' ? 'ally' : 'enemy';
-        const victimTeam = isEnemyVictim ? 'enemy' : 'ally';
-        addKillFeedEntry(killerName, victimName, killerTeam, victimTeam as 'ally' | 'enemy');
-
-        if (isEnemyVictim) {
-          state.totalEnemyKills++;
-        }
-
-        if (isPlayerLaser) {
-          state.score += C.fighterKillScore;
-          state.playerHealth = Math.min(
-            state.maxHealth,
-            state.playerHealth + state.maxHealth * PLAYER_CONFIG.killHealthBonus,
-          );
-          showMessage(`+${C.fighterKillScore} | +10% HP`, 1.5);
-        }
-
-        state.respawnQueue.push({
-          team: isEnemyVictim ? 'enemy' : 'ally',
-          timer: combatConfig.respawnDelay,
-        });
+        const isEnemyVictim = fighters === state.enemies;
+        destroyFighter(f, killerName, killerTeam, isEnemyVictim, isPlayerLaser);
       }
       return true;
     }
@@ -76,40 +46,7 @@ function hitTestCapitalShips(laser: LaserData): boolean {
         createExplosion(laser.mesh.position.clone(), C.hitCapitalExplosionSize);
 
         if (sub.health <= 0) {
-          createExplosion(_hitWorldPos.clone(), C.subsystemExplosionSize);
-          state.score += C.subsystemKillScore;
-          showMessage(`${sub.name} УНИЧТОЖЕНА! +${C.subsystemKillScore}`, 2);
-        }
-
-        if (cs.subsystems.every((s) => s.health <= 0)) {
-          cs.alive = false;
-          createExplosion(cs.mesh.position.clone(), C.mainExplosionSize);
-          for (let k = 0; k < C.secondaryExplosionCount; k++) {
-            setTimeout(() => {
-              if (!cs.mesh.parent) return;
-              const offset = new THREE.Vector3(
-                (Math.random() - 0.5) * C.secondaryExplosionSpread.x,
-                (Math.random() - 0.5) * C.secondaryExplosionSpread.y,
-                (Math.random() - 0.5) * C.secondaryExplosionSpread.z,
-              );
-              createExplosion(cs.mesh.position.clone().add(offset), C.secondaryExplosionSize);
-            }, k * C.secondaryExplosionDelay);
-          }
-          setTimeout(() => {
-            scene.remove(cs.mesh);
-          }, C.shipRemoveDelay);
-          state.score += C.capitalShipKillScore;
-          showMessage(`КОРАБЛЬ УНИЧТОЖЕН! +${C.capitalShipKillScore}`, 3);
-
-          if (state.phase === 1 && state.capitalShips.every((c) => !c.alive)) {
-            state.phase = 2;
-            setTimeout(() => {
-              showMessage(
-                `ВСЕ КОРАБЛИ УНИЧТОЖЕНЫ!\nУничтожьте ${combatConfig.killTarget} истребителей!`,
-                4,
-              );
-            }, 3500);
-          }
+          destroySubsystem(sub, cs, laser.shooterName || '?');
         }
         return true;
       }
@@ -166,6 +103,7 @@ export function updateBullets(dt: number): void {
           state.lastAttacker = b.shooterName || '?';
           createExplosion(b.mesh.position.clone(), C.hitExplosionSize);
           playHitSound();
+          emit('player-hit', { damage: b.damage, attackerName: b.shooterName || '?' });
           hit = true;
         }
       }

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { playLaserSound, updateEngineHum } from '../audio/sound';
 import { PLAYER_CONFIG } from '../config/player';
 import { PLAYER_NAME } from '../constants';
+import { actions, aim } from '../input';
 import { GUN_OFFSET_L, GUN_OFFSET_R } from '../scene/models';
 import { camera } from '../scene/setup';
 import { state } from '../state';
@@ -27,8 +28,8 @@ export function initPlayerModel(): void {
 
 export function updatePlayer(dt: number): void {
   const P = PLAYER_CONFIG;
-  const mx = state.mouseX,
-    my = state.mouseY;
+  const mx = aim.x,
+    my = aim.y;
   const applyDZ = (v: number) => {
     const a = Math.abs(v);
     return a < P.mouseDeadZone ? 0 : Math.sign(v) * ((a - P.mouseDeadZone) / (1 - P.mouseDeadZone));
@@ -38,14 +39,14 @@ export function updatePlayer(dt: number): void {
   let pitchInput = -myAdj,
     yawInput = -mxAdj,
     rollInput = -mxAdj * P.rollFromMouse;
-  if (state.keys['KeyA']) rollInput -= P.keyRollStrength;
-  if (state.keys['KeyD']) rollInput += P.keyRollStrength;
+  if (actions.rollLeft) rollInput -= P.keyRollStrength;
+  if (actions.rollRight) rollInput += P.keyRollStrength;
 
   if (state.speedDecay) {
     // Combat: accelerate/decelerate with decay to baseSpeed
-    if (state.keys['KeyW'] || state.keys['ShiftLeft'] || state.keys['ShiftRight']) {
+    if (actions.thrust || actions.boost) {
       state.speed = Math.min(state.speed + P.accelerateRate * dt, state.boostSpeed);
-    } else if (state.keys['KeyS']) {
+    } else if (actions.brake) {
       state.speed = Math.max(state.speed - P.decelerateRate * dt, P.minSpeed);
     } else {
       state.speed += (state.baseSpeed - state.speed) * P.speedDecayRate * dt;
@@ -53,9 +54,9 @@ export function updatePlayer(dt: number): void {
   } else {
     // Exploration: speed maintained, no decay
     const accelRate = state.boostSpeed * P.explorationAccelFraction;
-    if (state.keys['KeyW'] || state.keys['ShiftLeft'] || state.keys['ShiftRight']) {
+    if (actions.thrust || actions.boost) {
       state.speed = Math.min(state.speed + accelRate * dt, state.boostSpeed);
-    } else if (state.keys['KeyS']) {
+    } else if (actions.brake) {
       state.speed = Math.max(state.speed - accelRate * dt, 0);
     }
   }
@@ -141,9 +142,9 @@ export function updatePlayer(dt: number): void {
   }
 
   state.shootCooldown -= dt;
-  if ((state.keys['Space'] || state.keys['MouseLeft']) && state.shootCooldown <= 0) {
+  if (actions.fire && state.shootCooldown <= 0) {
     state.shootCooldown = P.shootCooldown;
-    _shootAim.set(state.mouseX, -state.mouseY, 0.5).unproject(camera);
+    _shootAim.set(aim.x, -aim.y, 0.5).unproject(camera);
     _shootDir.copy(_shootAim).sub(camera.position).normalize();
     _shootOrigin
       .copy(GUN_OFFSET_R)
