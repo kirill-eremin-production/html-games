@@ -1,10 +1,13 @@
 import * as THREE from 'three';
+import { COMBAT_CONSTANTS } from '../config/combat';
 import { combatConfig } from '../constants';
 import { addHealthBar, createFighter } from '../scene/models';
 import { scene } from '../scene/setup';
 import { parseHexColor, settings } from '../settings';
 import { nextAllyName, nextEnemyName, state } from '../state';
 import { playerPlane } from './player';
+
+const C = COMBAT_CONSTANTS;
 
 export function spawnAlly(near: THREE.Vector3): void {
   const mesh = createFighter(
@@ -13,9 +16,9 @@ export function spawnAlly(near: THREE.Vector3): void {
   );
   scene.add(mesh);
   const offset = new THREE.Vector3(
-    (Math.random() - 0.5) * 200,
-    (Math.random() - 0.5) * 100,
-    (Math.random() - 0.5) * 200,
+    (Math.random() - 0.5) * C.allySpawnSpread.x,
+    (Math.random() - 0.5) * C.allySpawnSpread.y,
+    (Math.random() - 0.5) * C.allySpawnSpread.z,
   );
   mesh.position.copy(near).add(offset);
   mesh.quaternion.copy(playerPlane.quaternion);
@@ -45,9 +48,9 @@ export function spawnEnemy(near: THREE.Vector3): void {
   );
   scene.add(mesh);
   const offset = new THREE.Vector3(
-    (Math.random() - 0.5) * 300,
-    (Math.random() - 0.5) * 150,
-    (Math.random() - 0.5) * 300,
+    (Math.random() - 0.5) * C.enemySpawnSpread.x,
+    (Math.random() - 0.5) * C.enemySpawnSpread.y,
+    (Math.random() - 0.5) * C.enemySpawnSpread.z,
   );
   mesh.position.copy(near).add(offset);
   const hb = addHealthBar(mesh, 0xff0000);
@@ -77,7 +80,7 @@ export function updateRespawnQueue(dt: number): void {
       if (entry.team === 'ally') {
         spawnAlly(playerPlane.position);
       } else {
-        let spawnPos = new THREE.Vector3(1500, 0, 0);
+        let spawnPos = new THREE.Vector3(...C.defaultEnemySpawnPos);
         const livingShips = state.capitalShips.filter((cs) => cs.alive);
         if (livingShips.length > 0) {
           spawnPos =

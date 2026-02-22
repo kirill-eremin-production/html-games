@@ -1,12 +1,11 @@
 import { MAX_FUEL, QUIT_PENALTY, REWARDS, STARTING_FUEL, STARTING_MONEY } from './balance';
 import { generateContracts, getSystem } from './data';
-import type { CampaignState, Contract, GameMode } from './types';
+import type { CampaignState, Contract } from './types';
 
 const STORAGE_KEY = 'space-combat-campaign';
 
 // ── Campaign singleton ───────────────────────────────────────────────────────
 
-export let currentMode: GameMode = 'menu';
 export let isCampaignActive = false;
 
 export const campaign: CampaignState = {
@@ -21,10 +20,6 @@ export const campaign: CampaignState = {
 
 // Current station contracts (regenerated on arrival)
 export let stationContracts: Contract[] = [];
-
-export function setMode(mode: GameMode): void {
-  currentMode = mode;
-}
 
 export function setIsCampaignActive(value: boolean): void {
   isCampaignActive = value;

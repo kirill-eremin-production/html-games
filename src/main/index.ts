@@ -1,3 +1,9 @@
+import { combatMode } from '../modes/combat';
+import { explorationMode } from '../modes/exploration';
+import { galaxyMode } from '../modes/galaxy';
+import { menuMode } from '../modes/menu';
+import { registerMode } from '../modes/registry';
+import { stationMode } from '../modes/station';
 import { createFighter, preloadModels } from '../scene/models';
 import { camera, scene } from '../scene/setup';
 import { createStarfield } from '../scene/starfield';
@@ -12,6 +18,14 @@ import { setupInputListeners } from './input';
 import { clock, refs } from './refs';
 
 async function init(): Promise<void> {
+  // Register game modes
+  registerMode('menu', menuMode);
+  registerMode('result', menuMode);
+  registerMode('galaxy', galaxyMode);
+  registerMode('station', stationMode);
+  registerMode('exploration', explorationMode);
+  registerMode('combat', combatMode);
+
   // Load GLTF models before anything else
   await preloadModels();
 

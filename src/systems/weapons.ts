@@ -1,28 +1,42 @@
 import * as THREE from 'three';
 import { playLaserSound } from '../audio/sound';
+import { WEAPON_CONFIG } from '../config/weapons';
 import { GUN_OFFSET_L, GUN_OFFSET_R } from '../scene/models';
 import { scene } from '../scene/setup';
 import { state } from '../state';
 import type { LaserData } from '../types';
+import { addDirectionNoise } from '../utils/math';
 
-const laserGeoAlly = new THREE.CylinderGeometry(0.15, 0.15, 5, 4);
+const W = WEAPON_CONFIG;
+
+const laserGeoAlly = new THREE.CylinderGeometry(
+  W.allyLaserRadius,
+  W.allyLaserRadius,
+  W.laserLength,
+  W.laserSegments,
+);
 laserGeoAlly.rotateZ(Math.PI / 2);
 
-const laserGeoEnemy = new THREE.CylinderGeometry(0.18, 0.18, 5, 4);
+const laserGeoEnemy = new THREE.CylinderGeometry(
+  W.enemyLaserRadius,
+  W.enemyLaserRadius,
+  W.laserLength,
+  W.laserSegments,
+);
 laserGeoEnemy.rotateZ(Math.PI / 2);
 
 const laserMatPlayer = new THREE.MeshBasicMaterial({
-  color: 0x00ffcc,
+  color: W.playerLaserColor,
   blending: THREE.AdditiveBlending,
   transparent: true,
 });
 const laserMatAlly = new THREE.MeshBasicMaterial({
-  color: 0x44ff88,
+  color: W.allyLaserColor,
   blending: THREE.AdditiveBlending,
   transparent: true,
 });
 const laserMatEnemy = new THREE.MeshBasicMaterial({
-  color: 0xff3300,
+  color: W.enemyLaserColor,
   blending: THREE.AdditiveBlending,
   transparent: true,
 });
@@ -49,13 +63,13 @@ export function createLaser(
   mesh.quaternion.copy(_laserQuat);
   scene.add(mesh);
 
-  const speed = isEnemy ? 250 : 400;
+  const speed = isEnemy ? W.enemyLaserSpeed : W.playerLaserSpeed;
   const data: LaserData = {
     mesh,
     velocity: new THREE.Vector3().copy(_laserDir).multiplyScalar(speed),
-    life: 2.0,
+    life: W.laserLife,
     team,
-    damage: isPlayer ? 15 : isEnemy ? 10 : 10,
+    damage: isPlayer ? W.playerDamage : isEnemy ? W.enemyDamage : W.allyDamage,
     shooterName: shooterName || '',
   };
 
@@ -68,11 +82,11 @@ export function createLaser(
 
 export function cleanupExcessBullets(): void {
   const total = state.bullets.length + state.allyBullets.length + state.enemyBullets.length;
-  if (total > 200) {
+  if (total > W.maxBullets) {
     const arrays = [state.bullets, state.allyBullets, state.enemyBullets];
     arrays.sort((a, b) => b.length - a.length);
     const target = arrays[0];
-    const removeCount = total - 160;
+    const removeCount = total - W.cleanupTarget;
     const toRemove = Math.min(removeCount, target.length);
     for (let i = 0; i < toRemove; i++) {
       scene.remove(target[i].mesh);
@@ -83,7 +97,6 @@ export function cleanupExcessBullets(): void {
 
 const _fShootDir = new THREE.Vector3();
 const _fBulletPos = new THREE.Vector3();
-const AUDIO_DIST_SQ = 300 * 300;
 let _fGunToggle = false;
 
 export function shootFromFighter(
@@ -94,16 +107,12 @@ export function shootFromFighter(
   playerPlane: THREE.Group,
 ): void {
   _fShootDir.copy(dirToTarget);
-  _fShootDir.x += (Math.random() - 0.5) * 0.05;
-  _fShootDir.y += (Math.random() - 0.5) * 0.05;
-  _fShootDir.z += (Math.random() - 0.5) * 0.05;
-  _fShootDir.normalize();
-  // Alternate between left and right gun pods
+  addDirectionNoise(_fShootDir, W.fighterShotSpread);
   _fGunToggle = !_fGunToggle;
   const offset = _fGunToggle ? GUN_OFFSET_R : GUN_OFFSET_L;
   _fBulletPos.copy(offset).applyQuaternion(fighter.quaternion).add(fighter.position);
   createLaser(_fBulletPos, _fShootDir, team, name);
-  if (fighter.position.distanceToSquared(playerPlane.position) < AUDIO_DIST_SQ) {
+  if (fighter.position.distanceToSquared(playerPlane.position) < W.audioDistSq) {
     playLaserSound(false);
   }
 }

@@ -1,10 +1,10 @@
 import * as THREE from 'three';
+import { EXPLORATION_CONFIG } from '../../config/exploration';
 import { state } from '../../state';
 import { playerPlane } from '../../systems/player';
 import { getExplorationDetail } from './index';
 import { explorationRefs, planetMeshes } from './refs';
 
-const INFO_DISTANCE = 200000;
 const _toPlanet = new THREE.Vector3();
 const _forward = new THREE.Vector3();
 
@@ -43,18 +43,19 @@ export function updateExplorationScene(dt: number, elapsed: number): void {
     }
   }
 
-  explorationRefs.nearestPlanetIndex = minDist < INFO_DISTANCE ? nearestIdx : -1;
+  explorationRefs.nearestPlanetIndex =
+    minDist < EXPLORATION_CONFIG.planetInfoDistance ? nearestIdx : -1;
 
   // Slow down near planets (exploration only)
   if (nearestIdx >= 0 && !state.speedDecay) {
     const planetRadius = planetMeshes[nearestIdx].scale.x;
-    const slowdownDist = planetRadius * 3;
+    const slowdownDist = planetRadius * EXPLORATION_CONFIG.planetSlowdownMultiplier;
     if (minDist < slowdownDist) {
       // Only slow down when flying towards the planet, not away
       _toPlanet.copy(planetMeshes[nearestIdx].position).sub(playerPlane.position).normalize();
       _forward.set(1, 0, 0).applyQuaternion(playerPlane.quaternion);
       if (_forward.dot(_toPlanet) > 0) {
-        state.speed = Math.min(state.speed, 100);
+        state.speed = Math.min(state.speed, EXPLORATION_CONFIG.planetSlowdownMaxSpeed);
       }
     }
   }

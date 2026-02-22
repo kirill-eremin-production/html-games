@@ -14,9 +14,10 @@ import {
   onCombatQuit,
   registerCombatCallbacks,
 } from '../campaign/mode-manager';
-import { isCampaignActive, setMode } from '../campaign/state';
+import { isCampaignActive } from '../campaign/state';
 import type { CombatConfig } from '../campaign/types';
 import { applyCombatConfig, combatConfig } from '../constants';
+import { switchMode } from '../modes/registry';
 import { createFighter } from '../scene/models';
 import { camera, scene } from '../scene/setup';
 import { parseHexColor, settings } from '../settings';
@@ -155,7 +156,7 @@ export function startQuickPlay(): void {
   if (!isAudioInitialized()) initAudio();
   resumeAudio();
   applyCombatConfig(DEFAULT_COMBAT_CONFIG);
-  setMode('combat');
+  switchMode('combat');
   resetGame();
   showHUD();
   startEngineHum();
@@ -171,7 +172,7 @@ function startCampaignCombat(config: CombatConfig): void {
   if (!isAudioInitialized()) initAudio();
   resumeAudio();
   applyCombatConfig(config);
-  setMode('combat');
+  switchMode('combat');
   resetGame();
   showHUD();
   startEngineHum();

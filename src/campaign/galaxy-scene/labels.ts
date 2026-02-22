@@ -1,7 +1,8 @@
 import * as THREE from 'three';
+import { worldToScreen } from '../../utils/screen';
 import { getSystem, systemHasStation } from '../data';
 import { campaign } from '../state';
-import { labelElements, nearbySystemIds, projVec, refs, starMeshes } from './refs';
+import { labelElements, nearbySystemIds, refs, starMeshes } from './refs';
 
 export function rebuildLabels(): void {
   if (!refs.labelsContainer) {
@@ -32,21 +33,17 @@ export function updateGalaxyLabels(cam: THREE.Camera): void {
     const mesh = starMeshes.get(id);
     if (!mesh) continue;
 
-    projVec.copy(mesh.position);
-    projVec.project(cam);
+    const scr = worldToScreen(mesh.position, cam, w, h);
 
     // Behind camera
-    if (projVec.z > 1) {
+    if (scr.z > 1) {
       label.style.display = 'none';
       continue;
     }
 
-    const x = (0.5 + projVec.x / 2) * w;
-    const y = (0.5 - projVec.y / 2) * h;
-
     label.style.display = '';
-    label.style.left = `${x}px`;
-    label.style.top = `${y + 18}px`;
+    label.style.left = `${scr.x}px`;
+    label.style.top = `${scr.y + 18}px`;
 
     // Highlight current system
     label.classList.toggle('current', id === campaign.currentSystemId);

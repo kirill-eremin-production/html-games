@@ -1,9 +1,12 @@
 import * as THREE from 'three';
+import { AI_CONFIG } from '../config/ai';
 import { PLAYER_NAME } from '../constants';
 import { camera } from '../scene/setup';
 import { state } from '../state';
 import type { Fighter } from '../types';
 import { shootFromFighter } from './weapons';
+
+const A = AI_CONFIG;
 
 const _aiToTarget = new THREE.Vector3();
 const _aiCurrentFwd = new THREE.Vector3();
@@ -39,15 +42,15 @@ function updateFighterAI(
   isEnemy: boolean,
   playerPlane: THREE.Group,
 ): void {
-  if (!fighter.ai.target || Math.random() < 0.01) {
-    if (isEnemy && Math.random() < 0.5 && playerPos) {
+  if (!fighter.ai.target || Math.random() < A.retargetChance) {
+    if (isEnemy && Math.random() < A.enemyTargetPlayerChance && playerPos) {
       fighter.ai.target = { mesh: { position: playerPos }, name: PLAYER_NAME };
     } else {
       fighter.ai.target = findNearestTarget(fighter.mesh.position, enemies);
     }
   }
 
-  if (!isEnemy && Math.random() < 0.005) {
+  if (!isEnemy && Math.random() < A.allyTargetCapitalChance) {
     for (const cs of state.capitalShips) {
       if (!cs.alive) continue;
       for (const sub of cs.subsystems) {
@@ -73,24 +76,24 @@ function updateFighterAI(
 
   fighter.ai.timer -= dt;
   if (fighter.ai.timer <= 0) {
-    if (dist < 100) {
+    if (dist < A.evadeDistance) {
       fighter.ai.state = 'evade';
       fighter.ai.evadeDir.copy(dirToTarget).negate();
-      fighter.ai.evadeDir.x += (Math.random() - 0.5) * 0.8;
-      fighter.ai.evadeDir.y += (Math.random() - 0.5) * 0.4;
-      fighter.ai.evadeDir.z += (Math.random() - 0.5) * 0.8;
+      fighter.ai.evadeDir.x += (Math.random() - 0.5) * A.evadeNoiseXZ;
+      fighter.ai.evadeDir.y += (Math.random() - 0.5) * A.evadeNoiseY;
+      fighter.ai.evadeDir.z += (Math.random() - 0.5) * A.evadeNoiseXZ;
       fighter.ai.evadeDir.normalize();
-      fighter.ai.timer = 2 + Math.random() * 2;
-    } else if (dist > 500) {
+      fighter.ai.timer = A.evadeTimerBase + Math.random() * A.evadeTimerRange;
+    } else if (dist > A.chaseDistance) {
       fighter.ai.state = 'chase';
-      fighter.ai.timer = 3;
+      fighter.ai.timer = A.chaseTimer;
     } else {
       fighter.ai.state = 'orbit';
       fighter.ai.evadeDir
-        .set(-dirToTarget.z, (Math.random() - 0.5) * 0.3, dirToTarget.x)
+        .set(-dirToTarget.z, (Math.random() - 0.5) * A.orbitYNoise, dirToTarget.x)
         .normalize();
       if (Math.random() < 0.5) fighter.ai.evadeDir.negate();
-      fighter.ai.timer = 3 + Math.random() * 3;
+      fighter.ai.timer = A.orbitTimerBase + Math.random() * A.orbitTimerRange;
     }
   }
 
@@ -103,7 +106,7 @@ function updateFighterAI(
       targetDir = fighter.ai.evadeDir;
       break;
     case 'orbit': {
-      const correction = ((dist - 250) / 250) * 0.3;
+      const correction = ((dist - A.orbitDistance) / A.orbitDistance) * A.orbitCorrection;
       _aiOrbitDir.copy(fighter.ai.evadeDir).addScaledVector(dirToTarget, correction).normalize();
       targetDir = _aiOrbitDir;
       break;
@@ -116,31 +119,35 @@ function updateFighterAI(
   _aiCross.copy(_aiCurrentFwd).cross(targetDir);
   const crossLen = _aiCross.length();
   if (crossLen > 0.001) {
-    const angle = Math.asin(Math.min(1, crossLen)) * 1.5 * dt;
-    _aiCross.divideScalar(crossLen); // normalize without re-computing length
+    const angle = Math.asin(Math.min(1, crossLen)) * A.turnRate * dt;
+    _aiCross.divideScalar(crossLen);
     _aiRotQ.setFromAxisAngle(_aiCross, angle);
     fighter.mesh.quaternion.premultiply(_aiRotQ);
     fighter.mesh.quaternion.normalize();
   }
 
-  _aiRollQ.setFromAxisAngle(_tmpVec.set(1, 0, 0), -_aiCross.y * 1.5 * dt);
+  _aiRollQ.setFromAxisAngle(_tmpVec.set(1, 0, 0), -_aiCross.y * A.rollRate * dt);
   fighter.mesh.quaternion.multiply(_aiRollQ);
 
   _aiFwd.set(1, 0, 0).applyQuaternion(fighter.mesh.quaternion);
   fighter.mesh.position.addScaledVector(_aiFwd, fighter.speed * dt);
 
   fighter.shootTimer -= dt;
-  if (fighter.shootTimer <= 0 && dist < 400) {
-    fighter.shootTimer = 0.5 + Math.random() * 0.7;
+  if (fighter.shootTimer <= 0 && dist < A.shootDistance) {
+    fighter.shootTimer = A.shootTimerBase + Math.random() * A.shootTimerRange;
     shootFromFighter(fighter.mesh, dirToTarget, shootTeam, fighter.name, playerPlane);
   }
 
   // Exhaust glow pulse
-  const pulse = Math.sin(Date.now() * 0.006 + fighter.mesh.id * 1.7) * 0.5 + 0.5;
+  const pulse =
+    Math.sin(Date.now() * A.exhaustPulseSpeed + fighter.mesh.id * A.exhaustPulsePhaseMultiplier) *
+      0.5 +
+    0.5;
   const exh = fighter.mesh.getObjectByName('exhaust') as THREE.Mesh | undefined;
   if (exh) {
-    (exh.material as THREE.MeshBasicMaterial).opacity = 0.6 + pulse * 0.3;
-    exh.scale.setScalar(0.9 + pulse * 0.2);
+    (exh.material as THREE.MeshBasicMaterial).opacity =
+      A.exhaustOpacityBase + pulse * A.exhaustOpacityRange;
+    exh.scale.setScalar(A.exhaustScaleBase + pulse * A.exhaustScaleRange);
   }
 
   fighter.healthBar.lookAt(camera.position);

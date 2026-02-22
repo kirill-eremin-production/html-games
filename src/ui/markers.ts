@@ -3,26 +3,21 @@ import { CAPITAL_CLOSE_RANGE_SQ, CURSOR_PROXIMITY_FACTOR, LOCK_PICK_RADIUS } fro
 import { camera } from '../scene/setup';
 import { state } from '../state';
 import type { LockedTarget } from '../types';
+import { DomPool } from '../utils/dom-pool';
+import { clampToScreenEdge, worldToScreen } from '../utils/screen';
 
 const markersContainer = document.getElementById('target-markers')!;
-const markerPool: HTMLElement[] = [];
-const _mrkPos = new THREE.Vector3();
-const ENEMY_RANGE_SQ = 800 * 800;
-const SHIP_RANGE_SQ = 1500 * 1500;
-
-function getMarkerElement(index: number): HTMLElement {
-  if (index < markerPool.length) {
-    markerPool[index].style.display = 'block';
-    return markerPool[index];
-  }
+const pool = new DomPool(markersContainer, () => {
   const el = document.createElement('div');
   el.className = 'target-marker';
   el.innerHTML =
     '<div class="diamond"></div><div class="marker-dist"></div><div class="marker-label"></div>';
-  markersContainer.appendChild(el);
-  markerPool.push(el);
   return el;
-}
+});
+
+const _mrkPos = new THREE.Vector3();
+const ENEMY_RANGE_SQ = 800 * 800;
+const SHIP_RANGE_SQ = 1500 * 1500;
 
 // ── Capital ship markers (always visible) ──────────────────────────────────
 
@@ -39,15 +34,12 @@ function renderCapitalShipMarkers(
 
     if (shipDistSq > CAPITAL_CLOSE_RANGE_SQ) {
       // Far: single marker at ship center
-      _mrkPos.copy(cs.mesh.position).project(camera);
-      const screenX = (_mrkPos.x * 0.5 + 0.5) * w;
-      const screenY = (-_mrkPos.y * 0.5 + 0.5) * h;
-      if (_mrkPos.z >= 1 || screenX < -20 || screenX > w + 20 || screenY < -20 || screenY > h + 20)
-        continue;
-      const el = getMarkerElement(usedCount++);
+      const scr = worldToScreen(cs.mesh.position, camera, w, h);
+      if (scr.z >= 1 || scr.x < -20 || scr.x > w + 20 || scr.y < -20 || scr.y > h + 20) continue;
+      const el = pool.get(usedCount++);
       el.className = 'target-marker capital';
-      el.style.left = screenX + 'px';
-      el.style.top = screenY + 'px';
+      el.style.left = scr.x + 'px';
+      el.style.top = scr.y + 'px';
       const dist3d = Math.sqrt(shipDistSq);
       el.children[1].textContent = Math.floor(dist3d) + 'm';
       el.children[2].textContent = `Корабль-${cs.mesh.userData.index + 1}`;
@@ -59,21 +51,12 @@ function renderCapitalShipMarkers(
         if (sub.health <= 0) continue;
         _mrkPos.copy(sub.center).applyMatrix4(cs.mesh.matrixWorld);
         const d = playerPlane.position.distanceTo(_mrkPos);
-        _mrkPos.project(camera);
-        const screenX = (_mrkPos.x * 0.5 + 0.5) * w;
-        const screenY = (-_mrkPos.y * 0.5 + 0.5) * h;
-        if (
-          _mrkPos.z >= 1 ||
-          screenX < -20 ||
-          screenX > w + 20 ||
-          screenY < -20 ||
-          screenY > h + 20
-        )
-          continue;
-        const el = getMarkerElement(usedCount++);
+        const scr = worldToScreen(_mrkPos, camera, w, h);
+        if (scr.z >= 1 || scr.x < -20 || scr.x > w + 20 || scr.y < -20 || scr.y > h + 20) continue;
+        const el = pool.get(usedCount++);
         el.className = 'target-marker capital';
-        el.style.left = screenX + 'px';
-        el.style.top = screenY + 'px';
+        el.style.left = scr.x + 'px';
+        el.style.top = scr.y + 'px';
         el.children[1].textContent = Math.floor(d) + 'm';
         el.children[2].textContent = sub.name;
         (el.children[0] as HTMLElement).style.width = '21px';
@@ -98,42 +81,27 @@ function renderLockedTarget(
 
   if (lt.kind === 'fighter') {
     dist3d = playerPlane.position.distanceTo(lt.fighter.mesh.position);
-    _mrkPos.copy(lt.fighter.mesh.position).project(camera);
+    _mrkPos.copy(lt.fighter.mesh.position);
     name = lt.fighter.name;
   } else {
     _mrkPos.copy(lt.subsystem.center).applyMatrix4(lt.ship.mesh.matrixWorld);
     dist3d = playerPlane.position.distanceTo(_mrkPos);
-    _mrkPos.project(camera);
     name = lt.subsystem.name;
   }
 
-  let screenX = (_mrkPos.x * 0.5 + 0.5) * w;
-  let screenY = (-_mrkPos.y * 0.5 + 0.5) * h;
-  const z = _mrkPos.z;
+  let scr = worldToScreen(_mrkPos, camera, w, h);
 
   // Clamp to screen edge if off-screen or behind camera
-  if (z >= 1 || screenX < 0 || screenX > w || screenY < 0 || screenY > h) {
-    const cx = w / 2,
-      cy = h / 2;
-    let dx = screenX - cx,
-      dy = screenY - cy;
-    if (z >= 1) {
-      dx = -dx;
-      dy = -dy;
-    }
-    const margin = 40;
-    const scaleX = Math.abs(dx) > 0.001 ? (w / 2 - margin) / Math.abs(dx) : Infinity;
-    const scaleY = Math.abs(dy) > 0.001 ? (h / 2 - margin) / Math.abs(dy) : Infinity;
-    const s = Math.min(scaleX, scaleY, 1);
-    screenX = cx + dx * s;
-    screenY = cy + dy * s;
+  if (scr.z >= 1 || scr.x < 0 || scr.x > w || scr.y < 0 || scr.y > h) {
+    const clamped = clampToScreenEdge(scr.x, scr.y, w, h, scr.z >= 1, 40);
+    scr = { x: clamped.x, y: clamped.y, z: scr.z };
   }
 
-  const el = getMarkerElement(usedCount++);
+  const el = pool.get(usedCount++);
   const isCapital = lt.kind === 'subsystem';
   el.className = 'target-marker target-locked' + (isCapital ? ' capital' : '');
-  el.style.left = screenX + 'px';
-  el.style.top = screenY + 'px';
+  el.style.left = scr.x + 'px';
+  el.style.top = scr.y + 'px';
   el.children[1].textContent = Math.floor(dist3d) + 'm';
   el.children[2].textContent = name;
   const scale = isCapital ? 1 : Math.max(0.6, Math.min(1.5, 300 / dist3d));
@@ -170,9 +138,7 @@ export function updateTargetMarkers(playerPlane: THREE.Group): void {
   if (state.lockedTarget) {
     usedCount = renderCapitalShipMarkers(usedCount, w, h, playerPlane);
     usedCount = renderLockedTarget(state.lockedTarget, usedCount, w, h, playerPlane);
-    for (let i = usedCount; i < markerPool.length; i++) {
-      markerPool[i].style.display = 'none';
-    }
+    pool.hideFrom(usedCount);
     return;
   }
 
@@ -183,21 +149,18 @@ export function updateTargetMarkers(playerPlane: THREE.Group): void {
   for (const e of state.enemies) {
     const distSq = playerPlane.position.distanceToSquared(e.mesh.position);
     if (distSq > ENEMY_RANGE_SQ) continue;
-    _mrkPos.copy(e.mesh.position).project(camera);
-    const screenX = (_mrkPos.x * 0.5 + 0.5) * w;
-    const screenY = (-_mrkPos.y * 0.5 + 0.5) * h;
-    if (_mrkPos.z >= 1 || screenX < -20 || screenX > w + 20 || screenY < -20 || screenY > h + 20)
-      continue;
+    const scr = worldToScreen(e.mesh.position, camera, w, h);
+    if (scr.z >= 1 || scr.x < -20 || scr.x > w + 20 || scr.y < -20 || scr.y > h + 20) continue;
 
     // Cursor proximity filter
-    const dxC = screenX - cursorScreenX,
-      dyC = screenY - cursorScreenY;
+    const dxC = scr.x - cursorScreenX,
+      dyC = scr.y - cursorScreenY;
     if (dxC * dxC + dyC * dyC > proximityThresholdSq) continue;
 
-    const el = getMarkerElement(usedCount++);
+    const el = pool.get(usedCount++);
     el.className = 'target-marker';
-    el.style.left = screenX + 'px';
-    el.style.top = screenY + 'px';
+    el.style.left = scr.x + 'px';
+    el.style.top = scr.y + 'px';
     const dist3d = Math.sqrt(distSq);
     el.children[1].textContent = Math.floor(dist3d) + 'm';
     el.children[2].textContent = e.name;
@@ -209,9 +172,7 @@ export function updateTargetMarkers(playerPlane: THREE.Group): void {
   // Capital ship markers (always visible)
   usedCount = renderCapitalShipMarkers(usedCount, w, h, playerPlane);
 
-  for (let i = usedCount; i < markerPool.length; i++) {
-    markerPool[i].style.display = 'none';
-  }
+  pool.hideFrom(usedCount);
 }
 
 // ── Target lock toggle ─────────────────────────────────────────────────────
@@ -234,11 +195,9 @@ export function toggleTargetLock(playerPlane: THREE.Group): void {
   // Screen-pick: enemies near cursor
   for (const e of state.enemies) {
     if (playerPlane.position.distanceToSquared(e.mesh.position) > ENEMY_RANGE_SQ) continue;
-    _mrkPos.copy(e.mesh.position).project(camera);
-    if (_mrkPos.z >= 1) continue;
-    const sx = (_mrkPos.x * 0.5 + 0.5) * w;
-    const sy = (-_mrkPos.y * 0.5 + 0.5) * h;
-    const dSq = (sx - cursorScreenX) ** 2 + (sy - cursorScreenY) ** 2;
+    const scr = worldToScreen(e.mesh.position, camera, w, h);
+    if (scr.z >= 1) continue;
+    const dSq = (scr.x - cursorScreenX) ** 2 + (scr.y - cursorScreenY) ** 2;
     if (dSq < pickRadiusSq && dSq < bestScreenDistSq) {
       bestScreenDistSq = dSq;
       bestTarget = { kind: 'fighter', fighter: e };
@@ -252,11 +211,9 @@ export function toggleTargetLock(playerPlane: THREE.Group): void {
     for (const sub of cs.subsystems) {
       if (sub.health <= 0) continue;
       _mrkPos.copy(sub.center).applyMatrix4(cs.mesh.matrixWorld);
-      _mrkPos.project(camera);
-      if (_mrkPos.z >= 1) continue;
-      const sx = (_mrkPos.x * 0.5 + 0.5) * w;
-      const sy = (-_mrkPos.y * 0.5 + 0.5) * h;
-      const dSq = (sx - cursorScreenX) ** 2 + (sy - cursorScreenY) ** 2;
+      const scr = worldToScreen(_mrkPos, camera, w, h);
+      if (scr.z >= 1) continue;
+      const dSq = (scr.x - cursorScreenX) ** 2 + (scr.y - cursorScreenY) ** 2;
       if (dSq < pickRadiusSq && dSq < bestScreenDistSq) {
         bestScreenDistSq = dSq;
         bestTarget = { kind: 'subsystem', subsystem: sub, ship: cs };

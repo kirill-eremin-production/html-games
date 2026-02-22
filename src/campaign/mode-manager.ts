@@ -5,8 +5,10 @@ import {
   startEngineHum,
   stopEngineHum,
 } from '../audio/sound';
+import { EXPLORATION_CONFIG } from '../config/exploration';
 import { applyCombatConfig } from '../constants';
 import { refs } from '../main/refs';
+import { switchMode } from '../modes/registry';
 import { camera, scene } from '../scene/setup';
 import { setStarfieldVisible } from '../scene/starfield';
 import { state } from '../state';
@@ -40,7 +42,6 @@ import {
   loadCampaign,
   regenerateContracts,
   setIsCampaignActive,
-  setMode,
   startCampaign,
 } from './state';
 import { hideStation, showStation } from './station-ui';
@@ -107,7 +108,7 @@ export function enterCampaignFromMenu(): void {
 }
 
 export function enterGalaxyMode(resetCamera = true): void {
-  setMode('galaxy');
+  switchMode('galaxy');
 
   // Hide other screens
   hideStation();
@@ -139,7 +140,7 @@ export function enterGalaxyMode(resetCamera = true): void {
 }
 
 export function enterStationMode(): void {
-  setMode('station');
+  switchMode('station');
   disableGalaxyControls();
   hideGalaxy();
   hideHUD();
@@ -149,7 +150,7 @@ export function enterStationMode(): void {
 }
 
 export function enterExplorationMode(): void {
-  setMode('exploration');
+  switchMode('exploration');
   disableGalaxyControls();
   hideGalaxy();
   hideStation();
@@ -162,18 +163,19 @@ export function enterExplorationMode(): void {
   setStarfieldVisible(true);
 
   // Position player outside the star (star radius up to ~100000)
-  playerPlane.position.set(250000, 0, 0);
+  const [sx, sy, sz] = EXPLORATION_CONFIG.startPosition;
+  playerPlane.position.set(sx, sy, sz);
   playerPlane.quaternion.identity();
   playerRotation.pitch = 0;
   playerRotation.yaw = 0;
   playerRotation.roll = 0;
   playerPlane.visible = true;
 
-  // Exploration speed: 0 (full stop) to 50000, no decay
-  state.baseSpeed = 0;
-  state.boostSpeed = 50000;
+  // Exploration speed
+  state.baseSpeed = EXPLORATION_CONFIG.baseSpeed;
+  state.boostSpeed = EXPLORATION_CONFIG.boostSpeed;
   state.speedDecay = false;
-  state.speed = 5000;
+  state.speed = EXPLORATION_CONFIG.initialSpeed;
   state.mouseX = 0;
   state.mouseY = 0;
   state.shootCooldown = 0;
@@ -184,7 +186,7 @@ export function enterExplorationMode(): void {
   // Set camera near plane for exploration (same as combat)
   camera.near = 1;
   camera.updateProjectionMatrix();
-  camera.position.set(250000 - 10.5, 3.75, 0);
+  camera.position.set(sx - 10.5, sy + 3.75, sz);
   camera.lookAt(playerPlane.position);
 
   // Show flight HUD with exploration overlay
@@ -216,7 +218,7 @@ function enterCombatFromContract(): void {
   const difficulty = campaign.activeContract.difficulty;
   const config = DIFFICULTY_CONFIGS[difficulty];
 
-  setMode('combat');
+  switchMode('combat');
   disableGalaxyControls();
   hideGalaxy();
   hideStation();
@@ -241,7 +243,7 @@ function enterCombatFromContract(): void {
 export function onCombatEnd(victory: boolean, score: number): void {
   if (!isCampaignActive) return;
 
-  setMode('result');
+  switchMode('result');
   hideHUD();
   hidePlanetMarkers();
   if (stopCombatFn) stopCombatFn();
@@ -260,7 +262,7 @@ export function onCombatEnd(victory: boolean, score: number): void {
 export function onCombatQuit(): void {
   if (!isCampaignActive) return;
 
-  setMode('result');
+  switchMode('result');
   hideHUD();
   hidePlanetMarkers();
   if (stopCombatFn) stopCombatFn();

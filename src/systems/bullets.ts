@@ -1,25 +1,27 @@
 import * as THREE from 'three';
 import { playHitSound } from '../audio/sound';
+import { COMBAT_CONSTANTS } from '../config/combat';
+import { PLAYER_CONFIG } from '../config/player';
 import { combatConfig } from '../constants';
 import { scene } from '../scene/setup';
 import { state } from '../state';
 import type { Fighter, LaserData } from '../types';
 import { showMessage } from '../ui/hud';
 import { addKillFeedEntry } from '../ui/kill-feed';
-import { createExplosion, destroyedSubMat } from './explosions';
+import { createExplosion } from './explosions';
 import { playerPlane } from './player';
 import { cleanupExcessBullets } from './weapons';
 
-const HIT_DIST_SQ = 12 * 12; // 144 (scaled 1.5×)
-const PLAYER_HIT_DIST_SQ = 6 * 6; // 36 (scaled 1.5×)
+const C = COMBAT_CONSTANTS;
+
 const _hitWorldPos = new THREE.Vector3();
 
 function hitTestFighters(laser: LaserData, fighters: Fighter[], isPlayerLaser: boolean): boolean {
   for (let j = fighters.length - 1; j >= 0; j--) {
     const f = fighters[j];
-    if (laser.mesh.position.distanceToSquared(f.mesh.position) < HIT_DIST_SQ) {
+    if (laser.mesh.position.distanceToSquared(f.mesh.position) < C.fighterHitDistSq) {
       f.health -= laser.damage;
-      createExplosion(laser.mesh.position.clone(), 0.3);
+      createExplosion(laser.mesh.position.clone(), C.hitExplosionSize);
 
       if (f.health <= 0) {
         createExplosion(f.mesh.position.clone(), 3);
@@ -44,12 +46,12 @@ function hitTestFighters(laser: LaserData, fighters: Fighter[], isPlayerLaser: b
         }
 
         if (isPlayerLaser) {
-          state.score += 100;
+          state.score += C.fighterKillScore;
           state.playerHealth = Math.min(
             state.maxHealth,
-            state.playerHealth + state.maxHealth * 0.1,
+            state.playerHealth + state.maxHealth * PLAYER_CONFIG.killHealthBonus,
           );
-          showMessage('+100 | +10% HP', 1.5);
+          showMessage(`+${C.fighterKillScore} | +10% HP`, 1.5);
         }
 
         state.respawnQueue.push({
@@ -71,33 +73,33 @@ function hitTestCapitalShips(laser: LaserData): boolean {
       _hitWorldPos.copy(sub.center).applyMatrix4(cs.mesh.matrixWorld);
       if (laser.mesh.position.distanceToSquared(_hitWorldPos) < sub.radius * sub.radius) {
         sub.health -= laser.damage;
-        createExplosion(laser.mesh.position.clone(), 0.5);
+        createExplosion(laser.mesh.position.clone(), C.hitCapitalExplosionSize);
 
         if (sub.health <= 0) {
-          createExplosion(_hitWorldPos.clone(), 4.5);
-          state.score += 500;
-          showMessage(`${sub.name} УНИЧТОЖЕНА! +500`, 2);
+          createExplosion(_hitWorldPos.clone(), C.subsystemExplosionSize);
+          state.score += C.subsystemKillScore;
+          showMessage(`${sub.name} УНИЧТОЖЕНА! +${C.subsystemKillScore}`, 2);
         }
 
         if (cs.subsystems.every((s) => s.health <= 0)) {
           cs.alive = false;
-          createExplosion(cs.mesh.position.clone(), 12);
-          for (let k = 0; k < 5; k++) {
+          createExplosion(cs.mesh.position.clone(), C.mainExplosionSize);
+          for (let k = 0; k < C.secondaryExplosionCount; k++) {
             setTimeout(() => {
               if (!cs.mesh.parent) return;
               const offset = new THREE.Vector3(
-                (Math.random() - 0.5) * 90,
-                (Math.random() - 0.5) * 30,
-                (Math.random() - 0.5) * 45,
+                (Math.random() - 0.5) * C.secondaryExplosionSpread.x,
+                (Math.random() - 0.5) * C.secondaryExplosionSpread.y,
+                (Math.random() - 0.5) * C.secondaryExplosionSpread.z,
               );
-              createExplosion(cs.mesh.position.clone().add(offset), 6);
-            }, k * 300);
+              createExplosion(cs.mesh.position.clone().add(offset), C.secondaryExplosionSize);
+            }, k * C.secondaryExplosionDelay);
           }
           setTimeout(() => {
             scene.remove(cs.mesh);
-          }, 1800);
-          state.score += 2000;
-          showMessage('КОРАБЛЬ УНИЧТОЖЕН! +2000', 3);
+          }, C.shipRemoveDelay);
+          state.score += C.capitalShipKillScore;
+          showMessage(`КОРАБЛЬ УНИЧТОЖЕН! +${C.capitalShipKillScore}`, 3);
 
           if (state.phase === 1 && state.capitalShips.every((c) => !c.alive)) {
             state.phase = 2;
@@ -157,12 +159,12 @@ export function updateBullets(dt: number): void {
       if (hitAllies && !hit) hit = hitTestFighters(b, state.allies, false);
 
       if (hitPlayer && !hit && state.invulnTimer <= 0) {
-        if (b.mesh.position.distanceToSquared(playerPlane.position) < PLAYER_HIT_DIST_SQ) {
+        if (b.mesh.position.distanceToSquared(playerPlane.position) < C.playerHitDistSq) {
           state.playerHealth -= b.damage;
-          state.damageFlash = 0.3;
+          state.damageFlash = PLAYER_CONFIG.damageFlashDuration;
           state.noDamageTimer = 0;
           state.lastAttacker = b.shooterName || '?';
-          createExplosion(b.mesh.position.clone(), 0.3);
+          createExplosion(b.mesh.position.clone(), C.hitExplosionSize);
           playHitSound();
           hit = true;
         }

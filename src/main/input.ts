@@ -1,6 +1,6 @@
 import { resumeAudio } from '../audio/sound';
 import { exitExplorationMode } from '../campaign/mode-manager';
-import { currentMode } from '../campaign/state';
+import { getCurrentModeName } from '../modes/registry';
 import { handleResize } from '../scene/setup';
 import { state } from '../state';
 import { playerPlane } from '../systems/player';
@@ -8,14 +8,15 @@ import { toggleTargetLock } from '../ui/markers';
 import { pauseGame } from './combat';
 
 function isFlightMode(): boolean {
-  return currentMode === 'combat' || currentMode === 'exploration';
+  const mode = getCurrentModeName();
+  return mode === 'combat' || mode === 'exploration';
 }
 
 export function setupInputListeners(): void {
   window.addEventListener('keydown', (e) => {
     if (!isFlightMode()) return;
     if (e.code === 'Escape' || e.code === 'KeyP') {
-      if (currentMode === 'exploration') {
+      if (getCurrentModeName() === 'exploration') {
         exitExplorationMode();
       } else {
         pauseGame();
@@ -42,7 +43,7 @@ export function setupInputListeners(): void {
   window.addEventListener('mousedown', (e) => {
     if (isFlightMode()) {
       if (e.button === 0) state.keys['MouseLeft'] = true;
-      if (e.button === 1 && (state.running || currentMode === 'exploration')) {
+      if (e.button === 1 && (state.running || getCurrentModeName() === 'exploration')) {
         e.preventDefault();
         toggleTargetLock(playerPlane);
       }

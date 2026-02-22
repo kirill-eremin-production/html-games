@@ -1,21 +1,19 @@
 import * as THREE from 'three';
 import { playLaserSound } from '../audio/sound';
+import { COMBAT_CONSTANTS } from '../config/combat';
 import { combatConfig } from '../constants';
 import { createCapitalShip } from '../scene/models';
 import { scene } from '../scene/setup';
 import { parseHexColor, settings } from '../settings';
 import { state } from '../state';
+import { addDirectionNoise } from '../utils/math';
 import { destroyedSubMat } from './explosions';
 import { playerPlane } from './player';
 import { createLaser } from './weapons';
 
-const SHIP_POSITIONS = [
-  new THREE.Vector3(2000, 100, 0),
-  new THREE.Vector3(-1000, -200, 2200),
-  new THREE.Vector3(-500, 300, -2500),
-  new THREE.Vector3(1500, -300, -1800),
-  new THREE.Vector3(-2000, 200, 1000),
-];
+const C = COMBAT_CONSTANTS;
+
+const SHIP_POSITIONS = C.shipPositions.map(([x, y, z]) => new THREE.Vector3(x, y, z));
 
 export function spawnCapitalShips(): void {
   const count = settings.counts.capitalShips;
@@ -44,16 +42,13 @@ function updateCapitalShipVisuals(cs: (typeof state.capitalShips)[number], dt: n
       });
     }
   }
-  if (cs.subsystems[0].health > 0) cs.mesh.rotation.y += 0.02 * dt;
+  if (cs.subsystems[0].health > 0) cs.mesh.rotation.y += C.shipRotationSpeed * dt;
 }
 
 const _csTargets: THREE.Vector3[] = [];
 const _csDir = new THREE.Vector3();
 const _csOrigin = new THREE.Vector3();
 const _csShotDir = new THREE.Vector3();
-const TURRET_RANGE_SQ = 800 * 800;
-const ALLY_TURRET_RANGE_SQ = 600 * 600;
-const AUDIO_CS_RANGE_SQ = 600 * 600;
 
 export function updateCapitalShips(dt: number): void {
   for (const cs of state.capitalShips) {
@@ -71,10 +66,10 @@ export function updateCapitalShips(dt: number): void {
         Math.random() * (combatConfig.turretFireRateMax - combatConfig.turretFireRateMin);
       _csTargets.length = 0;
       const shipPos = cs.mesh.position;
-      if (shipPos.distanceToSquared(playerPlane.position) < TURRET_RANGE_SQ)
+      if (shipPos.distanceToSquared(playerPlane.position) < C.turretRangeSq)
         _csTargets.push(playerPlane.position);
       for (const a of state.allies) {
-        if (shipPos.distanceToSquared(a.mesh.position) < ALLY_TURRET_RANGE_SQ)
+        if (shipPos.distanceToSquared(a.mesh.position) < C.allyTurretRangeSq)
           _csTargets.push(a.mesh.position);
       }
       if (_csTargets.length === 0) {
@@ -86,29 +81,24 @@ export function updateCapitalShips(dt: number): void {
       _csDir.copy(tgt).sub(shipPos).normalize();
       const bridgeSub = cs.subsystems[1];
       const inaccuracy =
-        bridgeSub.health <= 0 ? combatConfig.turretAccuracy * 2.5 : combatConfig.turretAccuracy;
-      _csDir.x += (Math.random() - 0.5) * inaccuracy;
-      _csDir.y += (Math.random() - 0.5) * inaccuracy;
-      _csDir.z += (Math.random() - 0.5) * inaccuracy;
-      _csDir.normalize();
+        bridgeSub.health <= 0
+          ? combatConfig.turretAccuracy * C.turretInaccuracyMultiplier
+          : combatConfig.turretAccuracy;
+      addDirectionNoise(_csDir, inaccuracy);
 
       const shipName = `Корабль-${cs.mesh.userData.index + 1}`;
-      const shots = 2 + Math.floor(Math.random() * 2);
+      const shots = C.turretBurstMin + Math.floor(Math.random() * C.turretBurstRandomExtra);
       for (let i = 0; i < shots; i++) {
         _csOrigin.set(
-          shipPos.x + (Math.random() - 0.5) * 30,
-          shipPos.y + (Math.random() - 0.5) * 15,
-          shipPos.z + (Math.random() - 0.5) * 30,
+          shipPos.x + (Math.random() - 0.5) * C.turretOriginSpreadXZ,
+          shipPos.y + (Math.random() - 0.5) * C.turretOriginSpreadY,
+          shipPos.z + (Math.random() - 0.5) * C.turretOriginSpreadXZ,
         );
         _csShotDir.copy(_csDir);
-        _csShotDir.x += (Math.random() - 0.5) * 0.05;
-        _csShotDir.y += (Math.random() - 0.5) * 0.05;
-        _csShotDir.z += (Math.random() - 0.5) * 0.05;
-        _csShotDir.normalize();
+        addDirectionNoise(_csShotDir, C.turretShotSpread);
         createLaser(_csOrigin, _csShotDir, 'enemy', shipName);
       }
-      if (shipPos.distanceToSquared(playerPlane.position) < AUDIO_CS_RANGE_SQ)
-        playLaserSound(false);
+      if (shipPos.distanceToSquared(playerPlane.position) < C.audioRangeSq) playLaserSound(false);
     }
     updateCapitalShipVisuals(cs, dt);
   }

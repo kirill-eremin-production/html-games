@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 import { playExplosionSound } from '../audio/sound';
+import { COMBAT_CONSTANTS } from '../config/combat';
 import { scene } from '../scene/setup';
 import { state } from '../state';
+
+const C = COMBAT_CONSTANTS;
 
 export const destroyedSubMat = new THREE.MeshBasicMaterial({
   color: 0x111111,
@@ -11,7 +14,6 @@ export const destroyedSubMat = new THREE.MeshBasicMaterial({
 
 // Shared geometry for all explosion particles (scaled via mesh.scale)
 const explosionGeo = new THREE.SphereGeometry(1, 4, 3);
-const explosionColors = [0xff4400, 0xff6600, 0xff8800, 0xffaa00, 0x00ccff, 0x444444];
 
 // Object pool for explosion particle meshes
 const particlePool: THREE.Mesh[] = [];
@@ -37,25 +39,29 @@ function releaseParticle(mesh: THREE.Mesh): void {
 
 export function createExplosion(position: THREE.Vector3, size = 1): void {
   playExplosionSound(size);
-  const count = 3 + Math.floor(Math.random() * 3);
+  const count = C.explosionParticleMin + Math.floor(Math.random() * C.explosionParticleRandomExtra);
   const particles: { mesh: THREE.Mesh; velocity: THREE.Vector3; life: number }[] = [];
   for (let i = 0; i < count; i++) {
-    const s = (0.5 + Math.random() * 1.5) * size;
+    const s = (C.explosionScaleBase + Math.random() * C.explosionScaleRange) * size;
     const m = acquireParticle();
     (m.material as THREE.MeshBasicMaterial).color.setHex(
-      explosionColors[Math.floor(Math.random() * explosionColors.length)],
+      C.explosionColors[Math.floor(Math.random() * C.explosionColors.length)],
     );
     m.position.copy(position);
     m.scale.setScalar(s);
     scene.add(m);
     const vel = new THREE.Vector3(
-      (Math.random() - 0.5) * 60 * size,
-      (Math.random() - 0.5) * 60 * size,
-      (Math.random() - 0.5) * 60 * size,
+      (Math.random() - 0.5) * C.explosionVelocityFactor * size,
+      (Math.random() - 0.5) * C.explosionVelocityFactor * size,
+      (Math.random() - 0.5) * C.explosionVelocityFactor * size,
     );
-    particles.push({ mesh: m, velocity: vel, life: 0.4 + Math.random() * 0.8 });
+    particles.push({
+      mesh: m,
+      velocity: vel,
+      life: C.explosionLifeBase + Math.random() * C.explosionLifeRange,
+    });
   }
-  state.explosions.push({ particles, timer: 1.2 });
+  state.explosions.push({ particles, timer: C.explosionTimer });
 }
 
 export function updateExplosions(dt: number): void {
@@ -65,10 +71,10 @@ export function updateExplosions(dt: number): void {
     for (let j = exp.particles.length - 1; j >= 0; j--) {
       const p = exp.particles[j];
       p.mesh.position.addScaledVector(p.velocity, dt);
-      p.velocity.multiplyScalar(1 - 2 * dt);
+      p.velocity.multiplyScalar(1 - C.explosionVelocityDecay * dt);
       p.life -= dt;
       (p.mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0, p.life);
-      p.mesh.scale.multiplyScalar(1 - 0.5 * dt);
+      p.mesh.scale.multiplyScalar(1 - C.explosionScaleDecay * dt);
       if (p.life <= 0) {
         releaseParticle(p.mesh);
         exp.particles.splice(j, 1);

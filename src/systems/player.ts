@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { playLaserSound, updateEngineHum } from '../audio/sound';
+import { PLAYER_CONFIG } from '../config/player';
 import { PLAYER_NAME } from '../constants';
 import { GUN_OFFSET_L, GUN_OFFSET_R } from '../scene/models';
 import { camera } from '../scene/setup';
@@ -25,36 +26,33 @@ export function initPlayerModel(): void {
 }
 
 export function updatePlayer(dt: number): void {
-  const pitchSpeed = 2.2,
-    rollSpeed = 3.0,
-    yawSpeed = 1.5;
+  const P = PLAYER_CONFIG;
   const mx = state.mouseX,
     my = state.mouseY;
-  const deadZone = 0.05;
   const applyDZ = (v: number) => {
     const a = Math.abs(v);
-    return a < deadZone ? 0 : Math.sign(v) * ((a - deadZone) / (1 - deadZone));
+    return a < P.mouseDeadZone ? 0 : Math.sign(v) * ((a - P.mouseDeadZone) / (1 - P.mouseDeadZone));
   };
   const mxAdj = applyDZ(mx),
     myAdj = applyDZ(my);
   let pitchInput = -myAdj,
     yawInput = -mxAdj,
-    rollInput = -mxAdj * 0.5;
-  if (state.keys['KeyA']) rollInput -= 2.0;
-  if (state.keys['KeyD']) rollInput += 2.0;
+    rollInput = -mxAdj * P.rollFromMouse;
+  if (state.keys['KeyA']) rollInput -= P.keyRollStrength;
+  if (state.keys['KeyD']) rollInput += P.keyRollStrength;
 
   if (state.speedDecay) {
     // Combat: accelerate/decelerate with decay to baseSpeed
     if (state.keys['KeyW'] || state.keys['ShiftLeft'] || state.keys['ShiftRight']) {
-      state.speed = Math.min(state.speed + 120 * dt, state.boostSpeed);
+      state.speed = Math.min(state.speed + P.accelerateRate * dt, state.boostSpeed);
     } else if (state.keys['KeyS']) {
-      state.speed = Math.max(state.speed - 100 * dt, 20);
+      state.speed = Math.max(state.speed - P.decelerateRate * dt, P.minSpeed);
     } else {
-      state.speed += (state.baseSpeed - state.speed) * 2 * dt;
+      state.speed += (state.baseSpeed - state.speed) * P.speedDecayRate * dt;
     }
   } else {
     // Exploration: speed maintained, no decay
-    const accelRate = state.boostSpeed * 0.15;
+    const accelRate = state.boostSpeed * P.explorationAccelFraction;
     if (state.keys['KeyW'] || state.keys['ShiftLeft'] || state.keys['ShiftRight']) {
       state.speed = Math.min(state.speed + accelRate * dt, state.boostSpeed);
     } else if (state.keys['KeyS']) {
@@ -62,12 +60,12 @@ export function updatePlayer(dt: number): void {
     }
   }
 
-  playerRotation.pitch += pitchInput * pitchSpeed * dt;
-  playerRotation.roll += rollInput * rollSpeed * dt;
-  playerRotation.yaw += yawInput * yawSpeed * dt;
-  playerRotation.pitch *= 1 - 1.5 * dt;
-  playerRotation.roll *= 1 - 2.0 * dt;
-  playerRotation.yaw *= 1 - 1.5 * dt;
+  playerRotation.pitch += pitchInput * P.pitchSpeed * dt;
+  playerRotation.roll += rollInput * P.rollSpeed * dt;
+  playerRotation.yaw += yawInput * P.yawSpeed * dt;
+  playerRotation.pitch *= 1 - P.pitchDamping * dt;
+  playerRotation.roll *= 1 - P.rollDamping * dt;
+  playerRotation.yaw *= 1 - P.yawDamping * dt;
 
   playerPlane.quaternion.multiply(
     _tmpQuat.setFromAxisAngle(_tmpVec.set(0, 0, 1), playerRotation.pitch * dt),
@@ -84,10 +82,10 @@ export function updatePlayer(dt: number): void {
   playerPlane.position.addScaledVector(forward, state.speed * dt);
 
   const speedRatio = state.speed / state.boostSpeed;
-  const exhaustOpacity = 0.4 + speedRatio * 0.6;
-  const exhaustScale = 0.8 + speedRatio * 0.6;
-  const glowOpacity = 0.1 + speedRatio * 0.3;
-  const glowScale = 0.7 + speedRatio * 0.8;
+  const exhaustOpacity = P.exhaustOpacityBase + speedRatio * P.exhaustOpacityRange;
+  const exhaustScale = P.exhaustScaleBase + speedRatio * P.exhaustScaleRange;
+  const glowOpacity = P.glowOpacityBase + speedRatio * P.glowOpacityRange;
+  const glowScale = P.glowScaleBase + speedRatio * P.glowScaleRange;
   for (const name of ['exhaust', 'exhaust_L'] as const) {
     const m = playerPlane.getObjectByName(name) as THREE.Mesh | undefined;
     if (m) {
@@ -106,53 +104,52 @@ export function updatePlayer(dt: number): void {
 
   let camBack: number, camUp: number, lookAhead: number;
   if (state.speedDecay) {
-    // Combat: fixed camera offset
-    camBack = -10.5;
-    camUp = 3.75;
-    lookAhead = 20;
+    camBack = P.combatCamBack;
+    camUp = P.combatCamUp;
+    lookAhead = P.combatLookAhead;
   } else {
-    // Exploration: camera adapts to speed (closer at 0, farther at max)
     const t = state.boostSpeed > 0 ? state.speed / state.boostSpeed : 0;
-    camBack = -(16 + t * 14);
-    camUp = 5 + t * 3;
-    lookAhead = 10 + t * 50;
+    camBack = P.explCamBackBase + t * P.explCamBackRange;
+    camUp = P.explCamUpBase + t * P.explCamUpRange;
+    lookAhead = P.explLookBase + t * P.explLookRange;
   }
   const camOffset = _tmpVec2.set(camBack, camUp, 0).applyQuaternion(playerPlane.quaternion);
   const camTarget = _tmpVec3.copy(playerPlane.position).add(camOffset);
-  const cameraSmoothing = Math.max(8, 5 + state.speed * 0.1);
+  const cameraSmoothing = Math.max(
+    P.cameraSmoothMin,
+    P.cameraSmoothBase + state.speed * P.cameraSmoothSpeedFactor,
+  );
   camera.position.lerp(camTarget, 1 - Math.exp(-cameraSmoothing * dt));
   const lookTarget = _tmpVec2.copy(playerPlane.position).add(forward.multiplyScalar(lookAhead));
   const up = _tmpVec3.set(0, 1, 0).applyQuaternion(playerPlane.quaternion);
-  camera.up.lerp(up, 3 * dt).normalize();
+  camera.up.lerp(up, P.cameraUpLerp * dt).normalize();
   camera.lookAt(lookTarget);
 
   if (state.invulnTimer > 0) {
     state.invulnTimer -= dt;
-    playerPlane.visible = Math.floor(state.invulnTimer * 10) % 2 === 0;
+    playerPlane.visible = Math.floor(state.invulnTimer * P.invulnBlinkRate) % 2 === 0;
   } else {
     playerPlane.visible = true;
   }
 
   state.noDamageTimer += dt;
-  if (state.noDamageTimer >= 5 && state.playerHealth < state.maxHealth) {
+  if (state.noDamageTimer >= P.healthRegenDelay && state.playerHealth < state.maxHealth) {
     state.playerHealth = Math.min(
       state.maxHealth,
-      state.playerHealth + state.maxHealth * 0.02 * dt,
+      state.playerHealth + state.maxHealth * P.healthRegenRate * dt,
     );
   }
 
   state.shootCooldown -= dt;
   if ((state.keys['Space'] || state.keys['MouseLeft']) && state.shootCooldown <= 0) {
-    state.shootCooldown = 0.1;
+    state.shootCooldown = P.shootCooldown;
     _shootAim.set(state.mouseX, -state.mouseY, 0.5).unproject(camera);
     _shootDir.copy(_shootAim).sub(camera.position).normalize();
-    // Right gun muzzle
     _shootOrigin
       .copy(GUN_OFFSET_R)
       .applyQuaternion(playerPlane.quaternion)
       .add(playerPlane.position);
     createLaser(_shootOrigin, _shootDir, 'player', PLAYER_NAME);
-    // Left gun muzzle
     _shootOrigin
       .copy(GUN_OFFSET_L)
       .applyQuaternion(playerPlane.quaternion)
@@ -163,7 +160,8 @@ export function updatePlayer(dt: number): void {
 }
 
 export function playerDeath(): void {
-  createExplosion(playerPlane.position.clone(), 6);
+  const P = PLAYER_CONFIG;
+  createExplosion(playerPlane.position.clone(), P.deathExplosionSize);
   addKillFeedEntry(state.lastAttacker || '?', PLAYER_NAME, 'enemy', 'player');
 
   state.lives--;
@@ -182,9 +180,9 @@ export function playerDeath(): void {
   playerRotation.roll = 0;
   state.playerHealth = state.maxHealth;
   state.speed = state.baseSpeed;
-  state.invulnTimer = 3;
+  state.invulnTimer = P.invulnDuration;
   state.damageFlash = 0;
   state.lastAttacker = '';
-  camera.position.set(-10.5, 3.75, 0);
+  camera.position.set(P.combatCamBack, P.combatCamUp, 0);
   camera.lookAt(playerPlane.position);
 }

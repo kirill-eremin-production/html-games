@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { EXPLORATION_CONFIG } from '../../config/exploration';
 import { getSystemDetail, mulberry32 } from '../data';
 import type { SystemDetail } from '../types';
 import { asteroidMeshes, explorationGroup, explorationRefs, planetMeshes } from './refs';
@@ -23,7 +24,7 @@ export function buildExplorationScene(systemId: string): void {
   explorationGroup.add(ambient);
 
   // Central star — massive
-  const starRadius = detail.starSize * 50000;
+  const starRadius = detail.starSize * EXPLORATION_CONFIG.starRadiusMultiplier;
   const starMesh = new THREE.Mesh(
     new THREE.SphereGeometry(starRadius, 48, 48),
     new THREE.MeshBasicMaterial({ color: detail.starColor }),
@@ -44,12 +45,12 @@ export function buildExplorationScene(systemId: string): void {
     depthWrite: false,
   });
   const glow = new THREE.Sprite(glowMat);
-  glow.scale.setScalar(detail.starSize * 160000);
+  glow.scale.setScalar(detail.starSize * EXPLORATION_CONFIG.starGlowScale);
   explorationGroup.add(glow);
   explorationRefs.starGlow = glow;
 
   // Planets — much larger than the player ship
-  const PLANET_SCALE = 20000;
+  const PLANET_SCALE = EXPLORATION_CONFIG.planetScale;
   for (let i = 0; i < detail.planets.length; i++) {
     const p = detail.planets[i];
     const mat = new THREE.MeshStandardMaterial({ color: p.color, roughness: 0.7 });
@@ -66,8 +67,8 @@ export function buildExplorationScene(systemId: string): void {
 
     // Orbit line
     const orbitGeo = new THREE.RingGeometry(
-      p.orbitalDistance - 2000,
-      p.orbitalDistance + 2000,
+      p.orbitalDistance - EXPLORATION_CONFIG.orbitRingWidth,
+      p.orbitalDistance + EXPLORATION_CONFIG.orbitRingWidth,
       128,
     );
     const orbitMat = new THREE.MeshBasicMaterial({
@@ -83,11 +84,7 @@ export function buildExplorationScene(systemId: string): void {
     // Rings for gas giants
     if (p.ringColor !== null) {
       const planetVisualSize = p.size * PLANET_SCALE;
-      const ringGeo = new THREE.RingGeometry(
-        planetVisualSize * 1.4,
-        planetVisualSize * 2.0,
-        64,
-      );
+      const ringGeo = new THREE.RingGeometry(planetVisualSize * 1.4, planetVisualSize * 2.0, 64);
       const ring = new THREE.Mesh(
         ringGeo,
         new THREE.MeshBasicMaterial({
@@ -105,7 +102,7 @@ export function buildExplorationScene(systemId: string): void {
   // Asteroid belt
   if (detail.asteroidBeltDistance !== null) {
     const beltDist = detail.asteroidBeltDistance;
-    const asteroidCount = 400;
+    const asteroidCount = EXPLORATION_CONFIG.asteroidCount;
     const rng = mulberry32(GALAXY_SEED * 2000 + idx);
     for (let i = 0; i < asteroidCount; i++) {
       const angle = (i / asteroidCount) * Math.PI * 2 + (rng() - 0.5) * 0.3;
