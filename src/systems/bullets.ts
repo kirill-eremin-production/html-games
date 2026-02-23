@@ -1,11 +1,12 @@
-import * as THREE from 'three';
-import { playHitSound } from '../audio/sound';
+import { playHitSound } from '../audio';
+
 import { COMBAT_CONSTANTS } from '../config/combat';
 import { PLAYER_CONFIG } from '../config/player';
-import { emit } from '../events';
-import { scene } from '../scene/setup';
-import { state } from '../state';
-import type { Fighter, LaserData } from '../types';
+import { Vector3 } from '@/shared/core';
+import { emit } from '@/shared/events';
+import { state } from '@/shared/state';
+import type { Fighter, LaserData } from '@/shared/types';
+
 import { destroyFighter, destroySubsystem } from './damage';
 import { createExplosion } from './explosions';
 import { playerPlane } from './player';
@@ -14,7 +15,7 @@ import { cleanupExcessBullets } from './weapons';
 
 const C = COMBAT_CONSTANTS;
 
-const _hitWorldPos = new THREE.Vector3();
+const _hitWorldPos = new Vector3();
 
 function hitTestFighters(laser: LaserData, fighters: Fighter[], isPlayerLaser: boolean): boolean {
   for (let j = fighters.length - 1; j >= 0; j--) {
@@ -41,7 +42,12 @@ function hitTestCapitalShips(laser: LaserData): boolean {
     if (!cs.alive) continue;
     for (const sub of cs.subsystems) {
       if (sub.health <= 0) continue;
-      _hitWorldPos.copy(sub.center).applyMatrix4(cs.mesh.matrixWorld);
+      try {
+        _hitWorldPos.copyFrom(sub.center).applyMatrix4(cs.mesh.matrixWorld);
+      } catch (err) {
+        console.error('[bullets] matrixWorld error on capital ship hit-test:', err);
+        continue;
+      }
       if (laser.mesh.position.distanceToSquared(_hitWorldPos) < sub.radius * sub.radius) {
         sub.health -= laser.damage;
         createExplosion(laser.mesh.position.clone(), C.hitCapitalExplosionSize);
@@ -87,7 +93,7 @@ export function updateBullets(dt: number): void {
       b.mesh.position.addScaledVector(b.velocity, dt);
       b.life -= dt;
       if (b.life <= 0) {
-        scene.remove(b.mesh);
+        b.mesh.dispose();
         arr.splice(i, 1);
         continue;
       }
@@ -111,7 +117,7 @@ export function updateBullets(dt: number): void {
 
       if ((isPlayer || b.team === 'ally') && !hit) hit = hitTestCapitalShips(b);
       if (hit) {
-        scene.remove(b.mesh);
+        b.mesh.dispose();
         arr.splice(i, 1);
       }
     }
@@ -123,9 +129,9 @@ export function updateBullets(dt: number): void {
 // ── GameSystem adapter ──────────────────────────────────────────────────────
 
 function clearAllBullets(): void {
-  for (const b of state.bullets) scene.remove(b.mesh);
-  for (const b of state.allyBullets) scene.remove(b.mesh);
-  for (const b of state.enemyBullets) scene.remove(b.mesh);
+  for (const b of state.bullets) b.mesh.dispose();
+  for (const b of state.allyBullets) b.mesh.dispose();
+  for (const b of state.enemyBullets) b.mesh.dispose();
   state.bullets = [];
   state.allyBullets = [];
   state.enemyBullets = [];

@@ -1,10 +1,9 @@
-import * as THREE from 'three';
-import { CAPITAL_CLOSE_RANGE_SQ, CURSOR_PROXIMITY_FACTOR, LOCK_PICK_RADIUS } from '../constants';
-import { camera } from '../scene/setup';
-import { state } from '../state';
-import type { LockedTarget } from '../types';
-import { DomPool } from '../utils/dom-pool';
-import { clampToScreenEdge, worldToScreen } from '../utils/screen';
+import { CAPITAL_CLOSE_RANGE_SQ, CURSOR_PROXIMITY_FACTOR, LOCK_PICK_RADIUS } from '@/shared/constants';
+import { TransformNode, Vector3, camera } from '@/shared/core';
+import { state } from '@/shared/state';
+import type { LockedTarget } from '@/shared/types';
+import { DomPool } from '../shared/utils/dom-pool';
+import { clampToScreenEdge, worldToScreen } from '../shared/utils/screen';
 
 const markersContainer = document.getElementById('target-markers')!;
 const pool = new DomPool(markersContainer, () => {
@@ -15,7 +14,7 @@ const pool = new DomPool(markersContainer, () => {
   return el;
 });
 
-const _mrkPos = new THREE.Vector3();
+const _mrkPos = new Vector3();
 const ENEMY_RANGE_SQ = 800 * 800;
 const SHIP_RANGE_SQ = 1500 * 1500;
 
@@ -25,7 +24,7 @@ function renderCapitalShipMarkers(
   usedCount: number,
   w: number,
   h: number,
-  playerPlane: THREE.Group,
+  playerPlane: TransformNode,
 ): number {
   for (const cs of state.capitalShips) {
     if (!cs.alive) continue;
@@ -49,7 +48,7 @@ function renderCapitalShipMarkers(
       // Close: individual subsystem markers
       for (const sub of cs.subsystems) {
         if (sub.health <= 0) continue;
-        _mrkPos.copy(sub.center).applyMatrix4(cs.mesh.matrixWorld);
+        _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.matrixWorld);
         const d = playerPlane.position.distanceTo(_mrkPos);
         const scr = worldToScreen(_mrkPos, camera, w, h);
         if (scr.z >= 1 || scr.x < -20 || scr.x > w + 20 || scr.y < -20 || scr.y > h + 20) continue;
@@ -74,17 +73,17 @@ function renderLockedTarget(
   usedCount: number,
   w: number,
   h: number,
-  playerPlane: THREE.Group,
+  playerPlane: TransformNode,
 ): number {
   let dist3d: number;
   let name: string;
 
   if (lt.kind === 'fighter') {
     dist3d = playerPlane.position.distanceTo(lt.fighter.mesh.position);
-    _mrkPos.copy(lt.fighter.mesh.position);
+    _mrkPos.copyFrom(lt.fighter.mesh.position);
     name = lt.fighter.name;
   } else {
-    _mrkPos.copy(lt.subsystem.center).applyMatrix4(lt.ship.mesh.matrixWorld);
+    _mrkPos.copyFrom(lt.subsystem.center).applyMatrix4(lt.ship.mesh.matrixWorld);
     dist3d = playerPlane.position.distanceTo(_mrkPos);
     name = lt.subsystem.name;
   }
@@ -113,7 +112,7 @@ function renderLockedTarget(
 
 // ── Main update ────────────────────────────────────────────────────────────
 
-export function updateTargetMarkers(playerPlane: THREE.Group): void {
+export function updateTargetMarkers(playerPlane: TransformNode): void {
   const w = window.innerWidth;
   const h = window.innerHeight;
   const cursorScreenX = (state.mouseX * 0.5 + 0.5) * w;
@@ -177,7 +176,7 @@ export function updateTargetMarkers(playerPlane: THREE.Group): void {
 
 // ── Target lock toggle ─────────────────────────────────────────────────────
 
-export function toggleTargetLock(playerPlane: THREE.Group): void {
+export function toggleTargetLock(playerPlane: TransformNode): void {
   if (state.lockedTarget) {
     state.lockedTarget = null;
     return;
@@ -210,7 +209,7 @@ export function toggleTargetLock(playerPlane: THREE.Group): void {
     if (playerPlane.position.distanceToSquared(cs.mesh.position) > SHIP_RANGE_SQ) continue;
     for (const sub of cs.subsystems) {
       if (sub.health <= 0) continue;
-      _mrkPos.copy(sub.center).applyMatrix4(cs.mesh.matrixWorld);
+      _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.matrixWorld);
       const scr = worldToScreen(_mrkPos, camera, w, h);
       if (scr.z >= 1) continue;
       const dSq = (scr.x - cursorScreenX) ** 2 + (scr.y - cursorScreenY) ** 2;
@@ -235,7 +234,7 @@ export function toggleTargetLock(playerPlane: THREE.Group): void {
       if (!cs.alive) continue;
       for (const sub of cs.subsystems) {
         if (sub.health <= 0) continue;
-        _mrkPos.copy(sub.center).applyMatrix4(cs.mesh.matrixWorld);
+        _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.matrixWorld);
         const dSq = playerPlane.position.distanceToSquared(_mrkPos);
         if (dSq < bestDist3dSq) {
           bestDist3dSq = dSq;

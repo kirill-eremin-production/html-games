@@ -13,8 +13,16 @@ export const GALAXY_TEMPLATES = {
     );
   },
 
-  hud(money: number, fuel: number, maxFuel: number, contractTarget?: string): string {
-    let html = `<span class="gal-money">${money}₵</span> <span class="gal-fuel">⛽ ${fuel}/${maxFuel}</span>`;
+  hud(
+    money: number,
+    fuel: number,
+    maxFuel: number,
+    engineRange: number,
+    contractTarget?: string,
+  ): string {
+    let html = `<span class="gal-money">${money}₵</span> `;
+    html += `<span class="gal-fuel">⛽ ${fuel}/${maxFuel}</span> `;
+    html += `<span class="gal-range">⚡ ${engineRange}</span>`;
     if (contractTarget) {
       html += `<br><span class="gal-contract">Контракт → ${contractTarget}</span>`;
     }
@@ -24,7 +32,8 @@ export const GALAXY_TEMPLATES = {
   infoPanel(data: {
     name: string;
     isCurrent: boolean;
-    isConnected: boolean;
+    isInRange: boolean;
+    distance: number;
     fuelCost: number;
     canTravel: boolean;
     isContractTarget: boolean;
@@ -37,7 +46,8 @@ export const GALAXY_TEMPLATES = {
         html += '<button class="gal-btn" id="gal-station-btn">НА СТАНЦИЮ</button>';
       }
       html += '<button class="gal-btn gal-btn-explore" id="gal-explore-btn">ИССЛЕДОВАТЬ</button>';
-    } else if (data.isConnected) {
+    } else if (data.isInRange) {
+      html += `<div class="gal-info-line">Расстояние: ${data.distance.toFixed(1)}</div>`;
       html += `<div class="gal-info-line">Топливо: ${data.fuelCost} ед.</div>`;
       if (data.isContractTarget) {
         html += '<div class="gal-info-line gal-contract-marker">Цель контракта!</div>';
@@ -48,7 +58,8 @@ export const GALAXY_TEMPLATES = {
         html += '<div class="gal-info-line gal-no-fuel">Недостаточно топлива</div>';
       }
     } else {
-      html += '<div class="gal-info-line gal-no-route">Нет прямого маршрута</div>';
+      html += `<div class="gal-info-line">Расстояние: ${data.distance.toFixed(1)}</div>`;
+      html += '<div class="gal-info-line gal-no-route">Вне зоны досягаемости</div>';
     }
     return html;
   },

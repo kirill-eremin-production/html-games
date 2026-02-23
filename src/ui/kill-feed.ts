@@ -1,6 +1,6 @@
-import { KILL_FEED_DURATION, KILL_FEED_MAX } from '../constants';
-import { state } from '../state';
-import type { KillFeedEntry } from '../types';
+import { KILL_FEED_DURATION, KILL_FEED_MAX } from '@/shared/constants';
+import { state } from '@/shared/state';
+import type { KillFeedEntry } from '@/shared/types';
 
 const killFeedEl = document.getElementById('kill-feed')!;
 

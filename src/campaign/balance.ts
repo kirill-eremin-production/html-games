@@ -9,6 +9,11 @@ export const FUEL_PRICE = 50;
 export const DEFEAT_REWARD_FRACTION = 0.3;
 export const QUIT_PENALTY = 1000;
 
+// ── Engine range ────────────────────────────────────────────────────────────
+export const STARTING_ENGINE_RANGE = 15;
+export const FUEL_DISTANCE_RATIO = 5;
+export const NEARBY_RADIUS_MULTIPLIER = 3;
+
 // ── Difficulty presets ───────────────────────────────────────────────────────
 
 export const DIFFICULTY_CONFIGS: Record<'easy' | 'medium' | 'hard', CombatConfig> = {

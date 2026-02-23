@@ -1,8 +1,7 @@
-import * as THREE from 'three';
-import { camera } from '../scene/setup';
-import { state } from '../state';
-import { DomPool } from '../utils/dom-pool';
-import { clampToScreenEdge, formatDistance, worldToScreen } from '../utils/screen';
+import { TransformNode, camera } from '@/shared/core';
+import { state } from '@/shared/state';
+import { DomPool } from '../shared/utils/dom-pool';
+import { clampToScreenEdge, formatDistance, worldToScreen } from '../shared/utils/screen';
 
 const indicatorsContainer = document.getElementById('enemy-indicators')!;
 const pool = new DomPool(indicatorsContainer, () => {
@@ -12,7 +11,7 @@ const pool = new DomPool(indicatorsContainer, () => {
   return el;
 });
 
-export function updateEnemyIndicators(playerPlane: THREE.Group): void {
+export function updateEnemyIndicators(playerPlane: TransformNode): void {
   const margin = 40;
   const w = window.innerWidth;
   const h = window.innerHeight;

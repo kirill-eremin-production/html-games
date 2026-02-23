@@ -1,64 +1,75 @@
-import * as THREE from 'three';
-import { camera } from '../../scene/setup';
+import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
+import { Vector3 as BVector3 } from '@babylonjs/core/Maths/math.vector';
+
+import type { Vector3 } from '@/shared/core';
+import { canvas, camera as combatCamera, scene } from '../../scene/setup';
 import { getSystem } from '../data';
 import { campaign } from '../state';
 
-// ── Orbit camera state ───────────────────────────────────────────────────────
+// ── Galaxy orbit camera ──────────────────────────────────────────────────────
 
-let orbitTheta = 0;
-let orbitPhi = Math.PI / 4;
-let orbitRadius = 52;
-const orbitTarget = new THREE.Vector3(0, 0, 0);
+export const galaxyCamera = new ArcRotateCamera(
+  'galaxyCamera',
+  0, // alpha (horizontal angle)
+  Math.PI / 4, // beta (vertical angle from Y+)
+  52, // radius
+  BVector3.Zero(),
+  scene,
+);
+galaxyCamera.lowerBetaLimit = 0.2;
+galaxyCamera.upperBetaLimit = Math.PI / 2.2;
+galaxyCamera.lowerRadiusLimit = 10;
+galaxyCamera.upperRadiusLimit = 120;
+galaxyCamera.wheelDeltaPercentage = 0.01;
+galaxyCamera.panningSensibility = 0; // disable panning
+galaxyCamera.detachControl();
 
-// ── Camera update ────────────────────────────────────────────────────────────
-
-export function updateCamera(): void {
-  const x = orbitTarget.x + orbitRadius * Math.sin(orbitPhi) * Math.sin(orbitTheta);
-  const y = orbitTarget.y + orbitRadius * Math.cos(orbitPhi);
-  const z = orbitTarget.z + orbitRadius * Math.sin(orbitPhi) * Math.cos(orbitTheta);
-  camera.position.set(x, y, z);
-  camera.lookAt(orbitTarget);
-}
+// ── Setup ────────────────────────────────────────────────────────────────────
 
 export function setupGalaxyCamera(): void {
-  camera.up.set(0, 1, 0);
   const sys = getSystem(campaign.currentSystemId);
-  orbitTarget.set(...sys.position);
-  orbitTheta = 0;
-  orbitPhi = Math.PI / 4;
-  orbitRadius = 52;
-  updateCamera();
+  galaxyCamera.target.set(...sys.position);
+  galaxyCamera.alpha = 0;
+  galaxyCamera.beta = Math.PI / 4;
+  galaxyCamera.radius = 52;
 }
 
 export function centerOnCurrentSystem(): void {
-  camera.up.set(0, 1, 0);
   const sys = getSystem(campaign.currentSystemId);
-  orbitTarget.set(...sys.position);
+  galaxyCamera.target.set(...sys.position);
 }
 
-// ── Orbit manipulation (used by input & travel) ─────────────────────────────
+// ── Activate / deactivate ────────────────────────────────────────────────────
 
-export function adjustOrbit(dTheta: number, dPhi: number): void {
-  orbitTheta -= dTheta;
-  orbitPhi = Math.max(0.2, Math.min(Math.PI / 2.2, orbitPhi - dPhi));
+export function activateGalaxyCamera(): void {
+  scene.activeCamera = galaxyCamera;
+  galaxyCamera.attachControl(canvas, true);
 }
 
-export function adjustRadius(delta: number): void {
-  orbitRadius = Math.max(10, Math.min(120, orbitRadius + delta));
+export function deactivateGalaxyCamera(): void {
+  galaxyCamera.detachControl();
+  scene.activeCamera = combatCamera;
 }
 
-export function getOrbitRadius(): number {
-  return orbitRadius;
+// ── Input control (for disabling during travel) ──────────────────────────────
+
+export function attachGalaxyInput(): void {
+  galaxyCamera.attachControl(canvas, true);
 }
 
-export function setOrbitRadius(r: number): void {
-  orbitRadius = Math.max(10, Math.min(120, r));
+export function detachGalaxyInput(): void {
+  galaxyCamera.detachControl();
 }
+
+// ── Travel helpers ───────────────────────────────────────────────────────────
+
+/** No-op — ArcRotateCamera updates position automatically. */
+export function updateCamera(): void {}
 
 export function setOrbitTarget(x: number, y: number, z: number): void {
-  orbitTarget.set(x, y, z);
+  galaxyCamera.target.set(x, y, z);
 }
 
-export function lerpOrbitTarget(from: THREE.Vector3, to: THREE.Vector3, t: number): void {
-  orbitTarget.lerpVectors(from, to, t);
+export function lerpOrbitTarget(from: Vector3, to: Vector3, t: number): void {
+  BVector3.LerpToRef(from, to, t, galaxyCamera.target);
 }

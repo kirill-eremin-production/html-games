@@ -1,106 +1,119 @@
-import * as THREE from 'three';
-import { playExplosionSound } from '../audio/sound';
+import { Texture } from '@babylonjs/core/Materials/Textures/texture';
+import { Color4 } from '@babylonjs/core/Maths/math.color';
+import { Vector3 as BVector3 } from '@babylonjs/core/Maths/math.vector';
+import { ParticleSystem } from '@babylonjs/core/Particles/particleSystem';
+
+import { playExplosionSound } from '../audio';
+
 import { COMBAT_CONSTANTS } from '../config/combat';
+import { type Vector3, createUnlitMaterial } from '@/shared/core';
 import { scene } from '../scene/setup';
-import { state } from '../state';
+
 import type { GameSystem } from './types';
 
 const C = COMBAT_CONSTANTS;
 
-export const destroyedSubMat = new THREE.MeshBasicMaterial({
+export const destroyedSubMat = createUnlitMaterial({
   color: 0x111111,
   transparent: true,
   opacity: 0.4,
 });
 
-// Shared geometry for all explosion particles (scaled via mesh.scale)
-const explosionGeo = new THREE.SphereGeometry(1, 4, 3);
+// ── Shared particle texture (radial gradient circle) ─────────────────────
 
-// Object pool for explosion particle meshes
-const particlePool: THREE.Mesh[] = [];
+let _tex: Texture | null = null;
 
-function acquireParticle(): THREE.Mesh {
-  const mesh = particlePool.pop();
-  if (mesh) {
-    mesh.visible = true;
-    (mesh.material as THREE.MeshBasicMaterial).opacity = 1;
-    return mesh;
-  }
-  return new THREE.Mesh(
-    explosionGeo,
-    new THREE.MeshBasicMaterial({ transparent: true, opacity: 1 }),
-  );
+function particleTexture(): Texture {
+  if (_tex) return _tex;
+  const sz = 64;
+  const cvs = document.createElement('canvas');
+  cvs.width = sz;
+  cvs.height = sz;
+  const ctx = cvs.getContext('2d')!;
+  const h = sz / 2;
+  const g = ctx.createRadialGradient(h, h, 0, h, h, h);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.4, 'rgba(255,255,255,0.8)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, sz, sz);
+  _tex = new Texture(cvs.toDataURL(), scene);
+  return _tex;
 }
 
-function releaseParticle(mesh: THREE.Mesh): void {
-  mesh.visible = false;
-  scene.remove(mesh);
-  particlePool.push(mesh);
-}
+// ── Active particle systems (for cleanup on mode exit) ───────────────────
 
-export function createExplosion(position: THREE.Vector3, size = 1): void {
+const active = new Set<ParticleSystem>();
+
+// ── Public API ───────────────────────────────────────────────────────────
+
+export function createExplosion(position: Vector3, size = 1): void {
   playExplosionSound(size);
+
   const count = C.explosionParticleMin + Math.floor(Math.random() * C.explosionParticleRandomExtra);
-  const particles: { mesh: THREE.Mesh; velocity: THREE.Vector3; life: number }[] = [];
-  for (let i = 0; i < count; i++) {
-    const s = (C.explosionScaleBase + Math.random() * C.explosionScaleRange) * size;
-    const m = acquireParticle();
-    (m.material as THREE.MeshBasicMaterial).color.setHex(
-      C.explosionColors[Math.floor(Math.random() * C.explosionColors.length)],
-    );
-    m.position.copy(position);
-    m.scale.setScalar(s);
-    scene.add(m);
-    const vel = new THREE.Vector3(
-      (Math.random() - 0.5) * C.explosionVelocityFactor * size,
-      (Math.random() - 0.5) * C.explosionVelocityFactor * size,
-      (Math.random() - 0.5) * C.explosionVelocityFactor * size,
-    );
-    particles.push({
-      mesh: m,
-      velocity: vel,
-      life: C.explosionLifeBase + Math.random() * C.explosionLifeRange,
-    });
-  }
-  state.explosions.push({ particles, timer: C.explosionTimer });
+
+  const ps = new ParticleSystem('explosion', count + 2, scene);
+  ps.particleTexture = particleTexture();
+
+  // Emit from a point
+  ps.emitter = new BVector3(position.x, position.y, position.z);
+  ps.minEmitBox = BVector3.Zero();
+  ps.maxEmitBox = BVector3.Zero();
+
+  // Real-time seconds (default 0.01 runs ~60× slower)
+  ps.updateSpeed = 1 / 60;
+
+  // Particle size
+  ps.minSize = C.explosionScaleBase * size;
+  ps.maxSize = (C.explosionScaleBase + C.explosionScaleRange) * size;
+
+  // Lifetime (seconds)
+  ps.minLifeTime = C.explosionLifeBase;
+  ps.maxLifeTime = C.explosionLifeBase + C.explosionLifeRange;
+
+  // Velocity: each axis independently random in [-v, v] units/s
+  const v = (C.explosionVelocityFactor / 2) * size;
+  ps.direction1 = new BVector3(-v, -v, -v);
+  ps.direction2 = new BVector3(v, v, v);
+  ps.minEmitPower = 1;
+  ps.maxEmitPower = 1;
+
+  // Colors: warm start → transparent end
+  ps.color1 = new Color4(1, 0.27, 0, 1); // orange-red
+  ps.color2 = new Color4(1, 0.67, 0, 1); // amber
+  ps.colorDead = new Color4(0.27, 0.27, 0.27, 0); // gray, transparent
+
+  // Additive blending for glow
+  ps.blendMode = ParticleSystem.BLENDMODE_ADD;
+
+  // Velocity drag (matches original velocity *= 1 - 2*dt)
+  ps.addDragGradient(0, C.explosionVelocityDecay);
+  ps.addDragGradient(1, C.explosionVelocityDecay);
+
+  // No gravity (space)
+  ps.gravity = BVector3.Zero();
+
+  // Burst emit, then auto-stop & auto-dispose
+  ps.emitRate = 0;
+  ps.manualEmitCount = count;
+  ps.targetStopDuration = 0.1;
+  ps.disposeOnStop = true;
+
+  active.add(ps);
+  ps.onDisposeObservable.addOnce(() => active.delete(ps));
+
+  ps.start();
 }
 
-export function updateExplosions(dt: number): void {
-  for (let i = state.explosions.length - 1; i >= 0; i--) {
-    const exp = state.explosions[i];
-    exp.timer -= dt;
-    for (let j = exp.particles.length - 1; j >= 0; j--) {
-      const p = exp.particles[j];
-      p.mesh.position.addScaledVector(p.velocity, dt);
-      p.velocity.multiplyScalar(1 - C.explosionVelocityDecay * dt);
-      p.life -= dt;
-      (p.mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0, p.life);
-      p.mesh.scale.multiplyScalar(1 - C.explosionScaleDecay * dt);
-      if (p.life <= 0) {
-        releaseParticle(p.mesh);
-        exp.particles.splice(j, 1);
-      }
-    }
-    if (exp.timer <= 0) {
-      for (const p of exp.particles) {
-        releaseParticle(p.mesh);
-      }
-      state.explosions.splice(i, 1);
-    }
-  }
-}
-
-// ── GameSystem adapter ──────────────────────────────────────────────────────
+// ── GameSystem adapter ──────────────────────────────────────────────────
 
 export const explosionSystem: GameSystem = {
   id: 'explosions',
-  update(dt) {
-    updateExplosions(dt);
+  update() {
+    // BJS ParticleSystem updates automatically via scene.render()
   },
   cleanup() {
-    for (const exp of state.explosions) {
-      for (const p of exp.particles) releaseParticle(p.mesh);
-    }
-    state.explosions = [];
+    for (const ps of active) ps.dispose();
+    active.clear();
   },
 };

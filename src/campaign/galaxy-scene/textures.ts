@@ -1,19 +1,20 @@
-import * as THREE from 'three';
+import type { CanvasTexture } from '@/shared/core';
+import { createTextureFromCanvas } from '@/shared/core';
 
-let glowTexture: THREE.CanvasTexture | null = null;
-let dotTexture: THREE.CanvasTexture | null = null;
+let glowTexture: CanvasTexture | null = null;
+let dotTexture: CanvasTexture | null = null;
 
-export function getGlowTexture(): THREE.CanvasTexture {
+export function getGlowTexture(): CanvasTexture {
   if (!glowTexture) glowTexture = createGlowTexture();
   return glowTexture;
 }
 
-export function getDotTexture(): THREE.CanvasTexture {
+export function getDotTexture(): CanvasTexture {
   if (!dotTexture) dotTexture = createDotTexture();
   return dotTexture;
 }
 
-function createGlowTexture(): THREE.CanvasTexture {
+function createGlowTexture(): CanvasTexture {
   const size = 128;
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -27,13 +28,10 @@ function createGlowTexture(): THREE.CanvasTexture {
   grad.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, size, size);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.generateMipmaps = false;
-  tex.minFilter = THREE.LinearFilter;
-  return tex;
+  return createTextureFromCanvas(canvas, false);
 }
 
-function createDotTexture(): THREE.CanvasTexture {
+function createDotTexture(): CanvasTexture {
   const size = 64;
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -47,10 +45,7 @@ function createDotTexture(): THREE.CanvasTexture {
   grad.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, size, size);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.generateMipmaps = false;
-  tex.minFilter = THREE.LinearFilter;
-  return tex;
+  return createTextureFromCanvas(canvas, false);
 }
 
 export const STAR_COLORS = [

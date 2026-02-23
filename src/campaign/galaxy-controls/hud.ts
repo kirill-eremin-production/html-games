@@ -1,7 +1,8 @@
 import { isTouchDevice } from '../../ui/touch-controls';
-import { getFuelCost, getSystem, systemHasStation } from '../data';
+import { getDistanceBetween, getFuelCost, getSystem, systemHasStation } from '../data';
 import { selectSystem, setGalaxyBrightness } from '../galaxy-scene';
 import { campaign, spendFuel } from '../state';
+
 import { GALAXY_TEMPLATES } from './templates';
 
 // ── State ────────────────────────────────────────────────────────────────────
@@ -84,6 +85,7 @@ export function updateGalaxyHud(): void {
     campaign.money,
     campaign.fuel,
     campaign.maxFuel,
+    campaign.engineRange,
     contractTarget,
   );
 }
@@ -97,10 +99,10 @@ export function updateInfoPanel(): void {
 
   const sys = getSystem(selectedSystemId);
   const isCurrent = selectedSystemId === campaign.currentSystemId;
-  const currentSys = getSystem(campaign.currentSystemId);
-  const isConnected = currentSys.connections.includes(selectedSystemId);
-  const fuelCost = isConnected ? getFuelCost(campaign.currentSystemId, selectedSystemId) : 0;
-  const canTravel = isConnected && !isCurrent && campaign.fuel >= fuelCost;
+  const distance = isCurrent ? 0 : getDistanceBetween(campaign.currentSystemId, selectedSystemId);
+  const isInRange = !isCurrent && distance <= campaign.engineRange;
+  const fuelCost = isInRange ? getFuelCost(campaign.currentSystemId, selectedSystemId) : 0;
+  const canTravel = isInRange && campaign.fuel >= fuelCost;
   const isContractTarget = campaign.activeContract?.targetSystemId === selectedSystemId;
 
   const hasStation = systemHasStation(selectedSystemId);
@@ -108,7 +110,8 @@ export function updateInfoPanel(): void {
   infoPanel.innerHTML = GALAXY_TEMPLATES.infoPanel({
     name: sys.name,
     isCurrent,
-    isConnected,
+    isInRange,
+    distance,
     fuelCost,
     canTravel,
     isContractTarget: !!isContractTarget,

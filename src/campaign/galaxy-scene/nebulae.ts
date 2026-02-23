@@ -1,7 +1,15 @@
-import * as THREE from 'three';
+import type { CanvasTexture, TransformNode } from '@/shared/core';
+import {
+  Color,
+  createSprite,
+  createSpriteMaterial,
+  createTextureFromCanvas,
+  createTransformNode,
+} from '@/shared/core';
+
 import { baseNebulaOpacities, nebulaMats } from './refs';
 
-function createNebulaTexture(hue: number, saturation: number): THREE.CanvasTexture {
+function createNebulaTexture(hue: number, saturation: number): CanvasTexture {
   const size = 256;
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -10,7 +18,7 @@ function createNebulaTexture(hue: number, saturation: number): THREE.CanvasTextu
 
   const half = size / 2;
   const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
-  const c = new THREE.Color().setHSL(hue, saturation, 0.5);
+  const c = new Color().setHSL(hue, saturation, 0.5);
   const r = Math.round(c.r * 255);
   const g = Math.round(c.g * 255);
   const b = Math.round(c.b * 255);
@@ -21,14 +29,11 @@ function createNebulaTexture(hue: number, saturation: number): THREE.CanvasTextu
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, size, size);
 
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.generateMipmaps = false;
-  tex.minFilter = THREE.LinearFilter;
-  return tex;
+  return createTextureFromCanvas(canvas, false);
 }
 
-export function createGalaxyNebulae(): THREE.Group {
-  const group = new THREE.Group();
+export function createGalaxyNebulae(): TransformNode {
+  const group = createTransformNode();
 
   // Nebulae along spiral arms
   const nebulaConfigs: {
@@ -61,18 +66,18 @@ export function createGalaxyNebulae(): THREE.Group {
   baseNebulaOpacities.length = 0;
   for (const cfg of nebulaConfigs) {
     const tex = createNebulaTexture(cfg.hue, cfg.sat);
-    const mat = new THREE.SpriteMaterial({
+    const mat = createSpriteMaterial({
       map: tex,
       transparent: true,
       opacity: cfg.opacity,
-      blending: THREE.AdditiveBlending,
+      additive: true,
       depthWrite: false,
     });
     nebulaMats.push(mat);
     baseNebulaOpacities.push(cfg.opacity);
-    const sprite = new THREE.Sprite(mat);
+    const sprite = createSprite(mat);
     sprite.position.set(...cfg.pos);
-    sprite.scale.setScalar(cfg.scale);
+    sprite.scale.setAll(cfg.scale);
     group.add(sprite);
   }
 
@@ -87,16 +92,16 @@ export function createGalaxyNebulae(): THREE.Group {
 
   const dustTex = createNebulaTexture(0, 0);
   for (const cfg of dustConfigs) {
-    const mat = new THREE.SpriteMaterial({
+    const mat = createSpriteMaterial({
       map: dustTex,
       transparent: true,
       opacity: cfg.opacity,
       color: 0x030308,
       depthWrite: false,
     });
-    const sprite = new THREE.Sprite(mat);
+    const sprite = createSprite(mat);
     sprite.position.set(...cfg.pos);
-    sprite.scale.setScalar(cfg.scale);
+    sprite.scale.setAll(cfg.scale);
     group.add(sprite);
   }
 

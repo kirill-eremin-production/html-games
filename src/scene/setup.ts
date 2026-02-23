@@ -1,40 +1,81 @@
-import * as THREE from 'three';
+import { Engine } from '@babylonjs/core/Engines/engine';
+import { Color4 } from '@babylonjs/core/Maths/math.color';
+import { Scene as BScene } from '@babylonjs/core/scene';
 
-export const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0a0f1e);
+import {
+  AmbientLight,
+  DirectionalLight,
+  HemisphereLight,
+  PerspectiveCamera,
+  setFactoryScene,
+} from '@/shared/core';
 
-export const camera = new THREE.PerspectiveCamera(
+// ── Canvas + Engine ──────────────────────────────────────────────────────────
+const canvas = document.createElement('canvas');
+// CSS dimensions (100vw × 100vh) are set in main.css.
+// Do NOT set canvas.width / canvas.height manually — BabylonJS Engine manages
+// the pixel-buffer size via setHardwareScalingLevel + engine.resize().
+document.body.appendChild(canvas);
+
+const engine = new Engine(canvas, false, {
+  powerPreference: 'high-performance',
+  preserveDrawingBuffer: false,
+  alpha: false,
+});
+engine.setHardwareScalingLevel(1 / Math.min(window.devicePixelRatio, 1.5));
+engine.resize(); // set initial buffer size from CSS clientWidth/clientHeight
+
+// ── Scene ────────────────────────────────────────────────────────────────────
+const bScene = new BScene(engine);
+bScene.useRightHandedSystem = true;
+bScene.clearColor = new Color4(0x0a / 255, 0x0f / 255, 0x1e / 255, 1);
+
+// Register the scene for factory functions
+setFactoryScene(bScene);
+
+// ── Camera ───────────────────────────────────────────────────────────────────
+export const camera = new PerspectiveCamera(
   75,
   window.innerWidth / window.innerHeight,
   1,
   5000000,
+  bScene,
 );
+bScene.activeCamera = camera;
 
-export const renderer = new THREE.WebGLRenderer({
-  antialias: false,
-  powerPreference: 'high-performance',
-});
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-renderer.shadowMap.enabled = false;
-document.body.appendChild(renderer.domElement);
+// ── Lights ───────────────────────────────────────────────────────────────────
+new AmbientLight(0x556688, 0.9, bScene);
 
-const ambientLight = new THREE.AmbientLight(0x556688, 0.9);
-scene.add(ambientLight);
-
-const sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
+const sunLight = new DirectionalLight(0xffffff, 2.0, bScene);
 sunLight.position.set(500, 300, -200);
-scene.add(sunLight);
 
-const fillLight = new THREE.DirectionalLight(0x4466cc, 0.6);
+const fillLight = new DirectionalLight(0x4466cc, 0.6, bScene);
 fillLight.position.set(-300, -100, 400);
-scene.add(fillLight);
 
-const hemiLight = new THREE.HemisphereLight(0x334466, 0x111122, 0.4);
-scene.add(hemiLight);
+new HemisphereLight(0x334466, 0x111122, 0.4, bScene);
+
+// ── Exports ──────────────────────────────────────────────────────────────────
+export const scene = bScene;
+export { engine, canvas };
+
+export const renderer = {
+  domElement: canvas,
+  _engine: engine,
+  render(): void {
+    bScene.render();
+  },
+  setSize(_width: number, _height: number): void {
+    // Canvas buffer is managed by BabylonJS engine via hardwareScalingLevel.
+    // Just tell the engine to recalculate from the CSS clientWidth/clientHeight.
+    engine.resize();
+  },
+  setPixelRatio(ratio: number): void {
+    engine.setHardwareScalingLevel(1 / ratio);
+  },
+};
 
 export function handleResize(): void {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  engine.resize();
 }

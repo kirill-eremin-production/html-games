@@ -1,11 +1,13 @@
-import { resumeAudio } from '../audio/sound';
+import { resumeAudio } from '../audio';
+
 import { exitExplorationMode } from '../campaign/mode-manager';
 import { getCurrentModeName } from '../modes/registry';
 import { handleResize } from '../scene/setup';
-import { state } from '../state';
+import { state } from '@/shared/state';
 import { playerPlane } from '../systems/player';
 import { toggleTargetLock } from '../ui/markers';
-import { pauseGame } from './combat';
+
+import { pauseGame } from './pause';
 
 function isFlightMode(): boolean {
   const mode = getCurrentModeName();

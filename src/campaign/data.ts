@@ -1,3 +1,4 @@
+import { FUEL_DISTANCE_RATIO } from './balance';
 import type { Planet, PlanetType, StarSystem, SystemDetail } from './types';
 
 // ── Seeded PRNG (mulberry32) ────────────────────────────────────────────────
@@ -402,14 +403,18 @@ export function getSystem(id: string): StarSystem {
   return systemMap.get(id)!;
 }
 
-export function getFuelCost(fromId: string, toId: string): number {
+export function getDistanceBetween(fromId: string, toId: string): number {
   const a = getSystem(fromId);
   const b = getSystem(toId);
   const dx = a.position[0] - b.position[0];
   const dy = a.position[1] - b.position[1];
   const dz = a.position[2] - b.position[2];
-  const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-  return dist < 25 ? 1 : 2;
+  return Math.sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+export function getFuelCost(fromId: string, toId: string): number {
+  const dist = getDistanceBetween(fromId, toId);
+  return Math.max(1, Math.ceil(dist / FUEL_DISTANCE_RATIO));
 }
 
 // ── Contracts ───────────────────────────────────────────────────────────────
@@ -434,25 +439,21 @@ const HARD_DESCS = [
   'Очистить сектор от всех угроз',
 ];
 
-/** Find systems reachable in `maxHops` jumps via BFS */
-function findNearbySystemIds(startId: string, maxHops: number): string[] {
-  const visited = new Set<string>([startId]);
-  let frontier = [startId];
-  for (let hop = 0; hop < maxHops; hop++) {
-    const next: string[] = [];
-    for (const id of frontier) {
-      const sys = getSystem(id);
-      for (const connId of sys.connections) {
-        if (!visited.has(connId)) {
-          visited.add(connId);
-          next.push(connId);
-        }
-      }
+/** Find systems within a given distance from start */
+function findNearbySystemIds(startId: string, _maxHops: number): string[] {
+  const center = getSystem(startId);
+  const result: string[] = [];
+  const radiusSq = 50 * 50;
+  for (const sys of STAR_SYSTEMS) {
+    if (sys.id === startId) continue;
+    const dx = center.position[0] - sys.position[0];
+    const dy = center.position[1] - sys.position[1];
+    const dz = center.position[2] - sys.position[2];
+    if (dx * dx + dy * dy + dz * dz <= radiusSq) {
+      result.push(sys.id);
     }
-    frontier = next;
   }
-  visited.delete(startId);
-  return Array.from(visited);
+  return result;
 }
 
 // ── System detail (planets, station, asteroids) ─────────────────────────────

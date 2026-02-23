@@ -1,18 +1,25 @@
-import * as THREE from 'three';
+import {
+  type EngineMesh,
+  type TransformNode,
+  createMesh,
+  createPlaneGeometry,
+  createTransformNode,
+  createUnlitMaterial,
+} from '@/shared/core';
 
-const healthBarBgGeo = new THREE.PlaneGeometry(4, 0.4);
-const healthBarBgMat = new THREE.MeshBasicMaterial({ color: 0x220000, side: THREE.DoubleSide });
+const healthBarBgGeo = createPlaneGeometry(4, 0.4);
+const healthBarBgMat = createUnlitMaterial({ color: 0x220000, side: 2 });
 
 export function addHealthBar(
-  group: THREE.Group,
+  group: TransformNode,
   color: number,
-): { bar: THREE.Group; fill: THREE.Mesh } {
-  const barGroup = new THREE.Group();
-  const bg = new THREE.Mesh(healthBarBgGeo, healthBarBgMat);
+): { bar: TransformNode; fill: EngineMesh } {
+  const barGroup = createTransformNode();
+  const bg = createMesh(healthBarBgGeo, healthBarBgMat);
   barGroup.add(bg);
-  const fg = new THREE.Mesh(
-    new THREE.PlaneGeometry(4, 0.4),
-    new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }),
+  const fg = createMesh(
+    createPlaneGeometry(4, 0.4),
+    createUnlitMaterial({ color, side: 2 }),
   );
   fg.name = 'healthFill';
   barGroup.add(fg);

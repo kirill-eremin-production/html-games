@@ -1,12 +1,13 @@
-import * as THREE from 'three';
 import { EXPLORATION_CONFIG } from '../../config/exploration';
-import { state } from '../../state';
+import { Vector3 } from '@/shared/core';
+import { state } from '@/shared/state';
 import { playerPlane } from '../../systems/player';
+
 import { getExplorationDetail } from './index';
 import { explorationRefs, planetMeshes } from './refs';
 
-const _toPlanet = new THREE.Vector3();
-const _forward = new THREE.Vector3();
+const _toPlanet = new Vector3();
+const _forward = new Vector3();
 
 export function updateExplorationScene(dt: number, elapsed: number): void {
   const detail = getExplorationDetail();
@@ -24,12 +25,6 @@ export function updateExplorationScene(dt: number, elapsed: number): void {
 
     // Self-rotation
     mesh.rotation.y += dt * 0.5;
-  }
-
-  // Star glow pulse
-  if (explorationRefs.starGlow) {
-    const mat = explorationRefs.starGlow.material as THREE.SpriteMaterial;
-    mat.opacity = 0.5 + Math.sin(elapsed * 2) * 0.1;
   }
 
   // Find nearest planet to player
@@ -52,7 +47,7 @@ export function updateExplorationScene(dt: number, elapsed: number): void {
     const slowdownDist = planetRadius * EXPLORATION_CONFIG.planetSlowdownMultiplier;
     if (minDist < slowdownDist) {
       // Only slow down when flying towards the planet, not away
-      _toPlanet.copy(planetMeshes[nearestIdx].position).sub(playerPlane.position).normalize();
+      _toPlanet.copyFrom(planetMeshes[nearestIdx].position).subtractInPlace(playerPlane.position).normalize();
       _forward.set(1, 0, 0).applyQuaternion(playerPlane.quaternion);
       if (_forward.dot(_toPlanet) > 0) {
         state.speed = Math.min(state.speed, EXPLORATION_CONFIG.planetSlowdownMaxSpeed);

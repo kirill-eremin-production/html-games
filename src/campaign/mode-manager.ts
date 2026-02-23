@@ -1,5 +1,7 @@
+import { pauseScreen, refs } from '../main/refs';
 import { switchMode } from '../modes/registry';
 import { setStarfieldVisible } from '../scene/starfield';
+
 import { DIFFICULTY_CONFIGS } from './balance';
 import { hideCombatResult, showCombatQuitResult, showCombatResult } from './combat-result';
 import {
@@ -18,18 +20,6 @@ import {
 } from './state';
 import type { CombatConfig } from './types';
 
-// Callbacks set by main/combat.ts
-let startCombatFn: ((config: CombatConfig) => void) | null = null;
-let stopCombatFn: (() => void) | null = null;
-
-export function registerCombatCallbacks(
-  start: (config: CombatConfig) => void,
-  stop: () => void,
-): void {
-  startCombatFn = start;
-  stopCombatFn = stop;
-}
-
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function hideAllGameScreens(): void {
@@ -38,6 +28,13 @@ function hideAllGameScreens(): void {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   }
+}
+
+function startCampaignCombat(config: CombatConfig): void {
+  document.documentElement.requestFullscreen?.();
+  refs.paused = false;
+  pauseScreen.style.display = 'none';
+  switchMode('combat', { combatConfig: config });
 }
 
 // ── Mode transitions ─────────────────────────────────────────────────────────
@@ -102,13 +99,13 @@ function enterCombatFromContract(): void {
   showExploration();
   setStarfieldVisible(true);
 
-  if (startCombatFn) startCombatFn(config);
+  startCampaignCombat(config);
 }
 
 export function onCombatEnd(victory: boolean, score: number): void {
   if (!isCampaignActive) return;
 
-  if (stopCombatFn) stopCombatFn();
+  switchMode('menu');
   // Combat mode's exit() cleans up exploration scene, planet markers, etc.
 
   switchMode('result');
@@ -122,7 +119,7 @@ export function onCombatEnd(victory: boolean, score: number): void {
 export function onCombatQuit(): void {
   if (!isCampaignActive) return;
 
-  if (stopCombatFn) stopCombatFn();
+  switchMode('menu');
   // Combat mode's exit() cleans up exploration scene, planet markers, etc.
 
   switchMode('result');

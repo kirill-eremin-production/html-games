@@ -1,11 +1,14 @@
+import { renderer } from '@/shared/core';
 import { updateCurrentMode } from '../modes/registry';
-import { camera, renderer, scene } from '../scene/setup';
+
 import { clock } from './refs';
 
 const TARGET_FPS = 60;
 const FRAME_INTERVAL = 1000 / TARGET_FPS;
 
 let lastFrameTime = 0;
+
+let _lastRenderError = 0;
 
 export function gameLoop(timestamp = 0): void {
   requestAnimationFrame(gameLoop);
@@ -14,6 +17,21 @@ export function gameLoop(timestamp = 0): void {
   lastFrameTime = timestamp - (elapsed % FRAME_INTERVAL);
   const dt = Math.min(clock.getDelta(), 0.05);
 
-  updateCurrentMode(dt);
-  renderer.render(scene, camera);
+  try {
+    updateCurrentMode(dt);
+  } catch (err) {
+    if (timestamp - _lastRenderError > 2000) {
+      console.error('[game-loop] update error:', err);
+      _lastRenderError = timestamp;
+    }
+  }
+
+  try {
+    renderer.render();
+  } catch (err) {
+    if (timestamp - _lastRenderError > 2000) {
+      console.error('[game-loop] render error:', err);
+      _lastRenderError = timestamp;
+    }
+  }
 }

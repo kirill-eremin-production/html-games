@@ -1,7 +1,8 @@
-import * as THREE from 'three';
-import { worldToScreen } from '../../utils/screen';
+import type { ProjectionCamera } from '@/shared/core';
+import { worldToScreen } from '../../shared/utils/screen';
 import { getSystem, systemHasStation } from '../data';
 import { campaign } from '../state';
+
 import { labelElements, nearbySystemIds, refs, starMeshes } from './refs';
 
 export function rebuildLabels(): void {
@@ -24,7 +25,7 @@ export function rebuildLabels(): void {
   }
 }
 
-export function updateGalaxyLabels(cam: THREE.Camera): void {
+export function updateGalaxyLabels(cam: ProjectionCamera): void {
   if (!refs.labelsContainer) return;
   const w = window.innerWidth;
   const h = window.innerHeight;

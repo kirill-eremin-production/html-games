@@ -1,6 +1,8 @@
-import { resumeAudio } from '../audio/sound';
-import { state } from '../state';
+import { resumeAudio } from '../audio';
+
+import { state } from '@/shared/state';
 import { playerPlane } from '../systems/player';
+
 import { toggleTargetLock } from './markers';
 
 let aimReturnInterval: number | null = null;
