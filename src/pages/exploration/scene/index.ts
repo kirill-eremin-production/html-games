@@ -5,7 +5,6 @@ import {
   createMesh,
   createPBRMaterial,
   createPointLight,
-  createRingGeometry,
   createSphereGeometry,
   createUnlitMaterial,
 } from '@/shared/core';
@@ -77,22 +76,6 @@ export function buildExplorationScene(systemId: string): void {
     explorationGroup.add(mesh);
     planetMeshes.push(mesh);
 
-    // Rings for gas giants
-    if (p.ringColor !== null) {
-      const planetVisualSize = p.size * PLANET_SCALE;
-      const ringGeo = createRingGeometry(planetVisualSize * 1.4, planetVisualSize * 2.0, 64);
-      const ring = createMesh(
-        ringGeo,
-        createUnlitMaterial({
-          color: p.ringColor,
-          transparent: true,
-          opacity: 0.45,
-          side: 2,
-        }),
-      );
-      ring.rotation.x = Math.PI / 3;
-      mesh.add(ring);
-    }
   }
 
   // Asteroid belt
