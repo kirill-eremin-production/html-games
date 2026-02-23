@@ -11,8 +11,6 @@ import {
   getFactoryScene,
   setFactoryScene,
 } from '@/shared/core';
-import { createFighter } from '@/entities/fighter';
-import { createCapitalShip } from '@/entities/capital-ship';
 import {
   type GameSettings,
   parseHexColor,
@@ -20,6 +18,9 @@ import {
   saveSettings,
   settings,
 } from '@/shared/settings';
+
+import { createCapitalShip } from '@/entities/capital-ship';
+import { createFighter } from '@/entities/fighter';
 
 let initialized = false;
 let animationId = 0;

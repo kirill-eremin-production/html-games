@@ -2,27 +2,31 @@ import { SceneOptimizer, SceneOptimizerOptions } from '@babylonjs/core/Misc/scen
 
 import { addToScene } from '@/shared/core';
 import { camera } from '@/shared/engine';
+import { scene } from '@/shared/engine';
+import { preloadModels } from '@/shared/model-loader';
+import { clock, refs } from '@/shared/refs/app-refs';
 import { parseHexColor, settings } from '@/shared/settings';
 
-import { pauseGame, quitBattle, resumeGame } from './pause';
-import { startCampaign, startQuickPlay } from './start';
-import { gameLoop } from './game-loop';
-import { setupInputListeners } from './input-listeners';
-import { clock, refs } from '@/shared/refs/app-refs';
+import { createFighter } from '@/entities/fighter';
+
+import { playerPlane } from '@/features/flight/player-system';
+import { createStarfield } from '@/features/flight/starfield';
+import { initTouchControls } from '@/features/hud/touch-controls';
+import { showSettingsScreen } from '@/features/settings/settings-ui';
+
 import { combatMode } from '@/pages/combat';
 import { explorationMode } from '@/pages/exploration';
 import { galaxyMode } from '@/pages/galaxy';
 import { menuMode } from '@/pages/menu';
-import { registerMode } from './mode-registry';
 import { stationMode } from '@/pages/station';
-import { createFighter } from '@/entities/fighter';
-import { preloadModels } from '@/shared/model-loader';
-import { scene } from '@/shared/engine';
-import { createStarfield } from '@/features/flight/starfield';
+
 import '../styles/main.css';
-import { playerPlane } from '@/features/flight/player-system';
-import { showSettingsScreen } from '@/features/settings/settings-ui';
-import { initTouchControls } from '@/features/hud/touch-controls';
+
+import { gameLoop } from './game-loop';
+import { setupInputListeners } from './input-listeners';
+import { registerMode } from './mode-registry';
+import { pauseGame, quitBattle, resumeGame } from './pause';
+import { startCampaign, startQuickPlay } from './start';
 
 async function init(): Promise<void> {
   // Register game modes

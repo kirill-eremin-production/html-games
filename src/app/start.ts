@@ -1,10 +1,11 @@
-import { initAudio, isAudioInitialized, resumeAudio } from '../shared/audio';
+import { pauseScreen, refs } from '@/shared/refs/app-refs';
 
 import { DEFAULT_COMBAT_CONFIG } from '@/features/campaign/balance';
+
+import { initAudio, isAudioInitialized, resumeAudio } from '../shared/audio';
+
 import { enterCampaignFromMenu } from './mode-manager';
 import { switchMode } from './mode-registry';
-
-import { pauseScreen, refs } from '@/shared/refs/app-refs';
 
 export function startQuickPlay(): void {
   document.documentElement.requestFullscreen?.();

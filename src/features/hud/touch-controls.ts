@@ -1,6 +1,6 @@
 import { resumeAudio } from '@/shared/audio';
-
 import { state } from '@/shared/state';
+
 import { playerPlane } from '@/features/flight/player-system';
 
 import { toggleTargetLock } from './markers';

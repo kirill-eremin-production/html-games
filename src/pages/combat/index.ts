@@ -7,32 +7,35 @@ import {
   stopEngineHum,
   stopProximityHum,
 } from '@/shared/audio';
-import { clearExplorationScene, hideExploration } from '@/pages/exploration/scene/index';
-import { updateExplorationScene } from '@/pages/exploration/scene/update';
-import { isCampaignActive } from '@/features/campaign/state';
 import { applyCombatConfig, combatConfig } from '@/shared/config/combat-session';
-import { refs } from '@/shared/refs/app-refs';
-import { createFighter } from '@/entities/fighter';
 import { camera } from '@/shared/engine';
+import { refs } from '@/shared/refs/app-refs';
 import { parseHexColor, settings } from '@/shared/settings';
 import { resetNameCounters, state } from '@/shared/state';
-import { aiSystem } from '@/features/combat/ai-system';
+import type { CombatModeContext, GameModeHandler, GameSystem } from '@/shared/types';
+import { cleanupSystems, initSystems, updateSystems } from '@/shared/types';
+
 import { capitalShipSystem, spawnCapitalShips } from '@/entities/capital-ship/capital-ship-system';
-import { combatHudSystem, damageEffectSystem, proximityAudioSystem } from './ui/combat-hud';
+import { createFighter } from '@/entities/fighter';
+
+import { isCampaignActive } from '@/features/campaign/state';
+import { aiSystem } from '@/features/combat/ai-system';
 import { damageSystem } from '@/features/combat/damage-system';
+import { spawnAlly, spawnEnemy, spawnerSystem } from '@/features/combat/spawner-system';
 import {
   playerDeath as playerDeathOriginal,
   playerPlane,
   resetPlayerTransform,
 } from '@/features/flight/player-system';
 import { flightCoreSystems, weaponSystems } from '@/features/flight/presets';
-import { spawnAlly, spawnEnemy, spawnerSystem } from '@/features/combat/spawner-system';
-import type { CombatModeContext, GameModeHandler, GameSystem } from '@/shared/types';
-import { cleanupSystems, initSystems, updateSystems } from '@/shared/types';
+import { setStarfieldVisible } from '@/features/flight/starfield';
 import { hideHUD, resetCachedShipHTML, showHUD, showMessage } from '@/features/hud/hud';
 import { clearKillFeed } from '@/features/hud/kill-feed';
 
-import { setStarfieldVisible } from '@/features/flight/starfield';
+import { clearExplorationScene, hideExploration } from '@/pages/exploration/scene/index';
+import { updateExplorationScene } from '@/pages/exploration/scene/update';
+
+import { combatHudSystem, damageEffectSystem, proximityAudioSystem } from './ui/combat-hud';
 
 // ── Combat systems ──────────────────────────────────────────────────────────
 // Add new combat mechanics here — each system handles its own init/update/cleanup.

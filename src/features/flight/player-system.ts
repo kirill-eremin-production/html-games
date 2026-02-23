@@ -1,6 +1,4 @@
 import { playLaserSound, updateEngineHum } from '@/shared/audio';
-
-import { flightModels } from './flight-models';
 import { PLAYER_CONFIG } from '@/shared/config/player';
 import { PLAYER_NAME } from '@/shared/constants';
 import {
@@ -14,14 +12,17 @@ import {
 } from '@/shared/core';
 import { camera } from '@/shared/engine';
 import { actions, aim } from '@/shared/input';
-import { GUN_OFFSET_L, GUN_OFFSET_R } from '@/entities/fighter';
 import { state } from '@/shared/state';
+import type { GameSystem } from '@/shared/types';
+
+import { GUN_OFFSET_L, GUN_OFFSET_R } from '@/entities/fighter';
+
+import { createExplosion } from '@/features/combat/explosions';
+import { createLaser } from '@/features/combat/weapons';
 import { showMessage } from '@/features/hud/hud';
 import { addKillFeedEntry } from '@/features/hud/kill-feed';
 
-import { createExplosion } from '@/features/combat/explosions';
-import type { GameSystem } from '@/shared/types';
-import { createLaser } from '@/features/combat/weapons';
+import { flightModels } from './flight-models';
 
 export const playerPlane = createTransformNode();
 export const playerRotation = { pitch: 0, yaw: 0, roll: 0 };

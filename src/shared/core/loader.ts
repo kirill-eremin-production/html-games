@@ -1,9 +1,9 @@
 import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
-import type { AssetContainer } from '@babylonjs/core/assetContainer';
+import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { InstancedMesh } from '@babylonjs/core/Meshes/instancedMesh';
 import { Mesh as BMesh } from '@babylonjs/core/Meshes/mesh';
-import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { TransformNode as BTransformNode } from '@babylonjs/core/Meshes/transformNode';
+import type { AssetContainer } from '@babylonjs/core/assetContainer';
 import type { Node } from '@babylonjs/core/node';
 import '@babylonjs/loaders/glTF';
 

@@ -1,6 +1,6 @@
-import type { GameMode } from '@/features/campaign/types';
-
 import type { GameModeHandler, ModeContext } from '@/shared/types';
+
+import type { GameMode } from '@/features/campaign/types';
 
 const modes = new Map<string, GameModeHandler>();
 let currentHandler: GameModeHandler | null = null;

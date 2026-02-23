@@ -1,4 +1,21 @@
-import { initAudio, isAudioInitialized, resumeAudio, startEngineHum, stopEngineHum } from '@/shared/audio';
+import {
+  initAudio,
+  isAudioInitialized,
+  resumeAudio,
+  startEngineHum,
+  stopEngineHum,
+} from '@/shared/audio';
+import { EXPLORATION_CONFIG } from '@/shared/config/exploration';
+import { camera } from '@/shared/engine';
+import { state } from '@/shared/state';
+import type { ExplorationModeContext, GameModeHandler, GameSystem } from '@/shared/types';
+import { cleanupSystems, updateSystems } from '@/shared/types';
+
+import { playerPlane, resetPlayerTransform } from '@/features/flight/player-system';
+import { flightCoreSystems } from '@/features/flight/presets';
+import { setStarfieldVisible } from '@/features/flight/starfield';
+import { hideHUD, showHUD } from '@/features/hud/hud';
+
 import { hideExplorationHud, setupExplorationHud } from './scene/hud';
 import {
   buildExplorationScene,
@@ -7,16 +24,7 @@ import {
   hideExploration,
   showExploration,
 } from './scene/index';
-import { EXPLORATION_CONFIG } from '@/shared/config/exploration';
-import { camera } from '@/shared/engine';
-import { setStarfieldVisible } from '@/features/flight/starfield';
-import { state } from '@/shared/state';
 import { explorationHudSystem, explorationSceneSystem } from './ui/exploration-hud';
-import { playerPlane, resetPlayerTransform } from '@/features/flight/player-system';
-import { flightCoreSystems } from '@/features/flight/presets';
-import type { ExplorationModeContext, GameModeHandler, GameSystem } from '@/shared/types';
-import { cleanupSystems, updateSystems } from '@/shared/types';
-import { hideHUD, showHUD } from '@/features/hud/hud';
 import { hidePlanetMarkers } from './ui/planet-markers';
 
 // ── Exploration systems ─────────────────────────────────────────────────────

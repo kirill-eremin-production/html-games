@@ -1,12 +1,13 @@
+import { handleResize } from '@/shared/engine';
+import { state } from '@/shared/state';
+
+import { playerPlane } from '@/features/flight/player-system';
+import { toggleTargetLock } from '@/features/hud/markers';
+
 import { resumeAudio } from '../shared/audio';
 
 import { exitExplorationMode } from './mode-manager';
 import { getCurrentModeName } from './mode-registry';
-import { handleResize } from '@/shared/engine';
-import { state } from '@/shared/state';
-import { playerPlane } from '@/features/flight/player-system';
-import { toggleTargetLock } from '@/features/hud/markers';
-
 import { pauseGame } from './pause';
 
 function isFlightMode(): boolean {

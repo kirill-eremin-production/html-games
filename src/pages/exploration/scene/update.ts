@@ -1,10 +1,11 @@
 import { EXPLORATION_CONFIG } from '@/shared/config/exploration';
 import { Vector3 } from '@/shared/core';
+import { explorationRefs, planetMeshes } from '@/shared/refs/exploration-refs';
 import { state } from '@/shared/state';
+
 import { playerPlane } from '@/features/flight/player-system';
 
 import { getExplorationDetail } from './index';
-import { explorationRefs, planetMeshes } from '@/shared/refs/exploration-refs';
 
 const _toPlanet = new Vector3();
 const _forward = new Vector3();
@@ -47,7 +48,10 @@ export function updateExplorationScene(dt: number, elapsed: number): void {
     const slowdownDist = planetRadius * EXPLORATION_CONFIG.planetSlowdownMultiplier;
     if (minDist < slowdownDist) {
       // Only slow down when flying towards the planet, not away
-      _toPlanet.copyFrom(planetMeshes[nearestIdx].position).subtractInPlace(playerPlane.position).normalize();
+      _toPlanet
+        .copyFrom(planetMeshes[nearestIdx].position)
+        .subtractInPlace(playerPlane.position)
+        .normalize();
       _forward.set(1, 0, 0).applyQuaternion(playerPlane.quaternion);
       if (_forward.dot(_toPlanet) > 0) {
         state.speed = Math.min(state.speed, EXPLORATION_CONFIG.planetSlowdownMaxSpeed);

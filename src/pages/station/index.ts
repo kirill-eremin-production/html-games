@@ -1,6 +1,6 @@
-import { hideStation, showStation } from './station-ui';
-
 import type { GameModeHandler, StationModeContext } from '@/shared/types';
+
+import { hideStation, showStation } from './station-ui';
 
 export const stationMode: GameModeHandler = {
   update() {},

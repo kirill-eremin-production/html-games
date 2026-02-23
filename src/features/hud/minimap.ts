@@ -50,7 +50,11 @@ export function drawMinimap(playerPlane: TransformNode): void {
 }
 
 function drawExplorationMinimap(
-  cx: number, cy: number, px: number, pz: number, playerPlane: TransformNode,
+  cx: number,
+  cy: number,
+  px: number,
+  pz: number,
+  playerPlane: TransformNode,
 ): void {
   const scale = EXPLORATION_SCALE;
 
@@ -81,7 +85,11 @@ function drawExplorationMinimap(
 }
 
 function drawCombatMinimap(
-  cx: number, cy: number, px: number, pz: number, playerPlane: TransformNode,
+  cx: number,
+  cy: number,
+  px: number,
+  pz: number,
+  playerPlane: TransformNode,
 ): void {
   const scale = M.scale;
 

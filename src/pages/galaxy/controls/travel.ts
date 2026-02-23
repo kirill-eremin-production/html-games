@@ -1,7 +1,10 @@
 import { Vector3 as BjsVector3 } from '@babylonjs/core/Maths/math.vector';
 
 import { Vector3 } from '@/shared/core';
+
 import { getSystem } from '@/features/campaign/data';
+import { campaign, regenerateContracts, travelToSystem } from '@/features/campaign/state';
+
 import {
   getStarPosition,
   highlightRoutes,
@@ -9,7 +12,6 @@ import {
   updateContractMarker,
   updatePlayerShipPosition,
 } from '../scene';
-import { campaign, regenerateContracts, travelToSystem } from '@/features/campaign/state';
 
 import { attachGalaxyInput, detachGalaxyInput, lerpOrbitTarget, setOrbitTarget } from './camera';
 import { deselectSystem, updateGalaxyHud } from './hud';

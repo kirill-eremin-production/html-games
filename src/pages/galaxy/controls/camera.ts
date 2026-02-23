@@ -3,6 +3,7 @@ import { Vector3 as BVector3 } from '@babylonjs/core/Maths/math.vector';
 
 import type { Vector3 } from '@/shared/core';
 import { canvas, camera as combatCamera, scene } from '@/shared/engine';
+
 import { getSystem } from '@/features/campaign/data';
 import { campaign } from '@/features/campaign/state';
 

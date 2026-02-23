@@ -1,9 +1,10 @@
-import { onCombatQuit } from './mode-manager';
-import { isCampaignActive } from '@/features/campaign/state';
-import { switchMode } from './mode-registry';
+import { clock, pauseScreen, refs } from '@/shared/refs/app-refs';
 import { state } from '@/shared/state';
 
-import { clock, pauseScreen, refs } from '@/shared/refs/app-refs';
+import { isCampaignActive } from '@/features/campaign/state';
+
+import { onCombatQuit } from './mode-manager';
+import { switchMode } from './mode-registry';
 
 export function pauseGame(): void {
   if (!state.running || refs.paused) return;

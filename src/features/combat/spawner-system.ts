@@ -1,13 +1,14 @@
 import { COMBAT_CONSTANTS } from '@/shared/config/combat';
 import { combatConfig } from '@/shared/config/combat-session';
 import { Vector3, addToScene } from '@/shared/core';
-import { createFighterInstanced } from '@/entities/fighter';
 import { addHealthBar } from '@/shared/model-loader/shared';
 import { parseHexColor, settings } from '@/shared/settings';
 import { nextAllyName, nextEnemyName, state } from '@/shared/state';
+import type { GameSystem } from '@/shared/types';
+
+import { createFighterInstanced } from '@/entities/fighter';
 
 import { playerPlane } from '@/features/flight/player-system';
-import type { GameSystem } from '@/shared/types';
 
 const C = COMBAT_CONSTANTS;
 

@@ -17,8 +17,9 @@ import {
   createPoints,
   createPointsMaterial,
 } from '@/shared/core';
-import { playerPlane } from '@/features/flight/player-system';
 import type { GameSystem } from '@/shared/types';
+
+import { playerPlane } from '@/features/flight/player-system';
 
 /** Ссылка на меш звёздного поля; `null` до вызова {@link createStarfield}. */
 let starfieldPoints: EnginePoints | null = null;

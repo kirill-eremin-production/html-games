@@ -4,11 +4,9 @@ import { Vector3 as BVector3 } from '@babylonjs/core/Maths/math.vector';
 import { ParticleSystem } from '@babylonjs/core/Particles/particleSystem';
 
 import { playExplosionSound } from '@/shared/audio';
-
 import { COMBAT_CONSTANTS } from '@/shared/config/combat';
 import { type Vector3, createUnlitMaterial } from '@/shared/core';
 import { scene } from '@/shared/engine';
-
 import type { GameSystem } from '@/shared/types';
 
 const C = COMBAT_CONSTANTS;

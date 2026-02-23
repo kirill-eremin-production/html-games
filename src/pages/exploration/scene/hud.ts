@@ -1,8 +1,9 @@
+import { explorationRefs } from '@/shared/refs/exploration-refs';
+
 import { getSystem } from '@/features/campaign/data';
 import { campaign } from '@/features/campaign/state';
 
 import { getExplorationDetail } from './index';
-import { explorationRefs } from '@/shared/refs/exploration-refs';
 import { EXPLORATION_TEMPLATES } from './templates';
 
 let hudContainer: HTMLElement | null = null;

@@ -1,5 +1,6 @@
 import type { ProjectionCamera } from '@/shared/core';
 import { worldToScreen } from '@/shared/lib/screen';
+
 import { getSystem, systemHasStation } from '@/features/campaign/data';
 import { campaign } from '@/features/campaign/state';
 

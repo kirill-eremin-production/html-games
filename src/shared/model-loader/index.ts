@@ -10,8 +10,6 @@ import {
   loadModel,
   traverseNode,
 } from '@/shared/core';
-import type { Subsystem } from '@/shared/types';
-
 import {
   canopyMat,
   createAccentMat,
@@ -20,6 +18,7 @@ import {
   createGlowHaloMat,
   noseMat,
 } from '@/shared/materials/fighter-materials';
+import type { Subsystem } from '@/shared/types';
 
 // ─── Templates (populated by preloadModels) ─────────────────────────────────
 
@@ -72,7 +71,9 @@ export function cloneFighterModel(bodyColor: number, exhaustColor: number): Tran
 
 /** Find a descendant whose name ends with the given suffix (e.g. '.engines'). */
 function findDescendantBysuffix(node: TransformNode, suffix: string): TransformNode | undefined {
-  return node.getDescendants(false).find((d) => d.name.endsWith(suffix)) as TransformNode | undefined;
+  return node.getDescendants(false).find((d) => d.name.endsWith(suffix)) as
+    | TransformNode
+    | undefined;
 }
 
 // ─── Capital Ship cloning ───────────────────────────────────────────────────
@@ -124,7 +125,9 @@ export function cloneCapitalShipModel(index: number, hullColor: number): Transfo
   }
 
   const subsystems: Subsystem[] = SUBSYSTEM_NAMES.map((name, i) => {
-    const subGroup = (findDescendantBysuffix(group, `.${name}`) ?? group.getObjectByName(name)) as TransformNode | undefined;
+    const subGroup = (findDescendantBysuffix(group, `.${name}`) ?? group.getObjectByName(name)) as
+      | TransformNode
+      | undefined;
     if (!subGroup) {
       return {
         name: SUBSYSTEM_LABELS[i],

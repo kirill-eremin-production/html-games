@@ -1,9 +1,10 @@
-import { getExplorationDetail } from '../scene/index';
-import { planetMeshes } from '@/shared/refs/exploration-refs';
 import { TransformNode } from '@/shared/core';
 import { camera } from '@/shared/engine';
 import { DomPool } from '@/shared/lib/dom-pool';
 import { clampToScreenEdge, formatDistance, isOnScreen, worldToScreen } from '@/shared/lib/screen';
+import { planetMeshes } from '@/shared/refs/exploration-refs';
+
+import { getExplorationDetail } from '../scene/index';
 
 let container: HTMLElement | null = null;
 

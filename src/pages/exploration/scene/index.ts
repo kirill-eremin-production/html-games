@@ -10,10 +10,15 @@ import {
   createUnlitMaterial,
 } from '@/shared/core';
 import { createIcosahedronGeometry } from '@/shared/core';
+import {
+  asteroidMeshes,
+  explorationGroup,
+  explorationRefs,
+  planetMeshes,
+} from '@/shared/refs/exploration-refs';
+
 import { getSystemDetail, mulberry32 } from '@/features/campaign/data';
 import type { SystemDetail } from '@/features/campaign/types';
-
-import { asteroidMeshes, explorationGroup, explorationRefs, planetMeshes } from '@/shared/refs/exploration-refs';
 
 const GALAXY_SEED = 42;
 

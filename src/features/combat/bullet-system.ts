@@ -1,16 +1,16 @@
 import { playHitSound } from '@/shared/audio';
-
 import { COMBAT_CONSTANTS } from '@/shared/config/combat';
 import { PLAYER_CONFIG } from '@/shared/config/player';
 import { Vector3 } from '@/shared/core';
 import { emit } from '@/shared/events';
 import { state } from '@/shared/state';
 import type { Fighter, LaserData } from '@/shared/types';
+import type { GameSystem } from '@/shared/types';
+
+import { playerPlane } from '@/features/flight/player-system';
 
 import { destroyFighter, destroySubsystem } from './damage-system';
 import { createExplosion } from './explosions';
-import { playerPlane } from '@/features/flight/player-system';
-import type { GameSystem } from '@/shared/types';
 import { cleanupExcessBullets } from './weapons';
 
 const C = COMBAT_CONSTANTS;

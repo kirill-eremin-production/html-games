@@ -2,13 +2,15 @@ import { AI_CONFIG } from '@/shared/config/ai';
 import { PLAYER_NAME } from '@/shared/constants';
 import { Quaternion, TransformNode, Vector3 } from '@/shared/core';
 import { camera } from '@/shared/engine';
-import { cleanupTeamSources, updateExhaustGlow } from '@/entities/fighter';
+import { disposeObject } from '@/shared/lib/dispose';
 import { state } from '@/shared/state';
 import type { Fighter } from '@/shared/types';
-import { disposeObject } from '@/shared/lib/dispose';
+import type { GameSystem } from '@/shared/types';
+
+import { cleanupTeamSources, updateExhaustGlow } from '@/entities/fighter';
 
 import { playerPlane } from '@/features/flight/player-system';
-import type { GameSystem } from '@/shared/types';
+
 import { shootFromFighter } from './weapons';
 
 const A = AI_CONFIG;
@@ -112,7 +114,10 @@ function updateFighterAI(
       break;
     case 'orbit': {
       const correction = ((dist - A.orbitDistance) / A.orbitDistance) * A.orbitCorrection;
-      _aiOrbitDir.copyFrom(fighter.ai.evadeDir).addScaledVector(dirToTarget, correction).normalize();
+      _aiOrbitDir
+        .copyFrom(fighter.ai.evadeDir)
+        .addScaledVector(dirToTarget, correction)
+        .normalize();
       targetDir = _aiOrbitDir;
       break;
     }

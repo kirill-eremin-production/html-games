@@ -4,14 +4,15 @@ import { PLAYER_CONFIG } from '@/shared/config/player';
 import { Vector3, removeFromScene } from '@/shared/core';
 import { emit, off, on } from '@/shared/events';
 import type { EventMap } from '@/shared/events';
+import { disposeObject } from '@/shared/lib/dispose';
 import { state } from '@/shared/state';
 import type { CapitalShip, Fighter, Subsystem } from '@/shared/types';
+import type { GameSystem } from '@/shared/types';
+
 import { showMessage } from '@/features/hud/hud';
 import { addKillFeedEntry } from '@/features/hud/kill-feed';
-import { disposeObject } from '@/shared/lib/dispose';
 
 import { createExplosion } from './explosions';
-import type { GameSystem } from '@/shared/types';
 
 const C = COMBAT_CONSTANTS;
 

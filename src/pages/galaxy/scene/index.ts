@@ -15,12 +15,14 @@ import {
   createUnlitMaterial,
 } from '@/shared/core';
 import { camera } from '@/shared/engine';
-import { createFighter } from '@/entities/fighter';
 import { scene } from '@/shared/engine';
-import { setStarfieldVisible } from '@/features/flight/starfield';
 import { parseHexColor, settings } from '@/shared/settings';
+
+import { createFighter } from '@/entities/fighter';
+
 import { STAR_SYSTEMS } from '@/features/campaign/data';
 import { campaign } from '@/features/campaign/state';
+import { setStarfieldVisible } from '@/features/flight/starfield';
 
 import { createBackgroundStars } from './background';
 import { rebuildLabels, updateGalaxyLabels } from './labels';

@@ -5,6 +5,7 @@ import {
   createRingGeometry,
   createUnlitMaterial,
 } from '@/shared/core';
+
 import { getSystem } from '@/features/campaign/data';
 import { campaign } from '@/features/campaign/state';
 

@@ -1,11 +1,10 @@
 import { inputSystem } from '@/shared/input';
-
-import { starfieldSystem } from '@/features/flight/starfield';
+import type { GameSystem } from '@/shared/types';
 
 import { bulletSystem } from '@/features/combat/bullet-system';
 import { explosionSystem } from '@/features/combat/explosions';
 import { playerSystem } from '@/features/flight/player-system';
-import type { GameSystem } from '@/shared/types';
+import { starfieldSystem } from '@/features/flight/starfield';
 
 // ── Reusable system presets ─────────────────────────────────────────────────
 // Compose modes from these building blocks. Order matters — it defines

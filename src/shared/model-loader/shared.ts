@@ -17,10 +17,7 @@ export function addHealthBar(
   const barGroup = createTransformNode();
   const bg = createMesh(healthBarBgGeo, healthBarBgMat);
   barGroup.add(bg);
-  const fg = createMesh(
-    createPlaneGeometry(4, 0.4),
-    createUnlitMaterial({ color, side: 2 }),
-  );
+  const fg = createMesh(createPlaneGeometry(4, 0.4), createUnlitMaterial({ color, side: 2 }));
   fg.name = 'healthFill';
   barGroup.add(fg);
   barGroup.position.y = 3;

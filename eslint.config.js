@@ -39,8 +39,6 @@ export default [
       // Оставляем только boundaries-правила, остальное контролирует tsc
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
-      'prefer-const': 'off',
     },
   },
 ];

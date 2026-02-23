@@ -1,7 +1,8 @@
 import type { EngineLineMaterial, MeshBasicMaterial } from '@/shared/core';
 
-import { galaxyCamera } from '../controls/camera';
 import { campaign } from '@/features/campaign/state';
+
+import { galaxyCamera } from '../controls/camera';
 
 import {
   FAR_SCALE,

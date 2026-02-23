@@ -1,11 +1,11 @@
-import { updateExplorationHud } from '../scene/hud';
-import { updateExplorationScene } from '../scene/update';
 import { state } from '@/shared/state';
+import type { GameSystem } from '@/shared/types';
 
 import { updateFlightHUD, updateMessageTimer } from '@/features/combat/common-updates';
 import { playerPlane } from '@/features/flight/player-system';
-import type { GameSystem } from '@/shared/types';
 
+import { updateExplorationHud } from '../scene/hud';
+import { updateExplorationScene } from '../scene/update';
 import { updatePlanetMarkers } from '../ui/planet-markers';
 
 export const explorationSceneSystem: GameSystem = {

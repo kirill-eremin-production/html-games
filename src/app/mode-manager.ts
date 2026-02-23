@@ -1,14 +1,6 @@
 import { pauseScreen, refs } from '@/shared/refs/app-refs';
-import { switchMode } from './mode-registry';
-import { setStarfieldVisible } from '@/features/flight/starfield';
 
 import { DIFFICULTY_CONFIGS } from '@/features/campaign/balance';
-import { hideCombatResult, showCombatQuitResult, showCombatResult } from '@/pages/result/combat-result';
-import {
-  buildExplorationScene,
-  ensureExplorationGroup,
-  showExploration,
-} from '@/pages/exploration/scene/index';
 import {
   campaign,
   failContract,
@@ -19,6 +11,20 @@ import {
   startCampaign,
 } from '@/features/campaign/state';
 import type { CombatConfig } from '@/features/campaign/types';
+import { setStarfieldVisible } from '@/features/flight/starfield';
+
+import {
+  buildExplorationScene,
+  ensureExplorationGroup,
+  showExploration,
+} from '@/pages/exploration/scene/index';
+import {
+  hideCombatResult,
+  showCombatQuitResult,
+  showCombatResult,
+} from '@/pages/result/combat-result';
+
+import { switchMode } from './mode-registry';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

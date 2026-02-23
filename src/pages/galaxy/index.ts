@@ -1,3 +1,10 @@
+import { addToScene } from '@/shared/core';
+import { engine } from '@/shared/engine';
+import type { GalaxyModeContext, GameModeHandler } from '@/shared/types';
+
+import { playerPlane } from '@/features/flight/player-system';
+import { hideHUD } from '@/features/hud/hud';
+
 import { disableGalaxyControls, enableGalaxyControls } from './controls';
 import { updateTravelAnimation } from './controls';
 import { galaxyCamera } from './controls/camera';
@@ -12,12 +19,6 @@ import {
   updateGalaxyScene,
   updatePlayerShipPosition,
 } from './scene';
-import { addToScene } from '@/shared/core';
-import { engine } from '@/shared/engine';
-import { playerPlane } from '@/features/flight/player-system';
-import { hideHUD } from '@/features/hud/hud';
-
-import type { GalaxyModeContext, GameModeHandler } from '@/shared/types';
 
 let galaxyBuilt = false;
 

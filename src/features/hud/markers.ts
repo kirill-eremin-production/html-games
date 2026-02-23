@@ -1,10 +1,14 @@
-import { CAPITAL_CLOSE_RANGE_SQ, CURSOR_PROXIMITY_FACTOR, LOCK_PICK_RADIUS } from '@/shared/constants';
+import {
+  CAPITAL_CLOSE_RANGE_SQ,
+  CURSOR_PROXIMITY_FACTOR,
+  LOCK_PICK_RADIUS,
+} from '@/shared/constants';
 import { TransformNode, Vector3 } from '@/shared/core';
 import { camera } from '@/shared/engine';
-import { state } from '@/shared/state';
-import type { LockedTarget } from '@/shared/types';
 import { DomPool } from '@/shared/lib/dom-pool';
 import { clampToScreenEdge, worldToScreen } from '@/shared/lib/screen';
+import { state } from '@/shared/state';
+import type { LockedTarget } from '@/shared/types';
 
 const markersContainer = document.getElementById('target-markers')!;
 const pool = new DomPool(markersContainer, () => {

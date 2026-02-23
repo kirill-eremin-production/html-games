@@ -1,7 +1,13 @@
-import { isTouchDevice } from '@/features/hud/touch-controls';
-import { getDistanceBetween, getFuelCost, getSystem, systemHasStation } from '@/features/campaign/data';
-import { selectSystem, setGalaxyBrightness } from '../scene';
+import {
+  getDistanceBetween,
+  getFuelCost,
+  getSystem,
+  systemHasStation,
+} from '@/features/campaign/data';
 import { campaign, spendFuel } from '@/features/campaign/state';
+import { isTouchDevice } from '@/features/hud/touch-controls';
+
+import { selectSystem, setGalaxyBrightness } from '../scene';
 
 import { GALAXY_TEMPLATES } from './templates';
 

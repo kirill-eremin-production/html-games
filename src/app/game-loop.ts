@@ -1,7 +1,7 @@
 import { renderer } from '@/shared/engine';
-import { updateCurrentMode } from './mode-registry';
-
 import { clock } from '@/shared/refs/app-refs';
+
+import { updateCurrentMode } from './mode-registry';
 
 const TARGET_FPS = 60;
 const FRAME_INTERVAL = 1000 / TARGET_FPS;

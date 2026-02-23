@@ -1,5 +1,4 @@
 import { playLaserSound } from '@/shared/audio';
-
 import { WEAPON_CONFIG } from '@/shared/config/weapons';
 import {
   Quaternion,
@@ -10,10 +9,11 @@ import {
   createCylinderGeometry,
   createMesh,
 } from '@/shared/core';
-import { GUN_OFFSET_L, GUN_OFFSET_R } from '@/entities/fighter';
+import { addDirectionNoise } from '@/shared/lib/math';
 import { state } from '@/shared/state';
 import type { LaserData } from '@/shared/types';
-import { addDirectionNoise } from '@/shared/lib/math';
+
+import { GUN_OFFSET_L, GUN_OFFSET_R } from '@/entities/fighter';
 
 const W = WEAPON_CONFIG;
 

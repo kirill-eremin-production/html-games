@@ -1,5 +1,6 @@
-import { COMBAT_RESULT_TEMPLATES } from './templates';
 import { campaign, completeContract } from '@/features/campaign/state';
+
+import { COMBAT_RESULT_TEMPLATES } from './templates';
 
 let resultScreen: HTMLElement | null = null;
 let onContinue: (() => void) | null = null;

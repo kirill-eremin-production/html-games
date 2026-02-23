@@ -1,15 +1,14 @@
 import { updateProximityHum } from '@/shared/audio';
-
 import { UI_CONFIG } from '@/shared/config/ui';
 import { renderer } from '@/shared/engine';
 import { state } from '@/shared/state';
-import { updateEnemyIndicators } from '@/features/hud/indicators';
-import { updateKillFeed } from '@/features/hud/kill-feed';
-import { updateTargetMarkers } from '@/features/hud/markers';
+import type { GameSystem } from '@/shared/types';
 
 import { updateFlightHUD, updateMessageTimer } from '@/features/combat/common-updates';
 import { playerPlane } from '@/features/flight/player-system';
-import type { GameSystem } from '@/shared/types';
+import { updateEnemyIndicators } from '@/features/hud/indicators';
+import { updateKillFeed } from '@/features/hud/kill-feed';
+import { updateTargetMarkers } from '@/features/hud/markers';
 
 import { updatePlanetMarkers } from '@/pages/exploration/ui/planet-markers';
 
