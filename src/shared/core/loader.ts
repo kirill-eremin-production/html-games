@@ -1,5 +1,7 @@
 import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
 import type { AssetContainer } from '@babylonjs/core/assetContainer';
+import { InstancedMesh } from '@babylonjs/core/Meshes/instancedMesh';
+import { Mesh as BMesh } from '@babylonjs/core/Meshes/mesh';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { TransformNode as BTransformNode } from '@babylonjs/core/Meshes/transformNode';
 import type { Node } from '@babylonjs/core/node';
@@ -73,6 +75,30 @@ export function cloneModel(group: TransformNode): TransformNode {
   for (const child of group.getChildren()) {
     if ('clone' in child) {
       (child as BTransformNode).clone(child.name, clone);
+    }
+  }
+
+  // BJS GLTF loader creates InstancedMesh for mirrored geometry (e.g. wingL from wingR).
+  // InstancedMesh cannot have its own material — convert them to real Mesh clones.
+  for (const desc of clone.getDescendants(false)) {
+    if (desc instanceof InstancedMesh) {
+      const inst = desc;
+      const sourceMesh = inst.sourceMesh;
+      // Clone the source mesh geometry + material into a real Mesh
+      const realMesh = sourceMesh.clone(inst.name, inst.parent);
+      if (realMesh) {
+        realMesh.position.copyFrom(inst.position);
+        if (inst.rotationQuaternion) {
+          realMesh.rotationQuaternion = inst.rotationQuaternion.clone();
+        } else {
+          realMesh.rotation.copyFrom(inst.rotation);
+        }
+        realMesh.scaling.copyFrom(inst.scaling);
+        realMesh.isVisible = true;
+        realMesh.setEnabled(true);
+      }
+      // Remove the instance
+      inst.dispose();
     }
   }
 

@@ -1,4 +1,3 @@
-import { InstancedMesh } from '@babylonjs/core/Meshes/instancedMesh';
 import { Mesh as BMesh } from '@babylonjs/core/Meshes/mesh';
 import type { TransformNode as BTransformNode } from '@babylonjs/core/Meshes/transformNode';
 import type { Node } from '@babylonjs/core/node';
@@ -32,11 +31,11 @@ function ensureTeamSource(bodyColor: number, exhaustColor: number): TeamSource {
   // Collect exhaust/glow materials and hide all source meshes
   const exhaustMats: { alpha: number }[] = [];
   for (const desc of root.getDescendants(false)) {
-    if (desc instanceof BMesh) {
+    if (desc instanceof BMesh && desc.getTotalVertices() > 0) {
       // Hide source mesh — instances will render instead
       desc.isVisible = false;
       const n = desc.name;
-      if ((n === 'exhaust' || n === 'exhaust_L') && desc.material) {
+      if ((n.endsWith('exhaust') || n.endsWith('exhaust_L')) && desc.material) {
         exhaustMats.push(desc.material as { alpha: number });
       }
     }

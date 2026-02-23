@@ -43,6 +43,12 @@ const SUBSYSTEM_LABELS = ['Двигатели', 'Мостик', 'Турели', 
 export function cloneFighterModel(bodyColor: number, exhaustColor: number): TransformNode {
   const group = cloneModel(fighterTemplate!);
 
+  // Ensure clone is enabled (template is disabled)
+  group.setEnabled(true);
+  traverseNode(group, (child) => {
+    if ('setEnabled' in child) (child as TransformNode).setEnabled(true);
+  });
+
   const bodyMat = createBodyMat(bodyColor);
   const accentMat = createAccentMat(bodyColor);
   const glowMat = createExhaustMat(exhaustColor);
@@ -52,22 +58,33 @@ export function cloneFighterModel(bodyColor: number, exhaustColor: number): Tran
     if (!isEngineMesh(child)) return;
     const mesh = child as EngineMesh;
     const n = mesh.name;
-    if (n.startsWith('body_')) mesh.material = bodyMat;
-    else if (n.startsWith('accent_')) mesh.material = accentMat;
-    else if (n === 'nose') mesh.material = noseMat;
-    else if (n === 'canopy') mesh.material = canopyMat;
-    else if (n === 'exhaust' || n === 'exhaust_L') mesh.material = glowMat;
-    else if (n === 'glow' || n === 'glow_L') mesh.material = haloMat;
+    if (n.includes('body_')) mesh.material = bodyMat;
+    else if (n.includes('accent_')) mesh.material = accentMat;
+    else if (n.endsWith('nose') || n.endsWith('.nose')) mesh.material = noseMat;
+    else if (n.endsWith('canopy') || n.endsWith('.canopy')) mesh.material = canopyMat;
+    else if (n.endsWith('exhaust') || n.endsWith('exhaust_L')) mesh.material = glowMat;
+    else if (n.endsWith('glow') || n.endsWith('glow_L')) mesh.material = haloMat;
   });
 
   group.scale.setAll(1.5);
   return group;
 }
 
+/** Find a descendant whose name ends with the given suffix (e.g. '.engines'). */
+function findDescendantBysuffix(node: TransformNode, suffix: string): TransformNode | undefined {
+  return node.getDescendants(false).find((d) => d.name.endsWith(suffix)) as TransformNode | undefined;
+}
+
 // ─── Capital Ship cloning ───────────────────────────────────────────────────
 
 export function cloneCapitalShipModel(index: number, hullColor: number): TransformNode {
   const group = cloneModel(capitalShipTemplate!);
+
+  // Ensure clone is enabled (template is disabled)
+  group.setEnabled(true);
+  traverseNode(group, (child) => {
+    if ('setEnabled' in child) (child as TransformNode).setEnabled(true);
+  });
 
   // Apply hull colors to the hull group
   const hc = new Color(hullColor);
@@ -87,30 +104,57 @@ export function cloneCapitalShipModel(index: number, hullColor: number): Transfo
     emissiveIntensity: 0.2,
   });
 
-  const hullGroup = group.getObjectByName('hull');
+  const hullGroup = findDescendantBysuffix(group, '.hull') ?? group.getObjectByName('hull');
   if (hullGroup) {
     traverseNode(hullGroup, (child) => {
       if (!isEngineMesh(child)) return;
       const mesh = child as EngineMesh;
       const n = mesh.name;
-      if (n.startsWith('hull_')) mesh.material = n === 'hull_bow' ? bowMat : hullMat;
-      else if (n.startsWith('detail_')) mesh.material = detailMat;
+      if (n.includes('hull_')) mesh.material = n.includes('hull_bow') ? bowMat : hullMat;
+      else if (n.includes('detail_')) mesh.material = detailMat;
       // static_* meshes (shields, lights, stripes) keep their loaded materials
     });
   }
 
-  // Build subsystem metadata from named groups
+  // Build subsystem metadata from named groups.
+  // Compute world matrices so bounding vectors are accurate.
+  group.computeWorldMatrix(true);
+  for (const desc of group.getDescendants(false)) {
+    if ('computeWorldMatrix' in desc) (desc as TransformNode).computeWorldMatrix(true);
+  }
+
   const subsystems: Subsystem[] = SUBSYSTEM_NAMES.map((name, i) => {
-    const subGroup = group.getObjectByName(name) as TransformNode;
-    const extras = subGroup?.userData ?? {};
-    const c = extras.center ?? [0, 0, 0];
+    const subGroup = (findDescendantBysuffix(group, `.${name}`) ?? group.getObjectByName(name)) as TransformNode | undefined;
+    if (!subGroup) {
+      return {
+        name: SUBSYSTEM_LABELS[i],
+        mesh: undefined as unknown as TransformNode,
+        health: SUBSYSTEM_HP,
+        maxHealth: SUBSYSTEM_HP,
+        center: new Vector3(),
+        radius: 15,
+      };
+    }
+
+    // Compute center from bounding box of child meshes
+    const bounds = subGroup.getHierarchyBoundingVectors(true);
+    const cx = (bounds.min.x + bounds.max.x) / 2;
+    const cy = (bounds.min.y + bounds.max.y) / 2;
+    const cz = (bounds.min.z + bounds.max.z) / 2;
+
+    // Radius: half the largest bounding box dimension
+    const dx = bounds.max.x - bounds.min.x;
+    const dy = bounds.max.y - bounds.min.y;
+    const dz = bounds.max.z - bounds.min.z;
+    const autoRadius = Math.max(dx, dy, dz) / 2;
+
     return {
       name: SUBSYSTEM_LABELS[i],
       mesh: subGroup,
       health: SUBSYSTEM_HP,
       maxHealth: SUBSYSTEM_HP,
-      center: new Vector3(c[0], c[1], c[2]),
-      radius: (extras.radius ?? 10) * 1.5,
+      center: new Vector3(cx, cy, cz),
+      radius: Math.max(autoRadius, 5) * 1.5,
     };
   });
 
