@@ -7,7 +7,7 @@ import { state } from '@/shared/state';
 import { playerPlane } from '../systems/player';
 import { toggleTargetLock } from '../ui/markers';
 
-import { pauseGame } from './combat';
+import { pauseGame } from './pause';
 
 function isFlightMode(): boolean {
   const mode = getCurrentModeName();

@@ -1,25 +1,26 @@
 import { SceneOptimizer, SceneOptimizerOptions } from '@babylonjs/core/Misc/sceneOptimizer';
 
 import { addToScene, camera } from '@/shared/core';
-import { combatMode } from '../modes/combat';
-import { explorationMode } from '../modes/exploration';
-import { galaxyMode } from '../modes/galaxy';
-import { menuMode } from '../modes/menu';
-import { registerMode } from '../modes/registry';
-import { stationMode } from '../modes/station';
-import { createFighter, preloadModels } from '../scene/models';
-import { scene } from '../scene/setup';
-import { createStarfield } from '../scene/starfield';
 import { parseHexColor, settings } from '@/shared/settings';
-import '../styles/main.css';
-import { playerPlane } from '../systems/player';
-import { showSettingsScreen } from '../ui/settings-ui';
-import { initTouchControls } from '../ui/touch-controls';
 
-import { pauseGame, quitBattle, resumeGame, startCampaign, startQuickPlay } from './combat';
-import { gameLoop } from './game-loop';
-import { setupInputListeners } from './input';
-import { clock, refs } from './refs';
+import { pauseGame, quitBattle, resumeGame } from './main/pause';
+import { startCampaign, startQuickPlay } from './main/start';
+import { gameLoop } from './main/game-loop';
+import { setupInputListeners } from './main/input';
+import { clock, refs } from './main/refs';
+import { combatMode } from './modes/combat';
+import { explorationMode } from './modes/exploration';
+import { galaxyMode } from './modes/galaxy';
+import { menuMode } from './modes/menu';
+import { registerMode } from './modes/registry';
+import { stationMode } from './modes/station';
+import { createFighter, preloadModels } from './scene/models';
+import { scene } from './scene/setup';
+import { createStarfield } from './scene/starfield';
+import './styles/main.css';
+import { playerPlane } from './systems/player';
+import { showSettingsScreen } from './ui/settings-ui';
+import { initTouchControls } from './ui/touch-controls';
 
 async function init(): Promise<void> {
   // Register game modes
