@@ -14,6 +14,7 @@ import {
 } from '@/campaign/galaxy-scene';
 import { addToScene } from '@/shared/core';
 import { playerPlane } from '@/systems/player';
+import { hideHUD } from '@/ui/hud';
 
 import type { GalaxyModeContext, GameModeHandler } from '../types';
 
@@ -41,6 +42,7 @@ export const galaxyMode: GameModeHandler = {
     const onExploration = context?.onExploration;
 
     ensureGalaxyBuilt();
+    hideHUD();
     playerPlane.visible = false;
 
     showGalaxy();
