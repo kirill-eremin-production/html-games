@@ -13,6 +13,7 @@ import {
   updatePlayerShipPosition,
 } from '@/campaign/galaxy-scene';
 import { addToScene } from '@/shared/core';
+import { engine } from '@/scene/setup';
 import { playerPlane } from '@/systems/player';
 import { hideHUD } from '@/ui/hud';
 
@@ -44,6 +45,7 @@ export const galaxyMode: GameModeHandler = {
     ensureGalaxyBuilt();
     hideHUD();
     playerPlane.visible = false;
+    engine.resize();
 
     showGalaxy();
     updatePlayerShipPosition();
