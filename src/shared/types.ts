@@ -1,5 +1,29 @@
-import type { FlightModelId } from '@/config/flight-models';
 import type { EngineMesh, TransformNode, Vector3 } from '@/shared/core';
+
+// ── Types shared across layers ──────────────────────────────────────────────
+
+export interface CombatConfig {
+  enemies: number;
+  allies: number;
+  capitalShips: number;
+  killTarget: number;
+  fighterHP: number;
+  subsystemHP: number;
+  enemySpeedMin: number;
+  enemySpeedMax: number;
+  enemyFireRateMin: number;
+  enemyFireRateMax: number;
+  allySpeedMin: number;
+  allySpeedMax: number;
+  allyFireRateMin: number;
+  allyFireRateMax: number;
+  turretFireRateMin: number;
+  turretFireRateMax: number;
+  turretAccuracy: number;
+  respawnDelay: number;
+}
+
+export type FlightModelId = 'combat' | 'exploration';
 
 /** Состояние ИИ истребителя */
 export interface FighterAI {
@@ -172,4 +196,62 @@ export interface GameState {
   hudFrameCounter: number;
   /** Время в режиме исследования (сек) */
   explorationTime: number;
+}
+
+// ── Game Mode types (from modes/types.ts) ───────────────────────────────────
+
+export interface CombatModeContext {
+  combatConfig?: CombatConfig;
+  onCombatEnd?: (victory: boolean, score: number) => void;
+}
+
+export interface ExplorationModeContext {
+  systemId?: string;
+  exitCallback?: () => void;
+}
+
+export interface GalaxyModeContext {
+  resetCamera?: boolean;
+  onStation?: () => void;
+  onCombat?: () => void;
+  onExploration?: () => void;
+}
+
+export interface StationModeContext {
+  onBack?: () => void;
+}
+
+/** Union of all mode contexts — used by the generic registry */
+export type ModeContext =
+  | CombatModeContext
+  | ExplorationModeContext
+  | GalaxyModeContext
+  | StationModeContext;
+
+/** Generic handler — each mode specifies its own context type */
+export interface GameModeHandler<TCtx = ModeContext> {
+  update(dt: number): void;
+  enter(context?: TCtx): void;
+  exit(): void;
+}
+
+// ── Game System types (from systems/types.ts) ───────────────────────────────
+
+export interface GameSystem {
+  readonly id: string;
+  init?(): void;
+  update(dt: number): void;
+  cleanup?(): void;
+}
+
+export function initSystems(systems: GameSystem[]): void {
+  for (const s of systems) s.init?.();
+}
+
+export function updateSystems(systems: GameSystem[], dt: number): void {
+  for (const s of systems) s.update(dt);
+}
+
+export function cleanupSystems(systems: GameSystem[]): void {
+  for (const s of systems) s.cleanup?.();
 }

@@ -107,7 +107,4 @@ export {
   createPointLight,
 } from './factories';
 
-// ── Scene / renderer (re-exported from scene/setup) ──
-export { camera, handleResize, renderer, scene } from '@/scene/setup';
-
 export type { Scene } from '@babylonjs/core/scene';
