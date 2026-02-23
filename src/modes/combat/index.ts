@@ -33,6 +33,7 @@ import { cleanupSystems, initSystems, updateSystems } from '@/systems/types';
 import { hideHUD, resetCachedShipHTML, showHUD, showMessage } from '@/ui/hud';
 import { clearKillFeed } from '@/ui/kill-feed';
 
+import { setStarfieldVisible } from '@/scene/starfield';
 import type { CombatModeContext, GameModeHandler } from '../types';
 
 // ── Combat systems ──────────────────────────────────────────────────────────
@@ -168,6 +169,7 @@ export const combatMode: GameModeHandler = {
     initSystems(combatSystems);
     resetCombatState();
     spawnCombatEntities();
+    setStarfieldVisible(true);
 
     showHUD();
     startEngineHum();

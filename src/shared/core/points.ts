@@ -39,7 +39,7 @@ export class EnginePoints extends BMesh {
     mat.pointSize = mat.size ?? 1;
     mat.disableLighting = true;
     if (mat.vertexColors) {
-      mat.emissiveColor.set(1, 1, 1);
+      mat.emissive.setHex(0xffffff);
     }
     if (mat._blending === 2) {
       mat.alphaMode = Constants.ALPHA_ADD;
