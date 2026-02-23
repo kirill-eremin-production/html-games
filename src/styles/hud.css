@@ -1,0 +1,115 @@
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 50px;
+}
+#crosshair::before,
+#crosshair::after {
+  content: '';
+  position: absolute;
+  background: rgba(0, 255, 200, 0.7);
+}
+#crosshair::before {
+  width: 2px;
+  height: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+#crosshair::after {
+  width: 100%;
+  height: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+#mouse-cursor {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border: 2px solid rgba(0, 255, 200, 0.8);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition:
+    left 0.03s,
+    top 0.03s;
+  box-shadow: 0 0 6px rgba(0, 255, 200, 0.4);
+}
+
+#stats {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  color: #0ff;
+  font-size: 15px;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+#stats div {
+  margin-bottom: 6px;
+}
+
+#objective {
+  color: #ff0;
+  font-size: 13px;
+  margin-top: 4px;
+  text-shadow: 0 0 8px rgba(255, 255, 0, 0.5);
+}
+
+#health-bar-container {
+  width: 200px;
+  height: 14px;
+  background: rgba(255, 0, 0, 0.3);
+  border: 1px solid rgba(0, 255, 255, 0.5);
+  border-radius: 7px;
+  overflow: hidden;
+}
+#health-bar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #0ff, #088);
+  transition: width 0.3s;
+  border-radius: 7px;
+}
+
+#speed-indicator {
+  position: absolute;
+  bottom: 30px;
+  left: 20px;
+  color: #0ff;
+  font-size: 14px;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+#message {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 21px;
+  font-weight: bold;
+  text-shadow: 0 0 20px rgba(0, 200, 255, 0.8);
+  opacity: 0;
+  transition: opacity 0.5s;
+  text-align: center;
+}
+
+/* ── HUD exploration-mode overrides ──────────────────────────────────────── */
+
+#hud.exploration-mode #stats,
+#hud.exploration-mode #ship-status,
+#hud.exploration-mode #kill-feed {
+  display: none !important;
+}

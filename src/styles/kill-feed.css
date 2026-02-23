@@ -1,0 +1,42 @@
+#kill-feed {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  color: #fff;
+  font-size: 12px;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+  max-width: 260px;
+}
+#kill-feed .kf-entry {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 3px 8px;
+  margin-bottom: 2px;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 1;
+  transition: opacity 0.5s;
+}
+#kill-feed .kf-killer-player {
+  color: #00ddff;
+}
+#kill-feed .kf-killer-ally {
+  color: #44ff88;
+}
+#kill-feed .kf-killer-enemy {
+  color: #ff4444;
+}
+#kill-feed .kf-victim-player {
+  color: #00ddff;
+}
+#kill-feed .kf-victim-ally {
+  color: #44ff88;
+}
+#kill-feed .kf-victim-enemy {
+  color: #ff4444;
+}
+#kill-feed .kf-arrow {
+  color: #888;
+  margin: 0 4px;
+}

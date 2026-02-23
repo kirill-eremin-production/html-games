@@ -1,0 +1,109 @@
+/* ── Exploration Mode ─────────────────────────────────────────────────────── */
+
+#exploration-hud {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 30;
+  display: none;
+  pointer-events: auto;
+}
+.expl-system-name {
+  font-size: 24px;
+  color: #0ff;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+  margin-bottom: 15px;
+}
+.expl-return-btn {
+  padding: 8px 20px;
+  font-size: 14px;
+  width: auto;
+}
+
+#exploration-planet-info {
+  position: fixed;
+  top: 50%;
+  right: 30px;
+  transform: translateY(-50%);
+  z-index: 30;
+  display: none;
+  pointer-events: none;
+}
+.expl-planet-card {
+  background: rgba(0, 10, 20, 0.85);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 20px;
+  min-width: 200px;
+  color: #fff;
+}
+.expl-planet-card h3 {
+  font-size: 18px;
+  color: #0ff;
+  margin: 0 0 10px;
+}
+.expl-planet-type {
+  font-size: 13px;
+  color: #8cf;
+  margin-bottom: 8px;
+}
+.expl-planet-stat {
+  font-size: 13px;
+  color: #aaa;
+  margin-bottom: 4px;
+}
+.expl-hint {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  text-align: center;
+}
+
+.gal-btn-explore {
+  background: linear-gradient(135deg, #0a8, #086);
+}
+.gal-btn-explore:hover {
+  box-shadow: 0 0 20px rgba(0, 200, 120, 0.5);
+}
+
+/* ── Planet Markers ──────────────────────────────────────────────────────── */
+
+#planet-markers {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 20;
+}
+.planet-marker {
+  position: absolute;
+  text-align: center;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.pm-icon {
+  font-size: 16px;
+  color: #44ffaa;
+  text-shadow: 0 0 8px rgba(68, 255, 170, 0.6);
+  line-height: 1;
+}
+.pm-label {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #88ffcc;
+  white-space: nowrap;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+  margin-top: 2px;
+}
+.pm-dist {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  color: #66ddaa;
+  opacity: 0.7;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+}
+.planet-marker.off-screen .pm-icon {
+  font-size: 20px;
+  color: #22cc88;
+}

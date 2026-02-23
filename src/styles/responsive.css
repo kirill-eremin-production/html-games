@@ -1,0 +1,27 @@
+@media (max-width: 768px) {
+  #minimap {
+    width: 100px;
+    height: 100px;
+    bottom: 10px;
+  }
+  .station-body {
+    flex-direction: column;
+  }
+  #galaxy-info-panel {
+    right: 10px;
+    top: auto;
+    bottom: 20px;
+    transform: none;
+    min-width: 160px;
+  }
+  .start-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  #exploration-planet-info {
+    right: 10px;
+    top: auto;
+    bottom: 80px;
+    transform: none;
+  }
+}
