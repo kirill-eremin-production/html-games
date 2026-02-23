@@ -12,6 +12,7 @@ import {
 
 // ── Canvas + Engine ──────────────────────────────────────────────────────────
 const canvas = document.createElement('canvas');
+canvas.id = 'game-canvas';
 // CSS dimensions (100vw × 100vh) are set in main.css.
 // Do NOT set canvas.width / canvas.height manually — BabylonJS Engine manages
 // the pixel-buffer size via setHardwareScalingLevel + engine.resize().

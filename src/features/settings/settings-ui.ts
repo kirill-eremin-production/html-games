@@ -4,12 +4,19 @@ import { Scene as BScene } from '@babylonjs/core/scene';
 
 import {
   AmbientLight,
+  Color,
   DirectionalLight,
+  type EngineMesh,
+  MeshBasicMaterial,
+  MeshPhongMaterial,
   PerspectiveCamera,
   type TransformNode,
-  createTransformNode,
+  cloneModel,
   getFactoryScene,
+  isEngineMesh,
+  loadModel,
   setFactoryScene,
+  traverseNode,
 } from '@/shared/core';
 import {
   type GameSettings,
@@ -18,9 +25,6 @@ import {
   saveSettings,
   settings,
 } from '@/shared/settings';
-
-import { createCapitalShip } from '@/entities/capital-ship';
-import { createFighter } from '@/entities/fighter';
 
 let initialized = false;
 let animationId = 0;
@@ -31,7 +35,8 @@ interface PreviewState {
   engine: Engine;
   scene: BScene;
   camera: PerspectiveCamera;
-  model: TransformNode;
+  model: TransformNode | null;
+  template: TransformNode | null;
 }
 
 let playerPreview: PreviewState;
@@ -46,14 +51,6 @@ const sliderInputs: {
   input: HTMLInputElement;
   label: HTMLSpanElement;
 }[] = [];
-
-function withPreviewScene<T>(previewScene: BScene, fn: () => T): T {
-  const original = getFactoryScene();
-  setFactoryScene(previewScene as any);
-  const result = fn();
-  setFactoryScene(original);
-  return result;
-}
 
 function createPreviewState(width: number, height: number, cameraZ: number): PreviewState {
   const canvas = document.createElement('canvas');
@@ -78,14 +75,96 @@ function createPreviewState(width: number, height: number, cameraZ: number): Pre
   camera.lookAt(0, 0, 0);
   scene.activeCamera = camera;
 
-  const model = withPreviewScene(scene, () => createTransformNode());
-
-  return { canvas, engine, scene, camera, model };
+  return { canvas, engine, scene, camera, model: null, template: null };
 }
 
-function replaceModel(preview: PreviewState, newModel: TransformNode): void {
-  preview.model.dispose();
-  preview.model = newModel;
+/** Load a GLB template into a preview scene. */
+async function loadPreviewTemplate(preview: PreviewState, url: string): Promise<void> {
+  const original = getFactoryScene();
+  setFactoryScene(preview.scene as any);
+  preview.template = await loadModel(url);
+  setFactoryScene(original);
+}
+
+/** Clone from the preview's own template (same WebGL context). */
+function cloneFromPreview(preview: PreviewState): TransformNode {
+  const original = getFactoryScene();
+  setFactoryScene(preview.scene as any);
+  const clone = cloneModel(preview.template!);
+  clone.setEnabled(true);
+  traverseNode(clone, (child) => {
+    if ('setEnabled' in child) (child as TransformNode).setEnabled(true);
+  });
+  setFactoryScene(original);
+  return clone;
+}
+
+function applyFighterMaterials(
+  group: TransformNode,
+  bodyColor: number,
+  exhaustColor: number,
+  scene: BScene,
+): void {
+  const bodyMat = new MeshPhongMaterial(
+    { color: bodyColor, emissive: bodyColor, emissiveIntensity: 0.2 },
+    scene,
+  );
+  const c = new Color(bodyColor);
+  const accentMat = new MeshPhongMaterial(
+    {
+      color: c.clone().multiplyScalar(0.7),
+      emissive: c,
+      emissiveIntensity: 0.1,
+    },
+    scene,
+  );
+  const pNoseMat = new MeshPhongMaterial(
+    { color: 0xaabbcc, emissive: 0x334455, emissiveIntensity: 0.15 },
+    scene,
+  );
+  const pCanopyMat = new MeshPhongMaterial(
+    {
+      color: 0x4488cc,
+      emissive: 0x224466,
+      emissiveIntensity: 0.3,
+      transparent: true,
+      opacity: 0.5,
+      shininess: 100,
+    },
+    scene,
+  );
+  const glowMat = new MeshBasicMaterial(
+    {
+      color: exhaustColor,
+      transparent: true,
+      opacity: 0.9,
+      blending: 2,
+      depthWrite: false,
+    },
+    scene,
+  );
+  const haloMat = new MeshBasicMaterial(
+    {
+      color: exhaustColor,
+      transparent: true,
+      opacity: 0.25,
+      blending: 2,
+      depthWrite: false,
+    },
+    scene,
+  );
+
+  traverseNode(group, (child) => {
+    if (!isEngineMesh(child)) return;
+    const mesh = child as EngineMesh;
+    const n = mesh.name;
+    if (n.includes('body_')) mesh.material = bodyMat;
+    else if (n.includes('accent_')) mesh.material = accentMat;
+    else if (n.endsWith('nose') || n.endsWith('.nose')) mesh.material = pNoseMat;
+    else if (n.endsWith('canopy') || n.endsWith('.canopy')) mesh.material = pCanopyMat;
+    else if (n.endsWith('exhaust') || n.endsWith('exhaust_L')) mesh.material = glowMat;
+    else if (n.endsWith('glow') || n.endsWith('glow_L')) mesh.material = haloMat;
+  });
 }
 
 function rebuildFighterPreview(
@@ -93,20 +172,25 @@ function rebuildFighterPreview(
   bodyKey: keyof GameSettings['colors'],
   exhaustKey: keyof GameSettings['colors'],
 ): void {
-  const model = withPreviewScene(preview.scene, () =>
-    createFighter(
-      parseHexColor(settings.colors[bodyKey]),
-      parseHexColor(settings.colors[exhaustKey]),
-    ),
+  if (!preview.template) return;
+  if (preview.model) preview.model.dispose();
+  const model = cloneFromPreview(preview);
+  applyFighterMaterials(
+    model,
+    parseHexColor(settings.colors[bodyKey]),
+    parseHexColor(settings.colors[exhaustKey]),
+    preview.scene,
   );
-  replaceModel(preview, model);
+  model.scale.setAll(1.5);
+  preview.model = model;
 }
 
 function rebuildCapitalPreview(): void {
-  const model = withPreviewScene(capitalPreview.scene, () =>
-    createCapitalShip(0, parseHexColor(settings.colors.capitalHull)),
-  );
-  replaceModel(capitalPreview, model);
+  if (!capitalPreview.template) return;
+  if (capitalPreview.model) capitalPreview.model.dispose();
+  const model = cloneFromPreview(capitalPreview);
+  model.scale.setAll(1.5);
+  capitalPreview.model = model;
 }
 
 function createColorInput(
@@ -318,19 +402,30 @@ function refreshAllPreviews(): void {
   rebuildCapitalPreview();
 }
 
+/** Load templates into each preview scene (once). */
+async function loadPreviewTemplates(): Promise<void> {
+  await Promise.all([
+    loadPreviewTemplate(playerPreview, './models/fighter.glb'),
+    loadPreviewTemplate(allyPreview, './models/fighter.glb'),
+    loadPreviewTemplate(enemyPreview, './models/fighter.glb'),
+    loadPreviewTemplate(capitalPreview, './models/capital-ship.glb'),
+  ]);
+}
+
 function animate(): void {
   animationId = requestAnimationFrame(animate);
   const t = Date.now() * 0.001;
   for (const p of [playerPreview, allyPreview, enemyPreview, capitalPreview]) {
-    p.model.rotation.y = t * 0.5;
+    if (p.model) p.model.rotation.y = t * 0.5;
     p.scene.render();
   }
 }
 
-export function showSettingsScreen(): void {
+export async function showSettingsScreen(): Promise<void> {
   if (!initialized) {
     buildDOM();
     initialized = true;
+    await loadPreviewTemplates();
   }
   refreshAllInputs();
   refreshAllPreviews();

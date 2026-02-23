@@ -8,7 +8,7 @@ body {
   background: #000;
   font-family: 'Segoe UI', Arial, sans-serif;
 }
-canvas {
+#game-canvas {
   display: block;
   width: 100vw;
   height: 100vh;
