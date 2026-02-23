@@ -1,4 +1,5 @@
 import type { MeshBasicMaterial } from '@/shared/core';
+
 import { galaxyCamera } from '../galaxy-controls/camera';
 import { campaign } from '../state';
 
@@ -67,7 +68,10 @@ export function updateGalaxyScene(dt: number): void {
     // Distance-based halo fade — prevents giant sprite rectangles near camera
     const halo = starHalos.get(id);
     if (!halo) continue;
-    const dist = camPos.distanceTo(mesh.position);
+    const dx = camPos.x - mesh.position.x;
+    const dy = camPos.y - mesh.position.y;
+    const dz = camPos.z - mesh.position.z;
+    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
     const fade = Math.max(
       0,
       Math.min(1, (dist - HALO_FADE_NEAR) / (HALO_FADE_FAR - HALO_FADE_NEAR)),
