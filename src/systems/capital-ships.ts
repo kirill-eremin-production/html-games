@@ -23,7 +23,7 @@ export function spawnCapitalShips(): void {
   const hullColor = parseHexColor(settings.colors.capitalHull);
   for (let i = 0; i < count; i++) {
     const ship = createCapitalShip(i, hullColor);
-    ship.position.copy(SHIP_POSITIONS[i]);
+    ship.position.copyFrom(SHIP_POSITIONS[i]);
     ship.lookAt(new Vector3(0, 0, 0));
     addToScene(ship);
     state.capitalShips.push({
@@ -81,7 +81,7 @@ export function updateCapitalShips(dt: number): void {
       }
 
       const tgt = _csTargets[Math.floor(Math.random() * _csTargets.length)];
-      _csDir.copy(tgt).sub(shipPos).normalize();
+      _csDir.copyFrom(tgt).subtractInPlace(shipPos).normalize();
       const bridgeSub = cs.subsystems[1];
       const inaccuracy =
         bridgeSub.health <= 0
@@ -97,7 +97,7 @@ export function updateCapitalShips(dt: number): void {
           shipPos.y + (Math.random() - 0.5) * C.turretOriginSpreadY,
           shipPos.z + (Math.random() - 0.5) * C.turretOriginSpreadXZ,
         );
-        _csShotDir.copy(_csDir);
+        _csShotDir.copyFrom(_csDir);
         addDirectionNoise(_csShotDir, C.turretShotSpread);
         createLaser(_csOrigin, _csShotDir, 'enemy', shipName);
       }

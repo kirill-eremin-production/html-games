@@ -8,7 +8,7 @@ import { Vector3 } from './vector3';
 
 /**
  * EngineSprite — billboard mesh that always faces the camera.
- * Replaces Three.js Sprite. Creates a 1x1 plane with BILLBOARDMODE_ALL.
+ * Creates a 1x1 plane with BILLBOARDMODE_ALL.
  */
 export class EngineSprite extends BMesh {
   constructor(name = '', scene?: Scene | null) {
@@ -29,8 +29,6 @@ export class EngineSprite extends BMesh {
     this.billboardMode = BMesh.BILLBOARDMODE_ALL;
     this.metadata = {};
   }
-
-  // ── Three.js-compat surface ──
 
   get userData(): Record<string, any> {
     return this.metadata;

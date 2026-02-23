@@ -60,7 +60,7 @@ export function cloneFighterModel(bodyColor: number, exhaustColor: number): Tran
     else if (n === 'glow' || n === 'glow_L') mesh.material = haloMat;
   });
 
-  group.scale.setScalar(1.5);
+  group.scale.setAll(1.5);
   return group;
 }
 
@@ -116,6 +116,6 @@ export function cloneCapitalShipModel(index: number, hullColor: number): Transfo
 
   group.userData.subsystems = subsystems;
   group.userData.index = index;
-  group.scale.setScalar(1.5);
+  group.scale.setAll(1.5);
   return group;
 }

@@ -54,7 +54,7 @@ export function updateExplorationScene(dt: number, elapsed: number): void {
     const slowdownDist = planetRadius * EXPLORATION_CONFIG.planetSlowdownMultiplier;
     if (minDist < slowdownDist) {
       // Only slow down when flying towards the planet, not away
-      _toPlanet.copy(planetMeshes[nearestIdx].position).sub(playerPlane.position).normalize();
+      _toPlanet.copyFrom(planetMeshes[nearestIdx].position).subtractInPlace(playerPlane.position).normalize();
       _forward.set(1, 0, 0).applyQuaternion(playerPlane.quaternion);
       if (_forward.dot(_toPlanet) > 0) {
         state.speed = Math.min(state.speed, EXPLORATION_CONFIG.planetSlowdownMaxSpeed);

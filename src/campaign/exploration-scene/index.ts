@@ -1,6 +1,5 @@
 import { EXPLORATION_CONFIG } from '../../config/exploration';
 import {
-  DoubleSide,
   addToScene,
   createAmbientLight,
   createMesh,
@@ -68,7 +67,7 @@ export function buildExplorationScene(systemId: string): void {
     depthWrite: false,
   });
   const glow = createSprite(glowMat);
-  glow.scale.setScalar(detail.starSize * EXPLORATION_CONFIG.starGlowScale);
+  glow.scale.setAll(detail.starSize * EXPLORATION_CONFIG.starGlowScale);
   explorationGroup.add(glow);
   explorationRefs.starGlow = glow;
 
@@ -78,7 +77,7 @@ export function buildExplorationScene(systemId: string): void {
     const p = detail.planets[i];
     const mat = createPBRMaterial({ color: p.color, roughness: 0.7 });
     const mesh = createMesh(planetGeo, mat);
-    mesh.scale.setScalar(p.size * PLANET_SCALE);
+    mesh.scale.setAll(p.size * PLANET_SCALE);
     mesh.userData.planetIndex = i;
 
     const x = p.orbitalDistance * Math.cos(p.initialAngle);
@@ -98,7 +97,7 @@ export function buildExplorationScene(systemId: string): void {
       color: 0x334466,
       transparent: true,
       opacity: 0.08,
-      side: DoubleSide,
+      side: 2,
     });
     const orbitLine = createMesh(orbitGeo, orbitMat);
     orbitLine.rotation.x = -Math.PI / 2;
@@ -114,7 +113,7 @@ export function buildExplorationScene(systemId: string): void {
           color: p.ringColor,
           transparent: true,
           opacity: 0.45,
-          side: DoubleSide,
+          side: 2,
         }),
       );
       ring.rotation.x = Math.PI / 3;
@@ -139,7 +138,7 @@ export function buildExplorationScene(systemId: string): void {
       });
       const mesh = createMesh(asteroidGeo, mat);
       mesh.position.set(r * Math.cos(angle), y, r * Math.sin(angle));
-      mesh.scale.setScalar(size);
+      mesh.scale.setAll(size);
       mesh.rotation.set(rng() * Math.PI, rng() * Math.PI, rng() * Math.PI);
 
       explorationGroup.add(mesh);

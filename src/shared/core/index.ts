@@ -1,12 +1,8 @@
-// ── Side-effect: augment BJS prototypes with Three.js-compat methods ──
-import './augment';
-
 // ── Math types ──
 export { Vector3 } from './vector3';
 export { Vector2 } from './vector3';
 export { Quaternion } from './quaternion';
 export { Color } from './color';
-export { Euler } from './euler';
 export { Matrix as Matrix4 } from '@babylonjs/core/Maths/math.vector';
 
 // ── Scene graph types ──
@@ -45,9 +41,6 @@ export {
   OctahedronGeometry,
   IcosahedronGeometry,
 } from './geometry';
-
-// ── Constants ──
-export { DoubleSide, AdditiveBlending, LinearFilter } from './constants';
 
 // ── Utilities ──
 export { Clock } from './clock';
@@ -117,11 +110,4 @@ export {
 // ── Scene / renderer (re-exported from scene/setup) ──
 export { camera, handleResize, renderer, scene } from '@/scene/setup';
 
-// ── Type aliases for Three.js compat ──
 export type { Scene } from '@babylonjs/core/scene';
-export type WebGLRenderer = {
-  domElement: HTMLCanvasElement;
-  render(): void;
-  setSize(w: number, h: number): void;
-  setPixelRatio(r: number): void;
-};

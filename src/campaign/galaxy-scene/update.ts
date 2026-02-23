@@ -58,10 +58,10 @@ export function updateGalaxyScene(dt: number): void {
     if (Math.abs(diff) > 0.005) {
       const next = current + diff * Math.min(1, dt * SCALE_LERP_SPEED);
       starScaleCurrent.set(id, next);
-      mesh.scale.setScalar(next);
+      mesh.scale.setAll(next);
     } else if (current !== target) {
       starScaleCurrent.set(id, target);
-      mesh.scale.setScalar(target);
+      mesh.scale.setAll(target);
     }
 
     // Distance-based halo fade — prevents giant sprite rectangles near camera

@@ -7,12 +7,8 @@ import { Quaternion } from './quaternion';
 import { Vector3 } from './vector3';
 
 /**
- * Extended TransformNode that inherits from Babylon.js TransformNode
- * and adds Three.js-compatible convenience properties/methods.
- *
+ * Extended TransformNode — inherits from BJS TransformNode, adds convenience properties.
  * Instances ARE real BJS TransformNodes — no wrapping, no sync layer.
- * position/rotation/scaling hold our extended Vector3 instances at runtime
- * (assigned through BJS's setter, stored in BJS's internal field).
  */
 export class TransformNode extends BTransformNode {
   constructor(name = '', scene?: Scene | null) {
@@ -25,7 +21,7 @@ export class TransformNode extends BTransformNode {
     this.scaling = new Vector3(1, 1, 1);
   }
 
-  // ── Three.js-compatible: userData backed by BJS metadata ──
+  // ── userData backed by BJS metadata ──
 
   get userData(): Record<string, any> {
     return this.metadata;
@@ -35,7 +31,7 @@ export class TransformNode extends BTransformNode {
     this.metadata = v;
   }
 
-  // ── Three.js-compatible: visible backed by BJS setEnabled/isEnabled ──
+  // ── visible backed by BJS setEnabled/isEnabled ──
 
   get visible(): boolean {
     return this.isEnabled();
@@ -45,7 +41,7 @@ export class TransformNode extends BTransformNode {
     this.setEnabled(v);
   }
 
-  // ── Three.js-compatible: .scale aliases .scaling ──
+  // ── .scale aliases .scaling ──
 
   get scale() {
     return this.scaling;
@@ -55,13 +51,13 @@ export class TransformNode extends BTransformNode {
     this.scaling.copyFrom(v);
   }
 
-  // ── Three.js-compatible: .children returns direct child TransformNodes ──
+  // ── .children returns direct child TransformNodes ──
 
   get children(): TransformNode[] {
     return this.getChildTransformNodes(true) as TransformNode[];
   }
 
-  // ── Three.js-compatible: .quaternion with lazy rotationQuaternion init ──
+  // ── .quaternion with lazy rotationQuaternion init ──
 
   get quaternion(): Quaternion {
     if (!this.rotationQuaternion) this.rotationQuaternion = new Quaternion();
@@ -72,13 +68,13 @@ export class TransformNode extends BTransformNode {
     this.rotationQuaternion = q;
   }
 
-  // ── Three.js-compatible: matrixWorld = BJS world matrix ──
+  // ── matrixWorld = BJS world matrix ──
 
   get matrixWorld(): Matrix {
     return this.getWorldMatrix();
   }
 
-  // ── Three.js-compatible: add/remove children ──
+  // ── add/remove children ──
 
   add(child: Node): this {
     child.parent = this;
@@ -90,7 +86,7 @@ export class TransformNode extends BTransformNode {
     return this;
   }
 
-  // ── Three.js-compatible: traverse all descendants ──
+  // ── traverse all descendants ──
 
   traverse(fn: (obj: Node) => void): void {
     fn(this);
@@ -99,7 +95,7 @@ export class TransformNode extends BTransformNode {
     }
   }
 
-  // ── Three.js-compatible: find descendant by name ──
+  // ── find descendant by name ──
 
   getObjectByName(name: string): Node | undefined {
     return this.getDescendants(false).find((d) => d.name === name);

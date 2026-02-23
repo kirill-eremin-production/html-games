@@ -7,8 +7,8 @@ import { Vector3 } from './vector3';
 let _camId = 0;
 
 /**
- * PerspectiveCamera — extends BJS FreeCamera with Three.js-compatible API.
- * fov is stored in degrees (Three.js convention) and converted to radians for BJS.
+ * PerspectiveCamera — extends BJS FreeCamera with convenience API.
+ * fov is stored in degrees and converted to radians for BJS.
  */
 export class PerspectiveCamera extends FreeCamera {
   private _fovDeg: number;
@@ -21,10 +21,10 @@ export class PerspectiveCamera extends FreeCamera {
     this.minZ = near;
     this.maxZ = far;
     this.fov = (fov * Math.PI) / 180;
-    // Disable built-in camera controls (we control manually)
     this.inputs.clear();
-    // Replace BJS Vector3 with our extended Vector3
+    // Replace BJS Vector3 with extended Vector3 for chaining support
     this.position = new Vector3();
+    this.upVector = new Vector3(0, 1, 0);
   }
 
   get near(): number {
@@ -41,18 +41,15 @@ export class PerspectiveCamera extends FreeCamera {
     this.maxZ = v;
   }
 
-  /** Get fov in degrees (Three.js convention). */
   get fovDeg(): number {
     return this._fovDeg;
   }
 
-  /** Set fov in degrees; automatically updates BJS fov in radians. */
   set fovDeg(v: number) {
     this._fovDeg = v;
     this.fov = (v * Math.PI) / 180;
   }
 
-  /** Three.js-compat: .up = BJS upVector. */
   get up(): BVector3 {
     return this.upVector;
   }
@@ -60,7 +57,7 @@ export class PerspectiveCamera extends FreeCamera {
     this.upVector.copyFrom(v);
   }
 
-  /** Three.js-compat: lookAt accepts either a Vector3 or (x, y, z). */
+  /** lookAt accepts either a Vector3 or (x, y, z). */
   lookAt(x: number | Vector3 | BVector3, y?: number, z?: number): this {
     if (typeof x === 'number') {
       this.setTarget(new BVector3(x, y!, z!));
@@ -70,15 +67,9 @@ export class PerspectiveCamera extends FreeCamera {
     return this;
   }
 
-  /** Three.js-compat: updateProjectionMatrix. In BJS this is automatic. */
+  /** Recalculate fov in radians after changing fovDeg. */
   updateProjectionMatrix(): void {
     this.fov = (this._fovDeg * Math.PI) / 180;
-  }
-
-  /** Three.js-compat: get combined view-projection matrix for screen projection. */
-  _updateMatrices(): void {
-    this.getViewMatrix(true);
-    this.getProjectionMatrix(true);
   }
 }
 

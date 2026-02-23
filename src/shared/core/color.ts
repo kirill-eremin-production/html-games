@@ -14,15 +14,7 @@ export class Color extends Color3 {
     return this;
   }
 
-  /** Get color as a hex integer. */
-  getHex(): number {
-    const r = Math.round(Math.min(this.r, 1) * 255);
-    const g = Math.round(Math.min(this.g, 1) * 255);
-    const b = Math.round(Math.min(this.b, 1) * 255);
-    return (r << 16) | (g << 8) | b;
-  }
-
-  /** Three.js-compatible: multiply each channel by scalar, return this. */
+  /** Multiply each channel by scalar. */
   multiplyScalar(s: number): this {
     this.r *= s;
     this.g *= s;
@@ -30,13 +22,6 @@ export class Color extends Color3 {
     return this;
   }
 
-  /** Three.js-compatible: copy values from another color, return this. */
-  copy(c: Color3): this {
-    this.copyFrom(c);
-    return this;
-  }
-
-  /** Override clone to return our extended Color instead of base Color3. */
   override clone(): Color {
     const c = new Color();
     c.r = this.r;
@@ -47,7 +32,6 @@ export class Color extends Color3 {
 
   /** Set color from HSL values (all in 0-1 range). */
   setHSL(h: number, s: number, l: number): this {
-    // Achromatic
     if (s === 0) {
       this.r = this.g = this.b = l;
       return this;
@@ -71,4 +55,12 @@ function hueToRgb(p: number, q: number, t: number): number {
   if (t < 1 / 2) return q;
   if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
   return p;
+}
+
+declare module '@babylonjs/core/Maths/math.color' {
+  interface Color3 {
+    setHex(hex: number): this;
+    multiplyScalar(s: number): this;
+    setHSL(h: number, s: number, l: number): this;
+  }
 }

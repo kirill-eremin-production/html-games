@@ -79,7 +79,7 @@ export function setStarfieldVisible(visible: boolean): void {
  * @param position — целевая позиция (как правило, позиция игрока).
  */
 export function updateStarfieldPosition(position: Vector3): void {
-  if (starfieldPoints) starfieldPoints.position.copy(position);
+  if (starfieldPoints) starfieldPoints.position.copyFrom(position);
 }
 
 // ── GameSystem adapter ──────────────────────────────────────────────────────

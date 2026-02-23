@@ -48,8 +48,6 @@ export class EnginePoints extends BMesh {
     this.material = mat;
   }
 
-  // ── Three.js-compat surface ──
-
   get userData(): Record<string, any> {
     return this.metadata;
   }

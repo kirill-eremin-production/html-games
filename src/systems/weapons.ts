@@ -63,16 +63,16 @@ export function createLaser(
   const mat = isPlayer ? laserMatPlayer : isEnemy ? laserMatEnemy : laserMatAlly;
 
   const mesh = createMesh(geo, mat);
-  mesh.position.copy(origin);
-  _laserDir.copy(direction).normalize();
+  mesh.position.copyFrom(origin);
+  _laserDir.copyFrom(direction).normalize();
   _laserQuat.setFromUnitVectors(_laserAxis, _laserDir);
-  mesh.quaternion.copy(_laserQuat);
+  mesh.quaternion.copyFrom(_laserQuat);
   addToScene(mesh);
 
   const speed = isEnemy ? W.enemyLaserSpeed : W.playerLaserSpeed;
   const data: LaserData = {
     mesh,
-    velocity: new Vector3().copy(_laserDir).multiplyScalar(speed),
+    velocity: new Vector3().copyFrom(_laserDir).scaleInPlace(speed),
     life: W.laserLife,
     team,
     damage: isPlayer ? W.playerDamage : isEnemy ? W.enemyDamage : W.allyDamage,
@@ -112,11 +112,11 @@ export function shootFromFighter(
   name: string,
   playerPlane: TransformNode,
 ): void {
-  _fShootDir.copy(dirToTarget);
+  _fShootDir.copyFrom(dirToTarget);
   addDirectionNoise(_fShootDir, W.fighterShotSpread);
   _fGunToggle = !_fGunToggle;
   const offset = _fGunToggle ? GUN_OFFSET_R : GUN_OFFSET_L;
-  _fBulletPos.copy(offset).applyQuaternion(fighter.quaternion).add(fighter.position);
+  _fBulletPos.copyFrom(offset).applyQuaternion(fighter.quaternion).add(fighter.position);
   createLaser(_fBulletPos, _fShootDir, team, name);
   if (fighter.position.distanceToSquared(playerPlane.position) < W.audioDistSq) {
     playLaserSound(false);

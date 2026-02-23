@@ -11,6 +11,7 @@ import {
   Vector3,
   camera,
   createTransformNode,
+  vec3Unproject,
 } from '@/shared/core';
 import { actions, aim } from '@/shared/input';
 import { GUN_OFFSET_L, GUN_OFFSET_R } from '../scene/models';
@@ -87,27 +88,27 @@ export function updatePlayer(dt: number): void {
     const m = playerPlane.getObjectByName(name) as EngineMesh | undefined;
     if (m) {
       (m.material as MeshBasicMaterial).opacity = exhaustOpacity;
-      m.scale.setScalar(exhaustScale);
+      m.scale.setAll(exhaustScale);
     }
   }
   for (const name of ['glow', 'glow_L'] as const) {
     const m = playerPlane.getObjectByName(name) as EngineMesh | undefined;
     if (m) {
       (m.material as MeshBasicMaterial).opacity = glowOpacity;
-      m.scale.setScalar(glowScale);
+      m.scale.setAll(glowScale);
     }
   }
   updateEngineHum(speedRatio);
 
   const { back: camBack, up: camUp, lookAhead } = fm.cameraOffset(state.speed, state.boostSpeed);
   const camOffset = _tmpVec2.set(camBack, camUp, 0).applyQuaternion(playerPlane.quaternion);
-  const camTarget = _tmpVec3.copy(playerPlane.position).add(camOffset);
+  const camTarget = _tmpVec3.copyFrom(playerPlane.position).add(camOffset);
   const cameraSmoothing = Math.max(
     P.cameraSmoothMin,
     P.cameraSmoothBase + state.speed * P.cameraSmoothSpeedFactor,
   );
   camera.position.lerp(camTarget, 1 - Math.exp(-cameraSmoothing * dt));
-  const lookTarget = _tmpVec2.copy(playerPlane.position).add(forward.multiplyScalar(lookAhead));
+  const lookTarget = _tmpVec2.copyFrom(playerPlane.position).add(forward.scaleInPlace(lookAhead));
   const up = _tmpVec3.set(0, 1, 0).applyQuaternion(playerPlane.quaternion);
   camera.up.lerp(up, P.cameraUpLerp * dt).normalize();
   camera.lookAt(lookTarget);
@@ -130,15 +131,15 @@ export function updatePlayer(dt: number): void {
   state.shootCooldown -= dt;
   if (actions.fire && state.shootCooldown <= 0) {
     state.shootCooldown = P.shootCooldown;
-    _shootAim.set(aim.x, -aim.y, 0.5).unproject(camera);
-    _shootDir.copy(_shootAim).sub(camera.position).normalize();
+    vec3Unproject(_shootAim.set(aim.x, -aim.y, 0.5), camera);
+    _shootDir.copyFrom(_shootAim).subtractInPlace(camera.position).normalize();
     _shootOrigin
-      .copy(GUN_OFFSET_R)
+      .copyFrom(GUN_OFFSET_R)
       .applyQuaternion(playerPlane.quaternion)
       .add(playerPlane.position);
     createLaser(_shootOrigin, _shootDir, 'player', PLAYER_NAME);
     _shootOrigin
-      .copy(GUN_OFFSET_L)
+      .copyFrom(GUN_OFFSET_L)
       .applyQuaternion(playerPlane.quaternion)
       .add(playerPlane.position);
     createLaser(_shootOrigin, _shootDir, 'player', PLAYER_NAME);
@@ -157,7 +158,7 @@ export const playerSystem: GameSystem = {
 
 export function resetPlayerTransform(x = 0, y = 0, z = 0): void {
   playerPlane.position.set(x, y, z);
-  playerPlane.quaternion.identity();
+  playerPlane.quaternion.set(0, 0, 0, 1);
   playerRotation.pitch = 0;
   playerRotation.yaw = 0;
   playerRotation.roll = 0;

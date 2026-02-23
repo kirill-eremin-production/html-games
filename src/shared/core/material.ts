@@ -25,23 +25,19 @@ export class EngineMaterial extends StandardMaterial {
   _transparent = false;
   _blending = 0;
 
-  // No-op shader hook (Three.js compat)
   onBeforeCompile: ((shader: any) => void) | null = null;
 
   constructor(config?: MaterialConfig, scene?: Scene) {
     super(`mat_${_matId++}`, scene ?? undefined);
 
-    // BJS defaults — less shiny by default
     this.specularColor.set(0.1, 0.1, 0.1);
 
     if (config) this._applyConfig(config);
 
-    // Auto-sync Three.js-style colors to BJS properties before rendering
+    // Sync color/emissive fields to BJS properties before rendering
     this.onBindObservable.add(() => this._syncColors());
   }
 
-  // Three.js-compatible "color" = BJS diffuseColor.
-  // Override with getter/setter using a private field so we use our extended Color.
   protected _color = new Color(0xffffff);
   get color(): Color {
     return this._color;
@@ -50,7 +46,6 @@ export class EngineMaterial extends StandardMaterial {
     this._color = v;
   }
 
-  // Three.js-compatible "emissive" = BJS emissiveColor
   protected _emissive = new Color(0x000000);
   get emissive(): Color {
     return this._emissive;
@@ -59,7 +54,6 @@ export class EngineMaterial extends StandardMaterial {
     this._emissive = v;
   }
 
-  // Three.js-compatible "opacity" = BJS alpha
   get opacity(): number {
     return this.alpha;
   }
@@ -67,7 +61,6 @@ export class EngineMaterial extends StandardMaterial {
     this.alpha = v;
   }
 
-  // Three.js "transparent"
   get transparent(): boolean {
     return this._transparent;
   }
@@ -75,7 +68,6 @@ export class EngineMaterial extends StandardMaterial {
     this._transparent = v;
   }
 
-  // Three.js "shininess" = BJS specularPower
   get shininess(): number {
     return this.specularPower;
   }
@@ -83,7 +75,6 @@ export class EngineMaterial extends StandardMaterial {
     this.specularPower = v;
   }
 
-  // Three.js "depthWrite" = !BJS disableDepthWrite
   get depthWrite(): boolean {
     return !this.disableDepthWrite;
   }
@@ -91,7 +82,7 @@ export class EngineMaterial extends StandardMaterial {
     this.disableDepthWrite = !v;
   }
 
-  // Three.js "side": 0=front, 2=double
+  // side: 0=front, 2=double
   get side(): number {
     return this.backFaceCulling ? 0 : 2;
   }
@@ -139,7 +130,6 @@ export class EngineMaterial extends StandardMaterial {
   }
 }
 
-// Aliases for Three.js compat
 export { EngineMaterial as Material };
 export { EngineMaterial as MeshPhongMaterial };
 export { EngineMaterial as MeshStandardMaterial };

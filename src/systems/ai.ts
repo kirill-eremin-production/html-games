@@ -59,7 +59,7 @@ function updateFighterAI(
       if (!cs.alive) continue;
       for (const sub of cs.subsystems) {
         if (sub.health > 0) {
-          _aiSubWorldPos.copy(sub.center).applyMatrix4(cs.mesh.matrixWorld);
+          _aiSubWorldPos.copyFrom(sub.center).applyMatrix4(cs.mesh.matrixWorld);
           fighter.ai.target = {
             mesh: { position: _aiSubWorldPos.clone() },
             name: `Корабль-${cs.mesh.userData.index + 1}`,
@@ -74,7 +74,7 @@ function updateFighterAI(
   const target = fighter.ai.target;
   if (!target) return;
 
-  _aiToTarget.copy(target.mesh.position).sub(fighter.mesh.position);
+  _aiToTarget.copyFrom(target.mesh.position).subtractInPlace(fighter.mesh.position);
   const dist = _aiToTarget.length();
   const dirToTarget = _aiToTarget.normalize();
 
@@ -82,7 +82,7 @@ function updateFighterAI(
   if (fighter.ai.timer <= 0) {
     if (dist < A.evadeDistance) {
       fighter.ai.state = 'evade';
-      fighter.ai.evadeDir.copy(dirToTarget).negate();
+      fighter.ai.evadeDir.copyFrom(dirToTarget).negate();
       fighter.ai.evadeDir.x += (Math.random() - 0.5) * A.evadeNoiseXZ;
       fighter.ai.evadeDir.y += (Math.random() - 0.5) * A.evadeNoiseY;
       fighter.ai.evadeDir.z += (Math.random() - 0.5) * A.evadeNoiseXZ;
@@ -111,7 +111,7 @@ function updateFighterAI(
       break;
     case 'orbit': {
       const correction = ((dist - A.orbitDistance) / A.orbitDistance) * A.orbitCorrection;
-      _aiOrbitDir.copy(fighter.ai.evadeDir).addScaledVector(dirToTarget, correction).normalize();
+      _aiOrbitDir.copyFrom(fighter.ai.evadeDir).addScaledVector(dirToTarget, correction).normalize();
       targetDir = _aiOrbitDir;
       break;
     }
@@ -120,11 +120,11 @@ function updateFighterAI(
   }
 
   _aiCurrentFwd.set(1, 0, 0).applyQuaternion(fighter.mesh.quaternion);
-  _aiCross.copy(_aiCurrentFwd).cross(targetDir);
+  _aiCross.copyFrom(_aiCurrentFwd).cross(targetDir);
   const crossLen = _aiCross.length();
   if (crossLen > 0.001) {
     const angle = Math.asin(Math.min(1, crossLen)) * A.turnRate * dt;
-    _aiCross.divideScalar(crossLen);
+    _aiCross.scaleInPlace(1 / crossLen);
     _aiRotQ.setFromAxisAngle(_aiCross, angle);
     fighter.mesh.quaternion.premultiply(_aiRotQ);
     fighter.mesh.quaternion.normalize();

@@ -42,7 +42,7 @@ function hitTestCapitalShips(laser: LaserData): boolean {
     if (!cs.alive) continue;
     for (const sub of cs.subsystems) {
       if (sub.health <= 0) continue;
-      _hitWorldPos.copy(sub.center).applyMatrix4(cs.mesh.matrixWorld);
+      _hitWorldPos.copyFrom(sub.center).applyMatrix4(cs.mesh.matrixWorld);
       if (laser.mesh.position.distanceToSquared(_hitWorldPos) < sub.radius * sub.radius) {
         sub.health -= laser.damage;
         createExplosion(laser.mesh.position.clone(), C.hitCapitalExplosionSize);

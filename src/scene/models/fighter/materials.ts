@@ -1,4 +1,4 @@
-import { AdditiveBlending, Color, MeshBasicMaterial, MeshPhongMaterial } from '@/shared/core';
+import { Color, MeshBasicMaterial, MeshPhongMaterial } from '@/shared/core';
 
 // Shared across all fighters (team-independent)
 export const canopyMat = new MeshPhongMaterial({
@@ -35,7 +35,7 @@ export function createExhaustMat(teamColor: number): MeshBasicMaterial {
     color: teamColor,
     transparent: true,
     opacity: 0.9,
-    blending: AdditiveBlending,
+    blending: 2,
     depthWrite: false,
   });
 }
@@ -45,7 +45,7 @@ export function createGlowHaloMat(teamColor: number): MeshBasicMaterial {
     color: teamColor,
     transparent: true,
     opacity: 0.25,
-    blending: AdditiveBlending,
+    blending: 2,
     depthWrite: false,
   });
 }

@@ -1,5 +1,4 @@
 import {
-  DoubleSide,
   type EngineMesh,
   type TransformNode,
   createMesh,
@@ -9,7 +8,7 @@ import {
 } from '@/shared/core';
 
 const healthBarBgGeo = createPlaneGeometry(4, 0.4);
-const healthBarBgMat = createUnlitMaterial({ color: 0x220000, side: DoubleSide });
+const healthBarBgMat = createUnlitMaterial({ color: 0x220000, side: 2 });
 
 export function addHealthBar(
   group: TransformNode,
@@ -20,7 +19,7 @@ export function addHealthBar(
   barGroup.add(bg);
   const fg = createMesh(
     createPlaneGeometry(4, 0.4),
-    createUnlitMaterial({ color, side: DoubleSide }),
+    createUnlitMaterial({ color, side: 2 }),
   );
   fg.name = 'healthFill';
   barGroup.add(fg);

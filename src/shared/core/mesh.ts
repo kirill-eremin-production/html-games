@@ -8,8 +8,7 @@ import type { TransformNode } from './transform-node';
 import { Vector3 } from './vector3';
 
 /**
- * Extended Mesh that inherits from Babylon.js Mesh
- * and adds Three.js-compatible convenience properties/methods.
+ * Extended Mesh — inherits from BJS Mesh, adds convenience properties.
  */
 export class EngineMesh extends BMesh {
   readonly isMesh = true;
@@ -23,7 +22,7 @@ export class EngineMesh extends BMesh {
     this.scaling = new Vector3(1, 1, 1);
   }
 
-  // ── Three.js-compatible: userData backed by BJS metadata ──
+  // ── userData backed by BJS metadata ──
 
   get userData(): Record<string, any> {
     return this.metadata;
@@ -33,7 +32,7 @@ export class EngineMesh extends BMesh {
     this.metadata = v;
   }
 
-  // ── Three.js-compatible: visible backed by BJS setEnabled/isEnabled ──
+  // ── visible backed by BJS setEnabled/isEnabled ──
 
   get visible(): boolean {
     return this.isEnabled();
@@ -43,7 +42,7 @@ export class EngineMesh extends BMesh {
     this.setEnabled(v);
   }
 
-  // ── Three.js-compatible: .scale aliases .scaling ──
+  // ── .scale aliases .scaling ──
 
   get scale() {
     return this.scaling;
@@ -53,7 +52,7 @@ export class EngineMesh extends BMesh {
     this.scaling.copyFrom(v);
   }
 
-  // ── Three.js-compatible: .quaternion with lazy rotationQuaternion init ──
+  // ── .quaternion with lazy rotationQuaternion init ──
 
   get quaternion(): Quaternion {
     if (!this.rotationQuaternion) this.rotationQuaternion = new Quaternion();
@@ -64,13 +63,13 @@ export class EngineMesh extends BMesh {
     this.rotationQuaternion = q;
   }
 
-  // ── Three.js-compatible: matrixWorld = BJS world matrix ──
+  // ── matrixWorld = BJS world matrix ──
 
   get matrixWorld(): Matrix {
     return this.getWorldMatrix();
   }
 
-  // ── Three.js-compatible: add/remove children ──
+  // ── add/remove children ──
 
   add(child: Node): this {
     child.parent = this;
@@ -82,7 +81,7 @@ export class EngineMesh extends BMesh {
     return this;
   }
 
-  // ── Three.js-compatible: traverse all descendants ──
+  // ── traverse all descendants ──
 
   traverse(fn: (obj: Node) => void): void {
     fn(this);
@@ -91,7 +90,7 @@ export class EngineMesh extends BMesh {
     }
   }
 
-  // ── Three.js-compatible: find descendant by name ──
+  // ── find descendant by name ──
 
   getObjectByName(name: string): Node | undefined {
     return this.getDescendants(false).find((d) => d.name === name);

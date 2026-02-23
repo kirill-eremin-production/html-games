@@ -77,7 +77,7 @@ export function createGalaxyNebulae(): TransformNode {
     baseNebulaOpacities.push(cfg.opacity);
     const sprite = createSprite(mat);
     sprite.position.set(...cfg.pos);
-    sprite.scale.setScalar(cfg.scale);
+    sprite.scale.setAll(cfg.scale);
     group.add(sprite);
   }
 
@@ -101,7 +101,7 @@ export function createGalaxyNebulae(): TransformNode {
     });
     const sprite = createSprite(mat);
     sprite.position.set(...cfg.pos);
-    sprite.scale.setScalar(cfg.scale);
+    sprite.scale.setAll(cfg.scale);
     group.add(sprite);
   }
 

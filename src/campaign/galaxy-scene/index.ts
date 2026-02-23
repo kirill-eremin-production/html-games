@@ -6,7 +6,6 @@ import '@babylonjs/core/Sprites/spriteSceneComponent';
 
 import type { EngineMesh } from '@/shared/core';
 import {
-  DoubleSide,
   Vector3,
   camera,
   createAmbientLight,
@@ -141,7 +140,7 @@ export function buildGalaxyScene(): void {
     color: 0xffff00,
     transparent: true,
     opacity: 0.7,
-    side: DoubleSide,
+    side: 2,
   });
   refs.selectionRing = createMesh(ringGeo, ringMat);
   refs.selectionRing.rotation.x = -Math.PI / 2;
@@ -162,7 +161,7 @@ export function buildGalaxyScene(): void {
     parseHexColor(settings.colors.playerBody),
     parseHexColor(settings.colors.playerExhaust),
   );
-  refs.playerShipModel.scale.setScalar(0.3);
+  refs.playerShipModel.scale.setAll(0.3);
   galaxyGroup.add(refs.playerShipModel);
 
   updatePlayerShipPosition();
@@ -172,7 +171,7 @@ export function buildGalaxyScene(): void {
   for (const [id, mesh] of starMeshes) {
     const s = nearbySystemIds.has(id) ? NEARBY_SCALE : FAR_SCALE;
     starScaleCurrent.set(id, s);
-    mesh.scale.setScalar(s);
+    mesh.scale.setAll(s);
     const halo = starHalos.get(id);
     if (halo) halo.size = 2.5 * s;
   }
@@ -201,7 +200,7 @@ function setHaloManagerVisible(visible: boolean): void {
 export function updatePlayerShipPosition(): void {
   const sys = starMeshes.get(campaign.currentSystemId);
   if (sys && refs.playerShipModel) {
-    refs.playerShipModel.position.copy(sys.position);
+    refs.playerShipModel.position.copyFrom(sys.position);
     refs.playerShipModel.position.y += 2.5;
   }
 }
@@ -225,7 +224,7 @@ export function selectSystem(systemId: string | null): void {
   }
   const mesh = starMeshes.get(systemId);
   if (mesh) {
-    refs.selectionRing.position.copy(mesh.position);
+    refs.selectionRing.position.copyFrom(mesh.position);
     refs.selectionRing.position.y += 0.05;
     refs.selectionRing.visible = true;
   }
@@ -236,7 +235,7 @@ export function updateContractMarker(): void {
   if (campaign.activeContract) {
     const targetMesh = starMeshes.get(campaign.activeContract.targetSystemId);
     if (targetMesh) {
-      refs.contractMarker.position.copy(targetMesh.position);
+      refs.contractMarker.position.copyFrom(targetMesh.position);
       refs.contractMarker.userData.baseY = targetMesh.position.y + 3.5;
       refs.contractMarker.position.y = refs.contractMarker.userData.baseY;
       refs.contractMarker.visible = true;

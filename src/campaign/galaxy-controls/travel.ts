@@ -1,3 +1,5 @@
+import { Vector3 as BjsVector3 } from '@babylonjs/core/Maths/math.vector';
+
 import { Vector3 } from '@/shared/core';
 import { getSystem } from '../data';
 import {
@@ -40,8 +42,8 @@ export function startTravelAnimation(targetId: string): void {
   const toPos = getStarPosition(targetId);
   if (!fromPos || !toPos) return;
 
-  travelFromPos.copy(fromPos);
-  travelToPos.copy(toPos);
+  travelFromPos.copyFrom(fromPos);
+  travelToPos.copyFrom(toPos);
   travelProgress = 0;
   travelTargetId = targetId;
   travelIsContractTarget = campaign.activeContract?.targetSystemId === targetId;
@@ -86,7 +88,7 @@ export function updateTravelAnimation(dt: number): void {
   const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
   // Move player ship along straight path
-  _lerpPos.lerpVectors(travelFromPos, travelToPos, ease);
+  BjsVector3.LerpToRef(travelFromPos, travelToPos, ease, _lerpPos);
   setPlayerShipAt(_lerpPos);
 
   // Camera follows smoothly

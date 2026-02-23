@@ -21,8 +21,8 @@ export function spawnAlly(near: Vector3): void {
     (Math.random() - 0.5) * C.allySpawnSpread.y,
     (Math.random() - 0.5) * C.allySpawnSpread.z,
   );
-  mesh.position.copy(near).add(offset);
-  mesh.quaternion.copy(playerPlane.quaternion);
+  mesh.position.copyFrom(near).add(offset);
+  mesh.quaternion.copyFrom(playerPlane.quaternion);
   const hb = addHealthBar(mesh, 0x00ff44);
   const name = nextAllyName();
   state.allies.push({
@@ -53,7 +53,7 @@ export function spawnEnemy(near: Vector3): void {
     (Math.random() - 0.5) * C.enemySpawnSpread.y,
     (Math.random() - 0.5) * C.enemySpawnSpread.z,
   );
-  mesh.position.copy(near).add(offset);
+  mesh.position.copyFrom(near).add(offset);
   const hb = addHealthBar(mesh, 0xff0000);
   const name = nextEnemyName();
   state.enemies.push({

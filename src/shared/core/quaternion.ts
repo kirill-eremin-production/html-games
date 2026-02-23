@@ -5,38 +5,25 @@ export class Quaternion extends BQuaternion {
     super(x, y, z, w);
   }
 
-  /** Three.js-compatible: copy values from another quaternion, return this. */
-  copy(q: BQuaternion): this {
-    this.copyFrom(q);
-    return this;
-  }
-
-  /** Three.js-compatible: set from axis + angle, return this. */
+  /** Set from axis + angle, return this. */
   setFromAxisAngle(axis: Vector3, angle: number): this {
     BQuaternion.RotationAxisToRef(axis, angle, this);
     return this;
   }
 
-  /** Three.js-compatible: set from two unit vectors, return this. */
+  /** Set from two unit vectors, return this. */
   setFromUnitVectors(from: Vector3, to: Vector3): this {
     BQuaternion.FromUnitVectorsToRef(from, to, this);
     return this;
   }
 
-  /**
-   * Three.js-compatible: MUTATE self by post-multiplying q.
-   * Result: this = this * q
-   * (Three.js multiply mutates; BJS multiply returns new.)
-   */
+  /** Mutating post-multiply: this = this * q (BJS multiply returns new). */
   override multiply(q: BQuaternion): this {
     this.multiplyInPlace(q);
     return this;
   }
 
-  /**
-   * Three.js-compatible: pre-multiply by q.
-   * Result: this = q * this
-   */
+  /** Pre-multiply: this = q * this. */
   premultiply(q: BQuaternion): this {
     const tx = this.x,
       ty = this.y,
@@ -48,12 +35,6 @@ export class Quaternion extends BQuaternion {
     this.z = q.w * tz + q.x * ty - q.y * tx + q.z * tw;
     this.w = q.w * tw - q.x * tx - q.y * ty - q.z * tz;
 
-    return this;
-  }
-
-  /** Three.js-compatible: reset to identity quaternion, return this. */
-  identity(): this {
-    this.set(0, 0, 0, 1);
     return this;
   }
 }
