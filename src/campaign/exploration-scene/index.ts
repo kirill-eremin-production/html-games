@@ -7,8 +7,6 @@ import {
   createPointLight,
   createRingGeometry,
   createSphereGeometry,
-  createSprite,
-  createSpriteMaterial,
   createUnlitMaterial,
 } from '@/shared/core';
 import { createIcosahedronGeometry } from '@/shared/core';
@@ -58,19 +56,6 @@ export function buildExplorationScene(systemId: string): void {
   const starLight = createPointLight(detail.starColor, 2, 5000000);
   explorationGroup.add(starLight);
 
-  // Star glow sprite
-  const glowMat = createSpriteMaterial({
-    color: detail.starColor,
-    transparent: true,
-    opacity: 0.6,
-    additive: true,
-    depthWrite: false,
-  });
-  const glow = createSprite(glowMat);
-  glow.scale.setAll(detail.starSize * EXPLORATION_CONFIG.starGlowScale);
-  explorationGroup.add(glow);
-  explorationRefs.starGlow = glow;
-
   // Planets — much larger than the player ship
   const PLANET_SCALE = EXPLORATION_CONFIG.planetScale;
   for (let i = 0; i < detail.planets.length; i++) {
@@ -86,22 +71,6 @@ export function buildExplorationScene(systemId: string): void {
 
     explorationGroup.add(mesh);
     planetMeshes.push(mesh);
-
-    // Orbit line
-    const orbitGeo = createRingGeometry(
-      p.orbitalDistance - EXPLORATION_CONFIG.orbitRingWidth,
-      p.orbitalDistance + EXPLORATION_CONFIG.orbitRingWidth,
-      128,
-    );
-    const orbitMat = createUnlitMaterial({
-      color: 0x334466,
-      transparent: true,
-      opacity: 0.08,
-      side: 2,
-    });
-    const orbitLine = createMesh(orbitGeo, orbitMat);
-    orbitLine.rotation.x = -Math.PI / 2;
-    explorationGroup.add(orbitLine);
 
     // Rings for gas giants
     if (p.ringColor !== null) {
@@ -154,7 +123,6 @@ export function clearExplorationScene(): void {
   planetMeshes.length = 0;
   asteroidMeshes.length = 0;
   explorationRefs.starMesh = null;
-  explorationRefs.starGlow = null;
   explorationRefs.nearestPlanetIndex = -1;
   currentDetail = null;
 }

@@ -1,5 +1,4 @@
 import { EXPLORATION_CONFIG } from '../../config/exploration';
-import type { EngineSpriteMaterial } from '@/shared/core';
 import { Vector3 } from '@/shared/core';
 import { state } from '@/shared/state';
 import { playerPlane } from '../../systems/player';
@@ -26,12 +25,6 @@ export function updateExplorationScene(dt: number, elapsed: number): void {
 
     // Self-rotation
     mesh.rotation.y += dt * 0.5;
-  }
-
-  // Star glow pulse
-  if (explorationRefs.starGlow) {
-    const mat = explorationRefs.starGlow.material as EngineSpriteMaterial;
-    mat.opacity = 0.5 + Math.sin(elapsed * 2) * 0.1;
   }
 
   // Find nearest planet to player
