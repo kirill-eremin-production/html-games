@@ -1,4 +1,5 @@
 import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
+import type { AssetContainer } from '@babylonjs/core/assetContainer';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { TransformNode as BTransformNode } from '@babylonjs/core/Meshes/transformNode';
 import type { Node } from '@babylonjs/core/node';
@@ -8,9 +9,17 @@ import { getFactoryScene } from './factories';
 import { TransformNode } from './transform-node';
 
 /**
+ * Keep references to loaded asset containers so they are not garbage-collected.
+ * Without this, geometry/material GPU buffers owned by the container can be
+ * freed intermittently, causing cloned/instanced meshes to become invisible.
+ */
+const _loadedContainers: AssetContainer[] = [];
+
+/**
  * Load a GLTF/GLB model and return its root as a TransformNode.
- * Uses LoadAssetContainerAsync — template meshes stay off-scene
- * (not rendered) until explicitly cloned.
+ * Uses LoadAssetContainerAsync, then adds assets to the scene so that
+ * geometry and materials are fully registered. The template root is
+ * disabled so it never renders until explicitly cloned.
  */
 export async function loadModel(url: string): Promise<TransformNode> {
   const scene = getFactoryScene();
@@ -20,6 +29,13 @@ export async function loadModel(url: string): Promise<TransformNode> {
   const filename = lastSlash >= 0 ? url.substring(lastSlash + 1) : url;
 
   const container = await SceneLoader.LoadAssetContainerAsync(rootUrl, filename, scene);
+
+  // Keep a reference to prevent GC from disposing GPU resources
+  _loadedContainers.push(container);
+
+  // Add all container assets (meshes, materials, textures) to the scene
+  // so that clones and instances can properly reference them.
+  container.addAllToScene();
 
   // Create our extended TransformNode as the root
   const root = new TransformNode('__gltfRoot__', scene);

@@ -12,8 +12,9 @@ import {
 
 // ── Canvas + Engine ──────────────────────────────────────────────────────────
 const canvas = document.createElement('canvas');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+// CSS dimensions (100vw × 100vh) are set in main.css.
+// Do NOT set canvas.width / canvas.height manually — BabylonJS Engine manages
+// the pixel-buffer size via setHardwareScalingLevel + engine.resize().
 document.body.appendChild(canvas);
 
 const engine = new Engine(canvas, false, {
@@ -22,6 +23,7 @@ const engine = new Engine(canvas, false, {
   alpha: false,
 });
 engine.setHardwareScalingLevel(1 / Math.min(window.devicePixelRatio, 1.5));
+engine.resize(); // set initial buffer size from CSS clientWidth/clientHeight
 
 // ── Scene ────────────────────────────────────────────────────────────────────
 const bScene = new BScene(engine);
@@ -62,9 +64,9 @@ export const renderer = {
   render(): void {
     bScene.render();
   },
-  setSize(width: number, height: number): void {
-    canvas.width = width;
-    canvas.height = height;
+  setSize(_width: number, _height: number): void {
+    // Canvas buffer is managed by BabylonJS engine via hardwareScalingLevel.
+    // Just tell the engine to recalculate from the CSS clientWidth/clientHeight.
     engine.resize();
   },
   setPixelRatio(ratio: number): void {
@@ -75,5 +77,5 @@ export const renderer = {
 export function handleResize(): void {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  engine.resize();
 }
