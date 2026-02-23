@@ -45,7 +45,7 @@ export const galaxyMode: GameModeHandler = {
 
     ensureGalaxyBuilt();
     hideHUD();
-    playerPlane.visible = false;
+    playerPlane.setVisibleRecursive(false);
     engine.resize();
 
     showGalaxy();

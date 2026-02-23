@@ -93,7 +93,7 @@ function resetCombatState(): void {
   camera.lookAt(playerPlane.position);
 
   // Rebuild player model with current settings colors
-  if (refs.playerModel) playerPlane.remove(refs.playerModel);
+  if (refs.playerModel) refs.playerModel.dispose();
   refs.playerModel = createFighter(
     parseHexColor(settings.colors.playerBody),
     parseHexColor(settings.colors.playerExhaust),
@@ -191,5 +191,6 @@ export const combatMode: GameModeHandler = {
     // Clean up exploration scene backdrop
     clearExplorationScene();
     hideExploration();
+    playerPlane.setVisibleRecursive(false);
   },
 };

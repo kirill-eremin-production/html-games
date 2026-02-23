@@ -115,9 +115,9 @@ export function updatePlayer(dt: number): void {
 
   if (state.invulnTimer > 0) {
     state.invulnTimer -= dt;
-    playerPlane.visible = Math.floor(state.invulnTimer * P.invulnBlinkRate) % 2 === 0;
+    playerPlane.setVisibleRecursive(Math.floor(state.invulnTimer * P.invulnBlinkRate) % 2 === 0);
   } else {
-    playerPlane.visible = true;
+    playerPlane.setVisibleRecursive(true);
   }
 
   state.noDamageTimer += dt;
@@ -162,7 +162,7 @@ export function resetPlayerTransform(x = 0, y = 0, z = 0): void {
   playerRotation.pitch = 0;
   playerRotation.yaw = 0;
   playerRotation.roll = 0;
-  playerPlane.visible = true;
+  playerPlane.setVisibleRecursive(true);
 }
 
 export function playerDeath(): void {

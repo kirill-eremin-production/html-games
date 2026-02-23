@@ -76,9 +76,11 @@ function hexToColor4(hex: number, alpha: number): Color4 {
 // ── Build scene ──────────────────────────────────────────────────────────────
 
 export function buildGalaxyScene(): void {
-  // Clear previous
-  while (galaxyGroup.children.length > 0) {
-    galaxyGroup.remove(galaxyGroup.children[0]);
+  // Dispose previous children (not just remove) — removing only sets parent=null,
+  // which leaves the node as a root scene node still rendering.
+  const oldChildren = [...galaxyGroup.children];
+  for (const child of oldChildren) {
+    child.dispose();
   }
   starMeshes.clear();
   starHalos.clear();

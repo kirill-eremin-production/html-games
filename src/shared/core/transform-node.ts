@@ -41,6 +41,19 @@ export class TransformNode extends BTransformNode {
     this.setEnabled(v);
   }
 
+  /**
+   * Recursively set enabled/disabled for this node and ALL descendants.
+   * Use this instead of `visible` when children are loaded meshes
+   * (BabylonJS `setEnabled` does NOT cascade to children automatically).
+   */
+  setVisibleRecursive(v: boolean): void {
+    this.setEnabled(v);
+    for (const desc of this.getDescendants(false)) {
+      if ('setEnabled' in desc) (desc as BTransformNode).setEnabled(v);
+      if ('isVisible' in desc) (desc as any).isVisible = v;
+    }
+  }
+
   // ── .scale aliases .scaling ──
 
   get scale() {

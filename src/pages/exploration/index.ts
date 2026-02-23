@@ -101,6 +101,6 @@ export const explorationMode: GameModeHandler = {
     hideHUD();
     stopEngineHum();
     cleanupSystems(explorationSystems);
-    playerPlane.visible = false;
+    playerPlane.setVisibleRecursive(false);
   },
 };

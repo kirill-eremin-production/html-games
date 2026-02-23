@@ -122,8 +122,11 @@ export function buildExplorationScene(systemId: string): void {
 }
 
 export function clearExplorationScene(): void {
-  while (explorationGroup.children.length > 0) {
-    explorationGroup.remove(explorationGroup.children[0]);
+  // Dispose children (not just remove) — removing only sets parent=null,
+  // which leaves the node as a root scene node still rendering.
+  const children = [...explorationGroup.children];
+  for (const child of children) {
+    child.dispose();
   }
   planetMeshes.length = 0;
   asteroidMeshes.length = 0;
