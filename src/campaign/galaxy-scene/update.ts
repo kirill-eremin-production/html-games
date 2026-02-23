@@ -1,6 +1,7 @@
 import type { MeshBasicMaterial } from '../../core';
 import { galaxyCamera } from '../galaxy-controls/camera';
 import { campaign } from '../state';
+
 import {
   FAR_SCALE,
   NEARBY_SCALE,

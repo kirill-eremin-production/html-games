@@ -1,6 +1,7 @@
-import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { Constants } from '@babylonjs/core/Engines/constants';
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import type { Scene } from '@babylonjs/core/scene';
+
 import { Color } from './color';
 
 // Counter for auto-naming

@@ -4,7 +4,8 @@ import {
   resumeAudio,
   startEngineHum,
   stopEngineHum,
-} from '../audio/sound';
+} from '../audio';
+
 import { hideExplorationHud, setupExplorationHud } from '../campaign/exploration-scene/hud';
 import {
   buildExplorationScene,
@@ -24,6 +25,7 @@ import type { GameSystem } from '../systems/types';
 import { cleanupSystems, updateSystems } from '../systems/types';
 import { hideHUD, showHUD } from '../ui/hud';
 import { hidePlanetMarkers } from '../ui/planet-markers';
+
 import type { ExplorationModeContext, GameModeHandler } from './types';
 
 // ── Exploration systems ─────────────────────────────────────────────────────

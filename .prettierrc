@@ -7,9 +7,10 @@
     "^three(.*)$",
     "<THIRD_PARTY_MODULES>",
     "^@/(.*)$",
+    "^\\.\\./audio$",
     "^\\.\\./(.*)",
     "^\\./(.*)$"
   ],
-  "importOrderSeparation": false,
+  "importOrderSeparation": true,
   "importOrderSortSpecifiers": true
 }

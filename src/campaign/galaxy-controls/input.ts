@@ -1,5 +1,6 @@
 import { Raycaster, Vector2 } from '../../core';
 import { getStarMeshes, selectSystem } from '../galaxy-scene';
+
 import { galaxyCamera } from './camera';
 import { setSelectedSystemId, updateInfoPanel } from './hud';
 import { isTraveling } from './travel';

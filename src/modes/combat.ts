@@ -6,7 +6,8 @@ import {
   startProximityHum,
   stopEngineHum,
   stopProximityHum,
-} from '../audio/sound';
+} from '../audio';
+
 import { clearExplorationScene, hideExploration } from '../campaign/exploration-scene/index';
 import { updateExplorationScene } from '../campaign/exploration-scene/update';
 import { onCombatEnd } from '../campaign/mode-manager';
@@ -32,6 +33,7 @@ import type { GameSystem } from '../systems/types';
 import { cleanupSystems, initSystems, updateSystems } from '../systems/types';
 import { hideHUD, resetCachedShipHTML, showHUD, showMessage } from '../ui/hud';
 import { clearKillFeed } from '../ui/kill-feed';
+
 import type { CombatModeContext, GameModeHandler } from './types';
 
 // ── Combat systems ──────────────────────────────────────────────────────────

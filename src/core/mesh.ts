@@ -1,5 +1,5 @@
-import { Mesh as BMesh } from '@babylonjs/core/Meshes/mesh';
 import { Quaternion as BQuaternion, Matrix } from '@babylonjs/core/Maths/math.vector';
+import { Mesh as BMesh } from '@babylonjs/core/Meshes/mesh';
 import type { Node } from '@babylonjs/core/node';
 import type { Scene } from '@babylonjs/core/scene';
 

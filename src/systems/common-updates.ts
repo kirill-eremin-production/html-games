@@ -2,6 +2,7 @@ import { state } from '../state';
 import { hideMessage, updateHUD } from '../ui/hud';
 import { drawMinimap } from '../ui/minimap';
 import { updatePlanetMarkers } from '../ui/planet-markers';
+
 import { playerPlane } from './player';
 
 export function updateFlightHUD(): void {

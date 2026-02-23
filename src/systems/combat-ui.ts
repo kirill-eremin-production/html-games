@@ -1,10 +1,12 @@
-import { updateProximityHum } from '../audio/sound';
+import { updateProximityHum } from '../audio';
+
 import { UI_CONFIG } from '../config/ui';
 import { renderer } from '../scene/setup';
 import { state } from '../state';
 import { updateEnemyIndicators } from '../ui/indicators';
 import { updateKillFeed } from '../ui/kill-feed';
 import { updateTargetMarkers } from '../ui/markers';
+
 import { updateFlightHUD, updateMessageTimer } from './common-updates';
 import { playerPlane } from './player';
 import type { GameSystem } from './types';

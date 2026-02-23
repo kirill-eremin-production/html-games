@@ -1,4 +1,5 @@
 import type { GameMode } from '../campaign/types';
+
 import type { GameModeHandler, ModeContext } from './types';
 
 const modes = new Map<string, GameModeHandler>();

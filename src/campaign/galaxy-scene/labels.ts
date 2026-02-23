@@ -2,6 +2,7 @@ import type { ProjectionCamera } from '../../core';
 import { worldToScreen } from '../../utils/screen';
 import { getSystem, systemHasStation } from '../data';
 import { campaign } from '../state';
+
 import { labelElements, nearbySystemIds, refs, starMeshes } from './refs';
 
 export function rebuildLabels(): void {

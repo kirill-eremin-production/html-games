@@ -1,5 +1,6 @@
 import { getSystem } from '../data';
 import { campaign } from '../state';
+
 import { nearbySystemIds } from './refs';
 
 const NEARBY_HOPS = 6;

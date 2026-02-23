@@ -3,6 +3,7 @@ import { Color4 } from '@babylonjs/core/Maths/math.color';
 import { Sprite as BJSSprite } from '@babylonjs/core/Sprites/sprite';
 import { SpriteManager } from '@babylonjs/core/Sprites/spriteManager';
 import '@babylonjs/core/Sprites/spriteSceneComponent';
+
 import type { EngineMesh } from '../../core';
 import {
   DoubleSide,
@@ -21,6 +22,7 @@ import { setStarfieldVisible } from '../../scene/starfield';
 import { parseHexColor, settings } from '../../settings';
 import { STAR_SYSTEMS } from '../data';
 import { campaign } from '../state';
+
 import { createBackgroundStars } from './background';
 import { rebuildLabels, updateGalaxyLabels } from './labels';
 import { recomputeNearby } from './nearby';

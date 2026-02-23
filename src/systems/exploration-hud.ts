@@ -1,6 +1,7 @@
 import { updateExplorationHud } from '../campaign/exploration-scene/hud';
 import { updateExplorationScene } from '../campaign/exploration-scene/update';
 import { state } from '../state';
+
 import { updateFlightHUD, updateMessageTimer } from './common-updates';
 import type { GameSystem } from './types';
 

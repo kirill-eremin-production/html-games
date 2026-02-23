@@ -1,11 +1,11 @@
-import { Mesh as BMesh } from '@babylonjs/core/Meshes/mesh';
 import { Constants } from '@babylonjs/core/Engines/constants';
+import { Mesh as BMesh } from '@babylonjs/core/Meshes/mesh';
 import type { Node } from '@babylonjs/core/node';
 import type { Scene } from '@babylonjs/core/scene';
 
-import { Quaternion } from './quaternion';
 import type { EngineBufferGeometry } from './geometry';
 import type { EnginePointsMaterial } from './material';
+import { Quaternion } from './quaternion';
 import { Vector3 } from './vector3';
 
 /**

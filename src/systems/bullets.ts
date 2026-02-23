@@ -1,10 +1,12 @@
-import { playHitSound } from '../audio/sound';
+import { playHitSound } from '../audio';
+
 import { COMBAT_CONSTANTS } from '../config/combat';
 import { PLAYER_CONFIG } from '../config/player';
-import { emit } from '../events';
 import { Vector3, removeFromScene } from '../core';
+import { emit } from '../events';
 import { state } from '../state';
 import type { Fighter, LaserData } from '../types';
+
 import { destroyFighter, destroySubsystem } from './damage';
 import { createExplosion } from './explosions';
 import { playerPlane } from './player';

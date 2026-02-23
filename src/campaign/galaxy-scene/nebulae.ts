@@ -1,5 +1,12 @@
 import type { CanvasTexture, TransformNode } from '../../core';
-import { Color, createSprite, createSpriteMaterial, createTextureFromCanvas, createTransformNode } from '../../core';
+import {
+  Color,
+  createSprite,
+  createSpriteMaterial,
+  createTextureFromCanvas,
+  createTransformNode,
+} from '../../core';
+
 import { baseNebulaOpacities, nebulaMats } from './refs';
 
 function createNebulaTexture(hue: number, saturation: number): CanvasTexture {

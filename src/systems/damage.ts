@@ -9,6 +9,7 @@ import type { CapitalShip, Fighter, Subsystem } from '../types';
 import { showMessage } from '../ui/hud';
 import { addKillFeedEntry } from '../ui/kill-feed';
 import { disposeObject } from '../utils/dispose';
+
 import { createExplosion } from './explosions';
 import type { GameSystem } from './types';
 

@@ -5,6 +5,7 @@ import { cleanupTeamSources, updateExhaustGlow } from '../scene/models';
 import { state } from '../state';
 import type { Fighter } from '../types';
 import { disposeObject } from '../utils/dispose';
+
 import { playerPlane } from './player';
 import type { GameSystem } from './types';
 import { shootFromFighter } from './weapons';

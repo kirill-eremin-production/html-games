@@ -21,10 +21,7 @@ function teamKey(bodyColor: number, exhaustColor: number): string {
   return `${bodyColor}_${exhaustColor}`;
 }
 
-function ensureTeamSource(
-  bodyColor: number,
-  exhaustColor: number,
-): TeamSource {
+function ensureTeamSource(bodyColor: number, exhaustColor: number): TeamSource {
   const key = teamKey(bodyColor, exhaustColor);
   let entry = teamSourceCache.get(key);
   if (entry) return entry;
@@ -39,10 +36,7 @@ function ensureTeamSource(
       // Hide source mesh — instances will render instead
       desc.isVisible = false;
       const n = desc.name;
-      if (
-        (n === 'exhaust' || n === 'exhaust_L') &&
-        desc.material
-      ) {
+      if ((n === 'exhaust' || n === 'exhaust_L') && desc.material) {
         exhaustMats.push(desc.material as { alpha: number });
       }
     }
@@ -63,9 +57,7 @@ function instanceChildren(source: Node, parent: Node): void {
   for (const child of source.getChildren()) {
     if (child instanceof BMesh && child.getTotalVertices() > 0) {
       // Renderable mesh — create instance
-      const inst = child.createInstance(
-        `${child.name}_i${instanceCounter++}`,
-      );
+      const inst = child.createInstance(`${child.name}_i${instanceCounter++}`);
       inst.parent = parent;
       inst.position.copyFrom(child.position);
       if (child.rotationQuaternion) {
@@ -99,10 +91,7 @@ function instanceChildren(source: Node, parent: Node): void {
  * Create a fighter using InstancedMesh for all renderable sub-meshes.
  * All fighters of the same team share geometry + material → batched draw calls.
  */
-export function createFighterInstanced(
-  bodyColor: number,
-  exhaustColor: number,
-): TransformNode {
+export function createFighterInstanced(bodyColor: number, exhaustColor: number): TransformNode {
   const source = ensureTeamSource(bodyColor, exhaustColor);
 
   const root = new TransformNode(`fighter_i${instanceCounter++}`);

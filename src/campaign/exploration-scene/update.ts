@@ -1,8 +1,9 @@
+import { EXPLORATION_CONFIG } from '../../config/exploration';
 import type { EngineSpriteMaterial } from '../../core';
 import { Vector3 } from '../../core';
-import { EXPLORATION_CONFIG } from '../../config/exploration';
 import { state } from '../../state';
 import { playerPlane } from '../../systems/player';
+
 import { getExplorationDetail } from './index';
 import { explorationRefs, planetMeshes } from './refs';
 

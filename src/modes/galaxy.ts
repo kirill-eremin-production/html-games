@@ -1,5 +1,6 @@
 import { disableGalaxyControls, enableGalaxyControls } from '../campaign/galaxy-controls';
 import { updateTravelAnimation } from '../campaign/galaxy-controls';
+import { galaxyCamera } from '../campaign/galaxy-controls/camera';
 import {
   buildGalaxyScene,
   galaxyGroup,
@@ -11,9 +12,9 @@ import {
   updateGalaxyScene,
   updatePlayerShipPosition,
 } from '../campaign/galaxy-scene';
-import { galaxyCamera } from '../campaign/galaxy-controls/camera';
 import { addToScene } from '../core';
 import { playerPlane } from '../systems/player';
+
 import type { GalaxyModeContext, GameModeHandler } from './types';
 
 let galaxyBuilt = false;

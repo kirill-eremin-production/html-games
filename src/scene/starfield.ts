@@ -1,11 +1,11 @@
 import {
+  type EnginePoints,
+  type Vector3,
   addToScene,
   createBufferAttribute,
   createBufferGeometry,
   createPoints,
   createPointsMaterial,
-  type EnginePoints,
-  type Vector3,
 } from '../core';
 import { playerPlane } from '../systems/player';
 import type { GameSystem } from '../systems/types';

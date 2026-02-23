@@ -1,9 +1,4 @@
-import {
-  AdditiveBlending,
-  Color,
-  MeshBasicMaterial,
-  MeshPhongMaterial,
-} from '../../../core';
+import { AdditiveBlending, Color, MeshBasicMaterial, MeshPhongMaterial } from '../../../core';
 
 // Shared across all fighters (team-independent)
 export const canopyMat = new MeshPhongMaterial({

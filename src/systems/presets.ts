@@ -1,5 +1,6 @@
 import { inputSystem } from '../input';
 import { starfieldSystem } from '../scene/starfield';
+
 import { bulletSystem } from './bullets';
 import { explosionSystem } from './explosions';
 import { playerSystem } from './player';

@@ -1,5 +1,6 @@
 import { renderer } from '../core';
 import { updateCurrentMode } from '../modes/registry';
+
 import { clock } from './refs';
 
 const TARGET_FPS = 60;

@@ -1,11 +1,14 @@
+import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { Color4 } from '@babylonjs/core/Maths/math.color';
 import { Vector3 as BVector3 } from '@babylonjs/core/Maths/math.vector';
 import { ParticleSystem } from '@babylonjs/core/Particles/particleSystem';
-import { Texture } from '@babylonjs/core/Materials/Textures/texture';
-import { playExplosionSound } from '../audio/sound';
+
+import { playExplosionSound } from '../audio';
+
 import { COMBAT_CONSTANTS } from '../config/combat';
 import { type Vector3, createUnlitMaterial } from '../core';
 import { scene } from '../scene/setup';
+
 import type { GameSystem } from './types';
 
 const C = COMBAT_CONSTANTS;
@@ -47,8 +50,7 @@ const active = new Set<ParticleSystem>();
 export function createExplosion(position: Vector3, size = 1): void {
   playExplosionSound(size);
 
-  const count =
-    C.explosionParticleMin + Math.floor(Math.random() * C.explosionParticleRandomExtra);
+  const count = C.explosionParticleMin + Math.floor(Math.random() * C.explosionParticleRandomExtra);
 
   const ps = new ParticleSystem('explosion', count + 2, scene);
   ps.particleTexture = particleTexture();

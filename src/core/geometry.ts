@@ -1,6 +1,7 @@
+import type { Mesh as BMesh } from '@babylonjs/core/Meshes/mesh';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
-import type { Mesh as BMesh } from '@babylonjs/core/Meshes/mesh';
+
 import type { Vector3 } from './vector3';
 
 export class EngineBufferAttribute {

@@ -1,4 +1,5 @@
-import { initAudio, isAudioInitialized, resumeAudio } from '../audio/sound';
+import { initAudio, isAudioInitialized, resumeAudio } from '../audio';
+
 import { DEFAULT_COMBAT_CONFIG } from '../campaign/balance';
 import {
   enterCampaignFromMenu,
@@ -9,6 +10,7 @@ import { isCampaignActive } from '../campaign/state';
 import type { CombatConfig } from '../campaign/types';
 import { switchMode } from '../modes/registry';
 import { state } from '../state';
+
 import { clock, pauseScreen, refs } from './refs';
 
 // ── Pause ────────────────────────────────────────────────────────────────────

@@ -1,4 +1,5 @@
-import { playLaserSound, updateEngineHum } from '../audio/sound';
+import { playLaserSound, updateEngineHum } from '../audio';
+
 import { flightModels } from '../config/flight-models';
 import { PLAYER_CONFIG } from '../config/player';
 import { PLAYER_NAME } from '../constants';
@@ -16,6 +17,7 @@ import { GUN_OFFSET_L, GUN_OFFSET_R } from '../scene/models';
 import { state } from '../state';
 import { showMessage } from '../ui/hud';
 import { addKillFeedEntry } from '../ui/kill-feed';
+
 import { createExplosion } from './explosions';
 import type { GameSystem } from './types';
 import { createLaser } from './weapons';

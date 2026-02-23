@@ -1,4 +1,9 @@
-import { Matrix, Quaternion, Vector2 as BjsVector2, Vector3 as BjsVector3 } from '@babylonjs/core/Maths/math.vector';
+import {
+  Vector2 as BjsVector2,
+  Vector3 as BjsVector3,
+  Matrix,
+  Quaternion,
+} from '@babylonjs/core/Maths/math.vector';
 
 // Reusable matrices for projection/unprojection
 const _tmpMat1 = new Matrix();
@@ -84,7 +89,11 @@ export class Vector3 extends BjsVector3 {
   }
 
   /** Three.js compat: unproject from NDC to world space using camera matrices. */
-  unproject(cam: { getViewMatrix(): Matrix; getProjectionMatrix(): Matrix; _updateMatrices?(): void }): this {
+  unproject(cam: {
+    getViewMatrix(): Matrix;
+    getProjectionMatrix(): Matrix;
+    _updateMatrices?(): void;
+  }): this {
     cam._updateMatrices?.();
     const vm = cam.getViewMatrix();
     const pm = cam.getProjectionMatrix();

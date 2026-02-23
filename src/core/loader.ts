@@ -1,11 +1,11 @@
 import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
-import '@babylonjs/loaders/glTF';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
-import type { Node } from '@babylonjs/core/node';
 import type { TransformNode as BTransformNode } from '@babylonjs/core/Meshes/transformNode';
+import type { Node } from '@babylonjs/core/node';
+import '@babylonjs/loaders/glTF';
 
-import { TransformNode } from './transform-node';
 import { getFactoryScene } from './factories';
+import { TransformNode } from './transform-node';
 
 /**
  * Load a GLTF/GLB model and return its root as a TransformNode.
@@ -82,9 +82,5 @@ export function isEngineMesh(obj: unknown): boolean {
   // Check for our EngineMesh.isMesh flag or BJS AbstractMesh
   if ((obj as { isMesh?: boolean }).isMesh) return true;
   // Check for BJS Mesh by duck-typing (has geometry property via getVerticesData)
-  return (
-    'getBoundingInfo' in obj &&
-    'material' in obj &&
-    'getVerticesData' in obj
-  );
+  return 'getBoundingInfo' in obj && 'material' in obj && 'getVerticesData' in obj;
 }

@@ -1,3 +1,4 @@
+import { EXPLORATION_CONFIG } from '../../config/exploration';
 import {
   DoubleSide,
   addToScene,
@@ -12,9 +13,9 @@ import {
   createUnlitMaterial,
 } from '../../core';
 import { createIcosahedronGeometry } from '../../core';
-import { EXPLORATION_CONFIG } from '../../config/exploration';
 import { getSystemDetail, mulberry32 } from '../data';
 import type { SystemDetail } from '../types';
+
 import { asteroidMeshes, explorationGroup, explorationRefs, planetMeshes } from './refs';
 
 const GALAXY_SEED = 42;

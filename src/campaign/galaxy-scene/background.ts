@@ -3,9 +3,11 @@ import { Effect } from '@babylonjs/core/Materials/effect';
 import { ShaderMaterial } from '@babylonjs/core/Materials/shaderMaterial';
 import { Mesh as BMesh } from '@babylonjs/core/Meshes/mesh';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
+
 import type { TransformNode } from '../../core';
 import { createTransformNode } from '../../core';
 import { scene } from '../../scene/setup';
+
 import { refs } from './refs';
 
 // ── Register GLSL shaders ───────────────────────────────────────────────────
@@ -142,11 +144,7 @@ export function createBackgroundStars(): TransformNode {
     regionPal[i] = Math.floor(Math.random() * REGION_PALETTES.length);
   }
 
-  function getRegionColor(
-    x: number,
-    z: number,
-    baseBrightness: number,
-  ): [number, number, number] {
+  function getRegionColor(x: number, z: number, baseBrightness: number): [number, number, number] {
     let bestDist = Infinity;
     let bestIdx = -1;
     let secondDist = Infinity;

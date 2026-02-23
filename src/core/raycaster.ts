@@ -1,6 +1,6 @@
-import type { Scene } from '@babylonjs/core/scene';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { Node } from '@babylonjs/core/node';
+import type { Scene } from '@babylonjs/core/scene';
 
 export interface Intersection {
   object: Node;

@@ -1,4 +1,5 @@
-import { playLaserSound } from '../audio/sound';
+import { playLaserSound } from '../audio';
+
 import { WEAPON_CONFIG } from '../config/weapons';
 import {
   Quaternion,

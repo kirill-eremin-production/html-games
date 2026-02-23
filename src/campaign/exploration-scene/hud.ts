@@ -1,5 +1,6 @@
 import { getSystem } from '../data';
 import { campaign } from '../state';
+
 import { getExplorationDetail } from './index';
 import { explorationRefs } from './refs';
 import { EXPLORATION_TEMPLATES } from './templates';

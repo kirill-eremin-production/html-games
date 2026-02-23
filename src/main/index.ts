@@ -1,4 +1,5 @@
 import { SceneOptimizer, SceneOptimizerOptions } from '@babylonjs/core/Misc/sceneOptimizer';
+
 import { addToScene, camera } from '../core';
 import { combatMode } from '../modes/combat';
 import { explorationMode } from '../modes/exploration';
@@ -14,6 +15,7 @@ import '../styles/main.css';
 import { playerPlane } from '../systems/player';
 import { showSettingsScreen } from '../ui/settings-ui';
 import { initTouchControls } from '../ui/touch-controls';
+
 import { pauseGame, quitBattle, resumeGame, startCampaign, startQuickPlay } from './combat';
 import { gameLoop } from './game-loop';
 import { setupInputListeners } from './input';
@@ -59,10 +61,7 @@ async function init(): Promise<void> {
   initTouchControls(pauseGame);
 
   // Auto-optimize scene when FPS drops
-  SceneOptimizer.OptimizeAsync(
-    scene,
-    SceneOptimizerOptions.ModerateDegradationAllowed(60),
-  );
+  SceneOptimizer.OptimizeAsync(scene, SceneOptimizerOptions.ModerateDegradationAllowed(60));
 
   clock.start();
   gameLoop();

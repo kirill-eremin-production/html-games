@@ -1,9 +1,10 @@
-import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
-import { Vector3 as BVector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
+import { Vector3 as BVector3 } from '@babylonjs/core/Maths/math.vector';
 import type { LinesMesh } from '@babylonjs/core/Meshes/linesMesh';
+import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import type { Node } from '@babylonjs/core/node';
 import type { Scene } from '@babylonjs/core/scene';
+
 import type { EngineBufferGeometry } from './geometry';
 import type { EngineLineMaterial } from './material';
 
@@ -47,22 +48,14 @@ export class EngineLine {
     const points: BVector3[] = [];
     for (let i = 0; i < posAttr.count; i++) {
       points.push(
-        new BVector3(
-          posAttr.array[i * 3],
-          posAttr.array[i * 3 + 1],
-          posAttr.array[i * 3 + 2],
-        ),
+        new BVector3(posAttr.array[i * 3], posAttr.array[i * 3 + 1], posAttr.array[i * 3 + 2]),
       );
     }
     if (points.length < 2) return;
 
     if (this._linesMesh) this._linesMesh.dispose();
 
-    this._linesMesh = MeshBuilder.CreateLines(
-      this.name || 'line',
-      { points },
-      scene,
-    );
+    this._linesMesh = MeshBuilder.CreateLines(this.name || 'line', { points }, scene);
 
     if (this.material) {
       const c = this.material.color;

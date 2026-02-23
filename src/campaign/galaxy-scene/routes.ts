@@ -2,6 +2,7 @@ import type { EngineLineMaterial } from '../../core';
 import { createBufferGeometry, createLine, createLineMaterial } from '../../core';
 import { getSystem } from '../data';
 import { campaign } from '../state';
+
 import { galaxyGroup, routeLines, starMeshes } from './refs';
 
 export function rebuildRouteLines(): void {

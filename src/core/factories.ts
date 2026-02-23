@@ -1,36 +1,37 @@
-import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
 import { DirectionalLight as BDirectionalLight } from '@babylonjs/core/Lights/directionalLight';
+import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
 import { PointLight as BPointLight } from '@babylonjs/core/Lights/pointLight';
-import { Vector3 as BVector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
-import type { Scene } from '@babylonjs/core/scene';
+import { Vector3 as BVector3 } from '@babylonjs/core/Maths/math.vector';
 import type { Node } from '@babylonjs/core/node';
-import { TransformNode } from './transform-node';
-import { EngineMesh } from './mesh';
-import { EngineSprite } from './sprite';
-import { EnginePoints } from './points';
-import { EngineLine } from './line';
+import type { Scene } from '@babylonjs/core/scene';
+
+import { Color } from './color';
 import {
-  EngineMaterial,
-  MeshBasicMaterial,
-  EngineSpriteMaterial,
-  EnginePointsMaterial,
-  EngineLineMaterial,
-  type MaterialConfig,
-} from './material';
-import {
-  type EngineBufferGeometry,
-  EngineBufferAttribute,
   EngineBufferGeometry as BufferGeometryClass,
-  SphereGeometry,
   CylinderGeometry,
+  EngineBufferAttribute,
+  type EngineBufferGeometry,
+  IcosahedronGeometry,
+  OctahedronGeometry,
   PlaneGeometry,
   RingGeometry,
-  OctahedronGeometry,
-  IcosahedronGeometry,
+  SphereGeometry,
 } from './geometry';
-import { Color } from './color';
+import { EngineLine } from './line';
+import {
+  EngineLineMaterial,
+  EngineMaterial,
+  EnginePointsMaterial,
+  EngineSpriteMaterial,
+  type MaterialConfig,
+  MeshBasicMaterial,
+} from './material';
+import { EngineMesh } from './mesh';
+import { EnginePoints } from './points';
+import { EngineSprite } from './sprite';
 import { CanvasTexture } from './texture';
+import { TransformNode } from './transform-node';
 import { Vector3 } from './vector3';
 
 // ── Scene reference (set once by scene/setup.ts) ─────────────────────────
@@ -48,10 +49,7 @@ export function createTransformNode(): TransformNode {
 }
 
 // ── Mesh creation ────────────────────────────────────────────────────────────
-export function createMesh(
-  geometry: EngineBufferGeometry,
-  material: EngineMaterial,
-): EngineMesh {
+export function createMesh(geometry: EngineBufferGeometry, material: EngineMaterial): EngineMesh {
   const mesh = new EngineMesh('', _scene);
   geometry._applyToMesh(mesh);
   mesh.material = material;
@@ -146,14 +144,16 @@ export function createAdditiveMaterial(opts: MaterialConfig = {}): MeshBasicMate
   return mat;
 }
 
-export function createSpriteMaterial(opts: {
-  map?: CanvasTexture;
-  color?: number;
-  transparent?: boolean;
-  opacity?: number;
-  depthWrite?: boolean;
-  additive?: boolean;
-} = {}): EngineSpriteMaterial {
+export function createSpriteMaterial(
+  opts: {
+    map?: CanvasTexture;
+    color?: number;
+    transparent?: boolean;
+    opacity?: number;
+    depthWrite?: boolean;
+    additive?: boolean;
+  } = {},
+): EngineSpriteMaterial {
   const mat = new EngineSpriteMaterial(undefined, _scene ?? undefined);
   if (opts.map) mat.map = opts.map;
   if (opts.color !== undefined) mat.color.setHex(opts.color);
@@ -164,16 +164,18 @@ export function createSpriteMaterial(opts: {
   return mat;
 }
 
-export function createPointsMaterial(opts: {
-  size?: number;
-  map?: CanvasTexture;
-  vertexColors?: boolean;
-  transparent?: boolean;
-  opacity?: number;
-  depthWrite?: boolean;
-  additive?: boolean;
-  sizeAttenuation?: boolean;
-} = {}): EnginePointsMaterial {
+export function createPointsMaterial(
+  opts: {
+    size?: number;
+    map?: CanvasTexture;
+    vertexColors?: boolean;
+    transparent?: boolean;
+    opacity?: number;
+    depthWrite?: boolean;
+    additive?: boolean;
+    sizeAttenuation?: boolean;
+  } = {},
+): EnginePointsMaterial {
   const mat = new EnginePointsMaterial(undefined, _scene ?? undefined);
   if (opts.size !== undefined) mat.size = opts.size;
   if (opts.map) mat.map = opts.map;
@@ -241,11 +243,7 @@ export function createPoints(
 
 // ── Lights ──────────────────────────────────────────────────────────────────
 function hexToColor3(hex: number): Color3 {
-  return new Color3(
-    ((hex >> 16) & 0xff) / 255,
-    ((hex >> 8) & 0xff) / 255,
-    (hex & 0xff) / 255,
-  );
+  return new Color3(((hex >> 16) & 0xff) / 255, ((hex >> 8) & 0xff) / 255, (hex & 0xff) / 255);
 }
 
 export class AmbientLight extends HemisphericLight {
@@ -285,10 +283,7 @@ export class PointLightWrapper extends BPointLight {
 export { PointLightWrapper as PointLight };
 
 // ── Material utilities ──────────────────────────────────────────────────────
-export function setMaterialOpacity(
-  mat: EngineMaterial | EngineMaterial[],
-  opacity: number,
-): void {
+export function setMaterialOpacity(mat: EngineMaterial | EngineMaterial[], opacity: number): void {
   const mats = Array.isArray(mat) ? mat : [mat];
   for (const m of mats) m.opacity = opacity;
 }

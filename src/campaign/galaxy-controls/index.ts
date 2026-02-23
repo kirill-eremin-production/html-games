@@ -1,4 +1,5 @@
 import { highlightRoutes, selectSystem, updateContractMarker } from '../galaxy-scene';
+
 import {
   activateGalaxyCamera,
   centerOnCurrentSystem,

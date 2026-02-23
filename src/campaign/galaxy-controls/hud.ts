@@ -2,6 +2,7 @@ import { isTouchDevice } from '../../ui/touch-controls';
 import { getFuelCost, getSystem, systemHasStation } from '../data';
 import { selectSystem, setGalaxyBrightness } from '../galaxy-scene';
 import { campaign, spendFuel } from '../state';
+
 import { GALAXY_TEMPLATES } from './templates';
 
 // ── State ────────────────────────────────────────────────────────────────────

@@ -1,3 +1,4 @@
+import { SUBSYSTEM_HP } from '../../constants';
 import {
   Color,
   type EngineMesh,
@@ -9,8 +10,8 @@ import {
   loadModel,
   traverseNode,
 } from '../../core';
-import { SUBSYSTEM_HP } from '../../constants';
 import type { Subsystem } from '../../types';
+
 import {
   canopyMat,
   createAccentMat,

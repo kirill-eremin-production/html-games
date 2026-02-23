@@ -4,6 +4,7 @@ import { Vector3, addToScene } from '../core';
 import { addHealthBar, createFighterInstanced } from '../scene/models';
 import { parseHexColor, settings } from '../settings';
 import { nextAllyName, nextEnemyName, state } from '../state';
+
 import { playerPlane } from './player';
 import type { GameSystem } from './types';
 

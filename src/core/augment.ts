@@ -5,8 +5,8 @@
  * This file must be imported (for side effects) before any game code runs.
  * Existing BJS methods (add, cross, multiply, etc.) are NOT modified.
  */
-import { Matrix, Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
+import { Matrix, Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 
 // ── Reusable temp matrices ──────────────────────────────────────────────────
 const _tmpMat1 = new Matrix();
@@ -35,9 +35,7 @@ Vector3.prototype.addScaledVector = function (dir: Vector3, s: number): Vector3 
   return this.addInPlaceFromFloats(dir.x * s, dir.y * s, dir.z * s);
 };
 Vector3.prototype.distanceTo = function (v: Vector3): number {
-  return Math.sqrt(
-    (this.x - v.x) ** 2 + (this.y - v.y) ** 2 + (this.z - v.z) ** 2,
-  );
+  return Math.sqrt((this.x - v.x) ** 2 + (this.y - v.y) ** 2 + (this.z - v.z) ** 2);
 };
 Vector3.prototype.distanceToSquared = function (v: Vector3): number {
   return (this.x - v.x) ** 2 + (this.y - v.y) ** 2 + (this.z - v.z) ** 2;
@@ -61,9 +59,11 @@ Vector3.prototype.lerpVectors = function (v1: Vector3, v2: Vector3, t: number): 
   this.z = v1.z + (v2.z - v1.z) * t;
   return this;
 };
-Vector3.prototype.unproject = function (
-  cam: { getViewMatrix(): Matrix; getProjectionMatrix(): Matrix; _updateMatrices?(): void },
-): Vector3 {
+Vector3.prototype.unproject = function (cam: {
+  getViewMatrix(): Matrix;
+  getProjectionMatrix(): Matrix;
+  _updateMatrices?(): void;
+}): Vector3 {
   cam._updateMatrices?.();
   const vm = cam.getViewMatrix();
   const pm = cam.getProjectionMatrix();
@@ -90,7 +90,10 @@ Quaternion.prototype.setFromUnitVectors = function (from: Vector3, to: Vector3):
   return this;
 };
 Quaternion.prototype.premultiply = function (q: Quaternion): Quaternion {
-  const tx = this.x, ty = this.y, tz = this.z, tw = this.w;
+  const tx = this.x,
+    ty = this.y,
+    tz = this.z,
+    tw = this.w;
   this.x = q.w * tx + q.x * tw + q.y * tz - q.z * ty;
   this.y = q.w * ty - q.x * tz + q.y * tw + q.z * tx;
   this.z = q.w * tz + q.x * ty - q.y * tx + q.z * tw;
@@ -167,7 +170,11 @@ declare module '@babylonjs/core/Maths/math.vector' {
     applyMatrix4(m: Matrix): this;
     lerp(v: Vector3, t: number): this;
     lerpVectors(v1: Vector3, v2: Vector3, t: number): this;
-    unproject(cam: { getViewMatrix(): Matrix; getProjectionMatrix(): Matrix; _updateMatrices?(): void }): this;
+    unproject(cam: {
+      getViewMatrix(): Matrix;
+      getProjectionMatrix(): Matrix;
+      _updateMatrices?(): void;
+    }): this;
   }
 
   interface Quaternion {

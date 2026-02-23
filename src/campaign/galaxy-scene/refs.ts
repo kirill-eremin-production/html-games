@@ -1,12 +1,8 @@
 import type { ShaderMaterial } from '@babylonjs/core/Materials/shaderMaterial';
 import type { Sprite as BJSSprite } from '@babylonjs/core/Sprites/sprite';
 import type { ISpriteManager } from '@babylonjs/core/Sprites/spriteManager';
-import type {
-  EngineLine,
-  EngineMesh,
-  EngineSpriteMaterial,
-  TransformNode,
-} from '../../core';
+
+import type { EngineLine, EngineMesh, EngineSpriteMaterial, TransformNode } from '../../core';
 import { Vector3, createTransformNode } from '../../core';
 
 export const galaxyGroup = createTransformNode();

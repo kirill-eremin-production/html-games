@@ -8,6 +8,7 @@ import {
   updatePlayerShipPosition,
 } from '../galaxy-scene';
 import { campaign, regenerateContracts, travelToSystem } from '../state';
+
 import { attachGalaxyInput, detachGalaxyInput, lerpOrbitTarget, setOrbitTarget } from './camera';
 import { deselectSystem, updateGalaxyHud } from './hud';
 

@@ -1,4 +1,4 @@
-import { Matrix, Vector3 as BVector3 } from '@babylonjs/core/Maths/math.vector';
+import { Vector3 as BVector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 
 import type { Quaternion } from './quaternion';
 import type { Vector3 } from './vector3';

@@ -1,5 +1,6 @@
 import { switchMode } from '../modes/registry';
 import { setStarfieldVisible } from '../scene/starfield';
+
 import { DIFFICULTY_CONFIGS } from './balance';
 import { hideCombatResult, showCombatQuitResult, showCombatResult } from './combat-result';
 import {
