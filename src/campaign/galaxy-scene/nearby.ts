@@ -1,27 +1,27 @@
-import { getSystem } from '../data';
+import { NEARBY_RADIUS_MULTIPLIER } from '../balance';
+import { STAR_SYSTEMS, getSystem } from '../data';
 import { campaign } from '../state';
 
 import { nearbySystemIds } from './refs';
 
-const NEARBY_HOPS = 6;
-
 export function recomputeNearby(): void {
   nearbySystemIds.clear();
 
-  const queue: [string, number][] = [[campaign.currentSystemId, 0]];
+  const center = getSystem(campaign.currentSystemId);
+  if (!center) return;
+
+  const nearbyRadius = campaign.engineRange * NEARBY_RADIUS_MULTIPLIER;
+  const nearbyRadiusSq = nearbyRadius * nearbyRadius;
+
   nearbySystemIds.add(campaign.currentSystemId);
 
-  while (queue.length > 0) {
-    const [id, depth] = queue.shift()!;
-    if (depth >= NEARBY_HOPS) continue;
-
-    const sys = getSystem(id);
-    if (!sys) continue;
-    for (const connId of sys.connections) {
-      if (!nearbySystemIds.has(connId)) {
-        nearbySystemIds.add(connId);
-        queue.push([connId, depth + 1]);
-      }
+  for (const sys of STAR_SYSTEMS) {
+    if (sys.id === campaign.currentSystemId) continue;
+    const dx = center.position[0] - sys.position[0];
+    const dy = center.position[1] - sys.position[1];
+    const dz = center.position[2] - sys.position[2];
+    if (dx * dx + dy * dy + dz * dz <= nearbyRadiusSq) {
+      nearbySystemIds.add(sys.id);
     }
   }
 }

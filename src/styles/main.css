@@ -931,6 +931,10 @@ body.galaxy-mode canvas {
 .gal-fuel {
   color: #44ff88;
 }
+.gal-range {
+  color: #88ccff;
+  margin-left: 15px;
+}
 .gal-contract {
   color: #ff6644;
   font-size: 13px;

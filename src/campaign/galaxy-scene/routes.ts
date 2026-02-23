@@ -1,31 +1,61 @@
-import type { EngineLineMaterial } from '@/shared/core';
-import { createBufferGeometry, createLine, createLineMaterial } from '@/shared/core';
+import {
+  Vector3,
+  createLineFromPoints,
+  createMesh,
+  createRingGeometry,
+  createUnlitMaterial,
+} from '@/shared/core';
 import { getSystem } from '../data';
 import { campaign } from '../state';
 
-import { galaxyGroup, routeLines, starMeshes } from './refs';
+import { galaxyGroup, rangeCircle } from './refs';
+
+const CIRCLE_SEGMENTS = 64;
+
+function buildCirclePoints(cx: number, cy: number, cz: number, radius: number): Vector3[] {
+  const points: Vector3[] = [];
+  for (let i = 0; i <= CIRCLE_SEGMENTS; i++) {
+    const angle = (i / CIRCLE_SEGMENTS) * Math.PI * 2;
+    points.push(
+      new Vector3(cx + Math.cos(angle) * radius, cy + 0.05, cz + Math.sin(angle) * radius),
+    );
+  }
+  return points;
+}
 
 export function rebuildRouteLines(): void {
-  for (const line of routeLines) {
-    line.parent = null;
-    line.geometry?.dispose();
-    (line.material as EngineLineMaterial).dispose();
+  // Dispose old range circle
+  if (rangeCircle.mesh) {
+    if (rangeCircle.mesh.material) rangeCircle.mesh.material.dispose();
+    rangeCircle.mesh.dispose();
+    rangeCircle.mesh = null;
   }
-  routeLines.length = 0;
+  if (rangeCircle.line) {
+    rangeCircle.line.dispose();
+    rangeCircle.line = null;
+  }
 
   const currentSys = getSystem(campaign.currentSystemId);
   if (!currentSys) return;
 
-  for (const connId of currentSys.connections) {
-    const from = starMeshes.get(campaign.currentSystemId);
-    const to = starMeshes.get(connId);
-    if (!from || !to) continue;
+  const range = campaign.engineRange;
+  const [cx, cy, cz] = currentSys.position;
 
-    const points = [from.position, to.position];
-    const geo = createBufferGeometry().setFromPoints(points);
-    const mat = createLineMaterial(0x00ccff, true, 0.5);
-    const line = createLine(geo, mat);
-    line.parent = galaxyGroup;
-    routeLines.push(line);
-  }
+  // Semi-transparent filled disc
+  const discGeo = createRingGeometry(0, range, CIRCLE_SEGMENTS);
+  const discMat = createUnlitMaterial({
+    color: 0x00ccff,
+    transparent: true,
+    opacity: 0.06,
+    side: 2,
+  });
+  rangeCircle.mesh = createMesh(discGeo, discMat);
+  rangeCircle.mesh.position.set(cx, cy + 0.02, cz);
+  rangeCircle.mesh.rotation.x = -Math.PI / 2;
+  galaxyGroup.add(rangeCircle.mesh);
+
+  // Circle outline
+  const circlePoints = buildCirclePoints(cx, cy, cz, range);
+  rangeCircle.line = createLineFromPoints(circlePoints, 0x00ccff, true, 0.5);
+  rangeCircle.line.parent = galaxyGroup;
 }

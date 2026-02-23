@@ -1,4 +1,11 @@
-import { MAX_FUEL, QUIT_PENALTY, REWARDS, STARTING_FUEL, STARTING_MONEY } from './balance';
+import {
+  MAX_FUEL,
+  QUIT_PENALTY,
+  REWARDS,
+  STARTING_ENGINE_RANGE,
+  STARTING_FUEL,
+  STARTING_MONEY,
+} from './balance';
 import { generateContracts, getSystem } from './data';
 import type { CampaignState, Contract } from './types';
 
@@ -12,6 +19,7 @@ export const campaign: CampaignState = {
   money: STARTING_MONEY,
   fuel: STARTING_FUEL,
   maxFuel: MAX_FUEL,
+  engineRange: STARTING_ENGINE_RANGE,
   currentSystemId: 'solaris',
   activeContract: null,
   completedContracts: 0,
@@ -30,6 +38,7 @@ export function startCampaign(): void {
   campaign.money = STARTING_MONEY;
   campaign.fuel = STARTING_FUEL;
   campaign.maxFuel = MAX_FUEL;
+  campaign.engineRange = STARTING_ENGINE_RANGE;
   campaign.currentSystemId = 'solaris';
   campaign.activeContract = null;
   campaign.completedContracts = 0;
@@ -130,6 +139,7 @@ export function saveCampaign(): void {
         money: campaign.money,
         fuel: campaign.fuel,
         maxFuel: campaign.maxFuel,
+        engineRange: campaign.engineRange,
         currentSystemId: campaign.currentSystemId,
         activeContract: campaign.activeContract,
         completedContracts: campaign.completedContracts,
@@ -149,6 +159,7 @@ export function loadCampaign(): boolean {
     campaign.money = data.money ?? STARTING_MONEY;
     campaign.fuel = data.fuel ?? STARTING_FUEL;
     campaign.maxFuel = data.maxFuel ?? MAX_FUEL;
+    campaign.engineRange = data.engineRange ?? STARTING_ENGINE_RANGE;
     campaign.currentSystemId = data.currentSystemId ?? 'solaris';
     campaign.activeContract = data.activeContract ?? null;
     campaign.completedContracts = data.completedContracts ?? 0;

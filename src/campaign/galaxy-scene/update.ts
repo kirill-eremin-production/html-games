@@ -1,4 +1,4 @@
-import type { MeshBasicMaterial } from '@/shared/core';
+import type { EngineLineMaterial, MeshBasicMaterial } from '@/shared/core';
 
 import { galaxyCamera } from '../galaxy-controls/camera';
 import { campaign } from '../state';
@@ -9,6 +9,7 @@ import {
   SCALE_LERP_SPEED,
   nearbySystemIds,
   pulse,
+  rangeCircle,
   refs,
   starHalos,
   starMeshes,
@@ -44,6 +45,12 @@ export function updateGalaxyScene(dt: number): void {
   if (refs.selectionRing && refs.selectionRing.visible) {
     const mat = refs.selectionRing.material as MeshBasicMaterial;
     mat.opacity = 0.5 + Math.sin(pulse.time * 4) * 0.2;
+  }
+
+  // Range circle outline pulse
+  if (rangeCircle.line?.material) {
+    const mat = rangeCircle.line.material as EngineLineMaterial;
+    mat.opacity = 0.4 + Math.sin(pulse.time * 2) * 0.15;
   }
 
   // Animate star scales (nearby = full, far = half)

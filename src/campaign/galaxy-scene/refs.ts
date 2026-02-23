@@ -10,7 +10,10 @@ galaxyGroup.visible = false;
 
 export const starMeshes = new Map<string, EngineMesh>();
 export const starHalos = new Map<string, BJSSprite>();
-export const routeLines: EngineLine[] = [];
+export const rangeCircle = {
+  mesh: null as EngineMesh | null,
+  line: null as EngineLine | null,
+};
 
 export const labelElements = new Map<string, HTMLElement>();
 export const nearbySystemIds = new Set<string>();

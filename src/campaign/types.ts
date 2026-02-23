@@ -40,6 +40,7 @@ export interface CampaignState {
   money: number;
   fuel: number;
   maxFuel: number;
+  engineRange: number;
   currentSystemId: string;
   activeContract: Contract | null;
   completedContracts: number;
