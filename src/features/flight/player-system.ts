@@ -5,7 +5,6 @@ import {
   EngineMesh,
   MeshBasicMaterial,
   Quaternion,
-  TransformNode,
   Vector3,
   createTransformNode,
   vec3Unproject,
@@ -49,9 +48,9 @@ export function updatePlayer(dt: number): void {
   };
   const mxAdj = applyDZ(mx),
     myAdj = applyDZ(my);
-  let pitchInput = -myAdj,
-    yawInput = -mxAdj,
-    rollInput = -mxAdj * P.rollFromMouse;
+  const pitchInput = -myAdj,
+    yawInput = -mxAdj;
+  let rollInput = -mxAdj * P.rollFromMouse;
   if (actions.rollLeft) rollInput -= P.keyRollStrength;
   if (actions.rollRight) rollInput += P.keyRollStrength;
 

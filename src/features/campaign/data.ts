@@ -209,7 +209,6 @@ function generateName(index: number, rng: () => number): string {
   if (index < REAL_STAR_NAMES.length) {
     return REAL_STAR_NAMES[index];
   }
-  const sectorNum = Math.floor((index - REAL_STAR_NAMES.length) / GREEK_LETTERS.length) + 1;
   const letterIdx = (index - REAL_STAR_NAMES.length) % GREEK_LETTERS.length;
   const sectorId = Math.floor(rng() * 900 + 100);
   return `${GREEK_LETTERS[letterIdx]}-${sectorId}`;
@@ -440,7 +439,7 @@ const HARD_DESCS = [
 ];
 
 /** Find systems within a given distance from start */
-function findNearbySystemIds(startId: string, _maxHops: number): string[] {
+function findNearbySystemIds(startId: string): string[] {
   const center = getSystem(startId);
   const result: string[] = [];
   const radiusSq = 50 * 50;
@@ -558,7 +557,7 @@ export function generateContracts(currentSystemId: string): {
   targetSystemId: string;
 }[] {
   // Pick targets within 2-4 hops
-  const nearby = findNearbySystemIds(currentSystemId, 4);
+  const nearby = findNearbySystemIds(currentSystemId);
   const shuffled = nearby.sort(() => Math.random() - 0.5);
 
   const pick = (i: number) =>

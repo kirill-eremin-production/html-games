@@ -6,7 +6,6 @@ import { Vector3 as BVector3 } from '@babylonjs/core/Maths/math.vector';
 import type { Node } from '@babylonjs/core/node';
 import type { Scene } from '@babylonjs/core/scene';
 
-import { Color } from './color';
 import {
   EngineBufferGeometry as BufferGeometryClass,
   CylinderGeometry,

@@ -1,4 +1,4 @@
-import { highlightRoutes, selectSystem, updateContractMarker } from '../scene';
+import { highlightRoutes, updateContractMarker } from '../scene';
 
 import {
   activateGalaxyCamera,

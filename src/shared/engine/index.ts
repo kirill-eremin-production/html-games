@@ -64,11 +64,6 @@ export const renderer = {
   render(): void {
     bScene.render();
   },
-  setSize(_width: number, _height: number): void {
-    // Canvas buffer is managed by BabylonJS engine via hardwareScalingLevel.
-    // Just tell the engine to recalculate from the CSS clientWidth/clientHeight.
-    engine.resize();
-  },
   setPixelRatio(ratio: number): void {
     engine.setHardwareScalingLevel(1 / ratio);
   },

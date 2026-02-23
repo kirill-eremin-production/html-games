@@ -1,7 +1,7 @@
 import { playLaserSound } from '@/shared/audio';
 import { COMBAT_CONSTANTS } from '@/shared/config/combat';
 import { combatConfig } from '@/shared/config/combat-session';
-import { EngineMesh, Vector3, addToScene, isEngineMesh, removeFromScene } from '@/shared/core';
+import { EngineMesh, Vector3, addToScene, isEngineMesh } from '@/shared/core';
 import { disposeObject } from '@/shared/lib/dispose';
 import { addDirectionNoise } from '@/shared/lib/math';
 import { parseHexColor, settings } from '@/shared/settings';

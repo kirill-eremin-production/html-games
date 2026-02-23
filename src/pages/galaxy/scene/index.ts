@@ -25,7 +25,7 @@ import { campaign } from '@/features/campaign/state';
 import { setStarfieldVisible } from '@/features/flight/starfield';
 
 import { createBackgroundStars } from './background';
-import { rebuildLabels, updateGalaxyLabels } from './labels';
+import { rebuildLabels } from './labels';
 import { recomputeNearby } from './nearby';
 import { createGalaxyNebulae } from './nebulae';
 import {
@@ -40,8 +40,6 @@ import {
 } from './refs';
 import { rebuildRouteLines } from './routes';
 import { STAR_COLORS } from './textures';
-import { updateGalaxyScene } from './update';
-
 export { galaxyGroup } from './refs';
 export { updateGalaxyScene } from './update';
 export { updateGalaxyLabels } from './labels';

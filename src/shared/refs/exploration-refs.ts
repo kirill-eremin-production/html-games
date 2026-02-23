@@ -1,4 +1,4 @@
-import type { EngineMesh, TransformNode } from '@/shared/core';
+import type { EngineMesh } from '@/shared/core';
 import { createTransformNode } from '@/shared/core';
 
 export const explorationGroup = createTransformNode();

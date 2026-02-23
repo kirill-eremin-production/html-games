@@ -40,8 +40,8 @@ let enemyPreview: PreviewState;
 let capitalPreview: PreviewState;
 
 // All input references for refreshing on reset
-let colorInputs: { key: keyof GameSettings['colors']; input: HTMLInputElement }[] = [];
-let sliderInputs: {
+const colorInputs: { key: keyof GameSettings['colors']; input: HTMLInputElement }[] = [];
+const sliderInputs: {
   key: keyof GameSettings['counts'];
   input: HTMLInputElement;
   label: HTMLSpanElement;
