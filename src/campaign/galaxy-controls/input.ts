@@ -1,4 +1,5 @@
 import { Raycaster, Vector2 } from '@/shared/core';
+
 import { getStarMeshes, selectSystem } from '../galaxy-scene';
 
 import { galaxyCamera } from './camera';
@@ -9,14 +10,9 @@ import { isTraveling } from './travel';
 
 let enabled = false;
 
-// Click detection (mouse)
+// Click detection (pointer)
 let dragStartX = 0;
 let dragStartY = 0;
-
-// Click detection (touch)
-let touchStartId: number | null = null;
-let touchStartX = 0;
-let touchStartY = 0;
 
 // Raycaster
 const raycaster = new Raycaster();
@@ -51,9 +47,11 @@ function pickStar(clientX: number, clientY: number): void {
   updateInfoPanel();
 }
 
-// ── Mouse click detection ───────────────────────────────────────────────────
+// ── Pointer click detection ─────────────────────────────────────────────────
+// Use pointer events instead of mouse events because BabylonJS ArcRotateCamera
+// calls preventDefault() on pointer events, which suppresses mousedown/mouseup.
 
-function onMouseDown(e: MouseEvent): void {
+function onPointerDown(e: PointerEvent): void {
   if (!enabled || isTraveling()) return;
   if (e.button === 0) {
     dragStartX = e.clientX;
@@ -61,7 +59,7 @@ function onMouseDown(e: MouseEvent): void {
   }
 }
 
-function onMouseUp(e: MouseEvent): void {
+function onPointerUp(e: PointerEvent): void {
   if (!enabled || isTraveling()) return;
   if (isUIElement(e.target)) return;
   if (e.button === 0) {
@@ -72,44 +70,14 @@ function onMouseUp(e: MouseEvent): void {
   }
 }
 
-// ── Touch click detection ───────────────────────────────────────────────────
-
-function onTouchStart(e: TouchEvent): void {
-  if (!enabled || isTraveling()) return;
-  if (isUIElement(e.target)) return;
-  if (e.touches.length === 1) {
-    const t = e.touches[0];
-    touchStartId = t.identifier;
-    touchStartX = t.clientX;
-    touchStartY = t.clientY;
-  }
-}
-
-function onTouchEnd(e: TouchEvent): void {
-  if (!enabled || isTraveling()) return;
-  for (let i = 0; i < e.changedTouches.length; i++) {
-    const t = e.changedTouches[i];
-    if (t.identifier !== touchStartId) continue;
-    touchStartId = null;
-    const moved = Math.abs(t.clientX - touchStartX) > 8 || Math.abs(t.clientY - touchStartY) > 8;
-    if (!moved) {
-      pickStar(t.clientX, t.clientY);
-    }
-  }
-}
-
 // ── Listener management ──────────────────────────────────────────────────────
 
 export function addInputListeners(): void {
-  window.addEventListener('mousedown', onMouseDown);
-  window.addEventListener('mouseup', onMouseUp);
-  window.addEventListener('touchstart', onTouchStart, { passive: false });
-  window.addEventListener('touchend', onTouchEnd);
+  window.addEventListener('pointerdown', onPointerDown);
+  window.addEventListener('pointerup', onPointerUp);
 }
 
 export function removeInputListeners(): void {
-  window.removeEventListener('mousedown', onMouseDown);
-  window.removeEventListener('mouseup', onMouseUp);
-  window.removeEventListener('touchstart', onTouchStart);
-  window.removeEventListener('touchend', onTouchEnd);
+  window.removeEventListener('pointerdown', onPointerDown);
+  window.removeEventListener('pointerup', onPointerUp);
 }

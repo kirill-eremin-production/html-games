@@ -1,3 +1,4 @@
+import '@babylonjs/core/Culling/ray';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { Node } from '@babylonjs/core/node';
 import type { Scene } from '@babylonjs/core/scene';
@@ -14,9 +15,10 @@ export class Raycaster {
 
   setFromCamera(mouse: { x: number; y: number }, camera: { getScene(): Scene }): void {
     this._scene = camera.getScene();
-    const engine = this._scene.getEngine();
-    this._mouseX = ((mouse.x + 1) / 2) * engine.getRenderWidth();
-    this._mouseY = ((-mouse.y + 1) / 2) * engine.getRenderHeight();
+    // scene.pick() expects CSS pixel coordinates, not render-buffer pixels.
+    const canvas = this._scene.getEngine().getRenderingCanvas()!;
+    this._mouseX = ((mouse.x + 1) / 2) * canvas.clientWidth;
+    this._mouseY = ((-mouse.y + 1) / 2) * canvas.clientHeight;
   }
 
   intersectObjects(objects: Node[]): Intersection[] {
