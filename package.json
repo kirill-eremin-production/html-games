@@ -9,11 +9,16 @@
     "preview": "vite preview",
     "format": "prettier --write \"src/**/*.{ts,css}\" \"*.{json,html}\"",
     "format:check": "prettier --check \"src/**/*.{ts,css}\" \"*.{json,html}\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix"
   },
   "lint-staged": {
     "*.{ts,css,json,html}": "prettier --write",
-    "*.ts": "bash -c 'tsc --noEmit'"
+    "*.ts": [
+      "eslint --no-warn-ignored",
+      "bash -c 'tsc --noEmit'"
+    ]
   },
   "dependencies": {
     "@babylonjs/core": "^8.52.0",
@@ -22,11 +27,14 @@
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/node": "^25.3.0",
+    "eslint": "^10.0.1",
+    "eslint-plugin-boundaries": "^5.4.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1",
     "vite": "^7.3.1"
   }
 }

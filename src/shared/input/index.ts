@@ -1,6 +1,6 @@
-import { defaultKeyMap } from '@/config/input';
+import { defaultKeyMap } from '@/shared/config/input';
 import { state } from '@/shared/state';
-import type { GameSystem } from '@/systems/types';
+import type { GameSystem } from '@/shared/types';
 
 import type { Action } from './types';
 
