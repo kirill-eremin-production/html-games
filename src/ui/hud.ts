@@ -1,6 +1,6 @@
 import { combatConfig } from '../config/combat-session';
-import { settings } from '../settings';
-import { state } from '../state';
+import { settings } from '@/shared/settings';
+import { state } from '@/shared/state';
 
 import { HUD_TEMPLATES } from './hud-templates';
 

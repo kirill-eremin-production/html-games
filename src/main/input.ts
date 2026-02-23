@@ -3,7 +3,7 @@ import { resumeAudio } from '../audio';
 import { exitExplorationMode } from '../campaign/mode-manager';
 import { getCurrentModeName } from '../modes/registry';
 import { handleResize } from '../scene/setup';
-import { state } from '../state';
+import { state } from '@/shared/state';
 import { playerPlane } from '../systems/player';
 import { toggleTargetLock } from '../ui/markers';
 

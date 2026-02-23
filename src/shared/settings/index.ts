@@ -1,20 +1,8 @@
-export interface GameSettings {
-  colors: {
-    playerBody: string;
-    playerExhaust: string;
-    allyBody: string;
-    allyExhaust: string;
-    enemyBody: string;
-    enemyExhaust: string;
-    capitalHull: string;
-  };
-  counts: {
-    capitalShips: number;
-    allies: number;
-    enemies: number;
-  };
-}
+import type { GameSettings } from './types';
 
+export type { ColorSettings, CountSettings, GameSettings } from './types';
+
+/** Настройки по умолчанию */
 export const DEFAULT_SETTINGS: GameSettings = {
   colors: {
     playerBody: '#2299dd',
@@ -34,8 +22,10 @@ export const DEFAULT_SETTINGS: GameSettings = {
 
 const STORAGE_KEY = 'space-combat-settings';
 
+/** Текущие настройки (мутабельный объект) */
 export const settings: GameSettings = structuredClone(DEFAULT_SETTINGS);
 
+/** Загрузить настройки из localStorage */
 export function loadSettings(): void {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -61,23 +51,26 @@ export function loadSettings(): void {
       }
     }
   } catch {
-    // Corrupted data — use defaults
+    // Повреждённые данные — используем значения по умолчанию
   }
 }
 
+/** Сохранить настройки в localStorage */
 export function saveSettings(): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 }
 
+/** Сбросить настройки к значениям по умолчанию */
 export function resetSettings(): void {
   Object.assign(settings.colors, DEFAULT_SETTINGS.colors);
   Object.assign(settings.counts, DEFAULT_SETTINGS.counts);
   saveSettings();
 }
 
+/** Преобразовать hex-цвет (#rrggbb) в число */
 export function parseHexColor(hex: string): number {
   return parseInt(hex.replace('#', ''), 16);
 }
 
-// Load on import
+// Загрузка при импорте
 loadSettings();

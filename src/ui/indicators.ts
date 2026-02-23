@@ -1,5 +1,5 @@
 import { TransformNode, camera } from '@/shared/core';
-import { state } from '../state';
+import { state } from '@/shared/state';
 import { DomPool } from '../shared/utils/dom-pool';
 import { clampToScreenEdge, formatDistance, worldToScreen } from '../shared/utils/screen';
 

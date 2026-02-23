@@ -19,7 +19,7 @@ import {
 import { createFighter } from '../../scene/models';
 import { scene } from '../../scene/setup';
 import { setStarfieldVisible } from '../../scene/starfield';
-import { parseHexColor, settings } from '../../settings';
+import { parseHexColor, settings } from '@/shared/settings';
 import { STAR_SYSTEMS } from '../data';
 import { campaign } from '../state';
 

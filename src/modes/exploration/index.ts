@@ -10,7 +10,7 @@ import {
 import { EXPLORATION_CONFIG } from '@/config/exploration';
 import { camera } from '@/scene/setup';
 import { setStarfieldVisible } from '@/scene/starfield';
-import { state } from '@/state';
+import { state } from '@/shared/state';
 import { explorationHudSystem, explorationSceneSystem } from '@/systems/exploration-hud';
 import { playerPlane, resetPlayerTransform } from '@/systems/player';
 import { flightCoreSystems } from '@/systems/presets';

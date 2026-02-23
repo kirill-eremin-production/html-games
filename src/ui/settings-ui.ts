@@ -18,7 +18,7 @@ import {
   resetSettings,
   saveSettings,
   settings,
-} from '../settings';
+} from '@/shared/settings';
 
 let initialized = false;
 let animationId = 0;

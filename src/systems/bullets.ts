@@ -3,9 +3,9 @@ import { playHitSound } from '../audio';
 import { COMBAT_CONSTANTS } from '../config/combat';
 import { PLAYER_CONFIG } from '../config/player';
 import { Vector3, removeFromScene } from '@/shared/core';
-import { emit } from '../events';
-import { state } from '../state';
-import type { Fighter, LaserData } from '../types';
+import { emit } from '@/shared/events';
+import { state } from '@/shared/state';
+import type { Fighter, LaserData } from '@/shared/types';
 
 import { destroyFighter, destroySubsystem } from './damage';
 import { createExplosion } from './explosions';

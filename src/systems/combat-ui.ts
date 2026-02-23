@@ -2,7 +2,7 @@ import { updateProximityHum } from '../audio';
 
 import { UI_CONFIG } from '../config/ui';
 import { renderer } from '../scene/setup';
-import { state } from '../state';
+import { state } from '@/shared/state';
 import { updateEnemyIndicators } from '../ui/indicators';
 import { updateKillFeed } from '../ui/kill-feed';
 import { updateTargetMarkers } from '../ui/markers';

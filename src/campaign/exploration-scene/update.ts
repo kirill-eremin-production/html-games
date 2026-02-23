@@ -1,7 +1,7 @@
 import { EXPLORATION_CONFIG } from '../../config/exploration';
 import type { EngineSpriteMaterial } from '@/shared/core';
 import { Vector3 } from '@/shared/core';
-import { state } from '../../state';
+import { state } from '@/shared/state';
 import { playerPlane } from '../../systems/player';
 
 import { getExplorationDetail } from './index';

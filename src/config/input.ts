@@ -1,4 +1,4 @@
-import type { Action } from '../input';
+import type { Action } from '@/shared/input';
 
 export const defaultKeyMap: Record<string, Action> = {
   KeyW: 'thrust',

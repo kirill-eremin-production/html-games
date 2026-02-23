@@ -12,8 +12,8 @@ import {
   removeFromScene,
 } from '@/shared/core';
 import { GUN_OFFSET_L, GUN_OFFSET_R } from '../scene/models';
-import { state } from '../state';
-import type { LaserData } from '../types';
+import { state } from '@/shared/state';
+import type { LaserData } from '@/shared/types';
 import { addDirectionNoise } from '../shared/utils/math';
 
 const W = WEAPON_CONFIG;

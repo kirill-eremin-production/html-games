@@ -1,28 +1,10 @@
-import type { CapitalShip, Fighter, Subsystem } from './types';
+import type { EventMap, Listener, Unsubscribe } from './types';
 
-type Team = 'player' | 'ally' | 'enemy';
-
-export interface EventMap {
-  'fighter-killed': {
-    victim: Fighter;
-    killerName: string;
-    killerTeam: Team;
-    victimTeam: 'ally' | 'enemy';
-    isPlayerKill: boolean;
-  };
-  'subsystem-destroyed': { subsystem: Subsystem; ship: CapitalShip; killerName: string };
-  'capital-ship-destroyed': { ship: CapitalShip; killerName: string };
-  'phase-changed': { phase: 1 | 2 };
-  'player-hit': { damage: number; attackerName: string };
-  'player-died': Record<string, never>;
-}
-
-type Listener<T> = (data: T) => void;
+export type { EventMap, Listener, Unsubscribe } from './types';
 
 const listeners = new Map<string, Set<Listener<unknown>>>();
 
-export type Unsubscribe = () => void;
-
+/** Подписаться на событие. Возвращает функцию отписки */
 export function on<K extends keyof EventMap>(
   event: K,
   listener: Listener<EventMap[K]>,
@@ -36,10 +18,12 @@ export function on<K extends keyof EventMap>(
   return () => off(event, listener);
 }
 
+/** Отписаться от события */
 export function off<K extends keyof EventMap>(event: K, listener: Listener<EventMap[K]>): void {
   listeners.get(event)?.delete(listener as Listener<unknown>);
 }
 
+/** Отправить событие всем подписчикам */
 export function emit<K extends keyof EventMap>(event: K, data: EventMap[K]): void {
   const set = listeners.get(event);
   if (set) {
@@ -53,6 +37,7 @@ export function emit<K extends keyof EventMap>(event: K, data: EventMap[K]): voi
   }
 }
 
+/** Удалить все подписки (вызывается при смене режима) */
 export function clearAllListeners(): void {
   listeners.clear();
 }

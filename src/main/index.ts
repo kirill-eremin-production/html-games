@@ -10,7 +10,7 @@ import { stationMode } from '../modes/station';
 import { createFighter, preloadModels } from '../scene/models';
 import { scene } from '../scene/setup';
 import { createStarfield } from '../scene/starfield';
-import { parseHexColor, settings } from '../settings';
+import { parseHexColor, settings } from '@/shared/settings';
 import '../styles/main.css';
 import { playerPlane } from '../systems/player';
 import { showSettingsScreen } from '../ui/settings-ui';

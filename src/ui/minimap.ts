@@ -1,6 +1,6 @@
 import { UI_CONFIG } from '../config/ui';
 import { TransformNode, Vector3 } from '@/shared/core';
-import { state } from '../state';
+import { state } from '@/shared/state';
 
 const M = UI_CONFIG.minimap;
 const minimapCanvas = document.getElementById('minimap-canvas') as HTMLCanvasElement;

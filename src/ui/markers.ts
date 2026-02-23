@@ -1,7 +1,7 @@
-import { CAPITAL_CLOSE_RANGE_SQ, CURSOR_PROXIMITY_FACTOR, LOCK_PICK_RADIUS } from '../constants';
+import { CAPITAL_CLOSE_RANGE_SQ, CURSOR_PROXIMITY_FACTOR, LOCK_PICK_RADIUS } from '@/shared/constants';
 import { TransformNode, Vector3, camera } from '@/shared/core';
-import { state } from '../state';
-import type { LockedTarget } from '../types';
+import { state } from '@/shared/state';
+import type { LockedTarget } from '@/shared/types';
 import { DomPool } from '../shared/utils/dom-pool';
 import { clampToScreenEdge, worldToScreen } from '../shared/utils/screen';
 

@@ -1,4 +1,4 @@
-import { state } from '../state';
+import { state } from '@/shared/state';
 import { hideMessage, updateHUD } from '../ui/hud';
 import { drawMinimap } from '../ui/minimap';
 import { updatePlanetMarkers } from '../ui/planet-markers';

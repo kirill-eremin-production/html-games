@@ -2,7 +2,7 @@ import { playLaserSound, updateEngineHum } from '../audio';
 
 import { flightModels } from '../config/flight-models';
 import { PLAYER_CONFIG } from '../config/player';
-import { PLAYER_NAME } from '../constants';
+import { PLAYER_NAME } from '@/shared/constants';
 import {
   EngineMesh,
   MeshBasicMaterial,
@@ -12,9 +12,9 @@ import {
   camera,
   createTransformNode,
 } from '@/shared/core';
-import { actions, aim } from '../input';
+import { actions, aim } from '@/shared/input';
 import { GUN_OFFSET_L, GUN_OFFSET_R } from '../scene/models';
-import { state } from '../state';
+import { state } from '@/shared/state';
 import { showMessage } from '../ui/hud';
 import { addKillFeedEntry } from '../ui/kill-feed';
 

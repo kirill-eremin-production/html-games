@@ -1,9 +1,9 @@
 import { AI_CONFIG } from '../config/ai';
-import { PLAYER_NAME } from '../constants';
+import { PLAYER_NAME } from '@/shared/constants';
 import { Quaternion, TransformNode, Vector3, camera } from '@/shared/core';
 import { cleanupTeamSources, updateExhaustGlow } from '../scene/models';
-import { state } from '../state';
-import type { Fighter } from '../types';
+import { state } from '@/shared/state';
+import type { Fighter } from '@/shared/types';
 import { disposeObject } from '../shared/utils/dispose';
 
 import { playerPlane } from './player';

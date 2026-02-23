@@ -4,8 +4,8 @@ import { COMBAT_CONSTANTS } from '../config/combat';
 import { combatConfig } from '../config/combat-session';
 import { EngineMesh, Vector3, addToScene, isEngineMesh, removeFromScene } from '@/shared/core';
 import { createCapitalShip } from '../scene/models';
-import { parseHexColor, settings } from '../settings';
-import { state } from '../state';
+import { parseHexColor, settings } from '@/shared/settings';
+import { state } from '@/shared/state';
 import { disposeObject } from '../shared/utils/dispose';
 import { addDirectionNoise } from '../shared/utils/math';
 

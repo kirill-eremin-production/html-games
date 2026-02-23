@@ -1,4 +1,4 @@
-import { SUBSYSTEM_HP } from '../../constants';
+import { SUBSYSTEM_HP } from '@/shared/constants';
 import {
   Color,
   type EngineMesh,
@@ -10,7 +10,7 @@ import {
   loadModel,
   traverseNode,
 } from '@/shared/core';
-import type { Subsystem } from '../../types';
+import type { Subsystem } from '@/shared/types';
 
 import {
   canopyMat,

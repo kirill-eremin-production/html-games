@@ -9,7 +9,7 @@ import {
 import { isCampaignActive } from '../campaign/state';
 import type { CombatConfig } from '../campaign/types';
 import { switchMode } from '../modes/registry';
-import { state } from '../state';
+import { state } from '@/shared/state';
 
 import { clock, pauseScreen, refs } from './refs';
 

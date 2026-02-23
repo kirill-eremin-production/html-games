@@ -1,4 +1,5 @@
-import { inputSystem } from '../input';
+import { inputSystem } from '@/shared/input';
+
 import { starfieldSystem } from '../scene/starfield';
 
 import { bulletSystem } from './bullets';

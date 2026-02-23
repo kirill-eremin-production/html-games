@@ -2,8 +2,8 @@ import { COMBAT_CONSTANTS } from '../config/combat';
 import { combatConfig } from '../config/combat-session';
 import { Vector3, addToScene } from '@/shared/core';
 import { addHealthBar, createFighterInstanced } from '../scene/models';
-import { parseHexColor, settings } from '../settings';
-import { nextAllyName, nextEnemyName, state } from '../state';
+import { parseHexColor, settings } from '@/shared/settings';
+import { nextAllyName, nextEnemyName, state } from '@/shared/state';
 
 import { playerPlane } from './player';
 import type { GameSystem } from './types';

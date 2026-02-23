@@ -1,4 +1,4 @@
-import { SUBSYSTEM_SHORT } from '../constants';
+import { SUBSYSTEM_SHORT } from '@/shared/constants';
 
 interface CapitalShipData {
   alive: boolean;
