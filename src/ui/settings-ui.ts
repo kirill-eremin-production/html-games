@@ -1,7 +1,17 @@
-import * as THREE from 'three';
+import { Engine } from '@babylonjs/core/Engines/engine';
+import { Scene as BScene } from '@babylonjs/core/scene';
+import { Color4 } from '@babylonjs/core/Maths/math.color';
+import {
+  AmbientLight,
+  DirectionalLight,
+  PerspectiveCamera,
+  type TransformNode,
+  createTransformNode,
+  getFactoryScene,
+  setFactoryScene,
+} from '../core';
 import { createCapitalShip, createFighter } from '../scene/models';
 import {
-  DEFAULT_SETTINGS,
   type GameSettings,
   parseHexColor,
   resetSettings,
@@ -14,10 +24,11 @@ let animationId = 0;
 let screenEl: HTMLDivElement;
 
 interface PreviewState {
-  renderer: THREE.WebGLRenderer;
-  scene: THREE.Scene;
-  camera: THREE.PerspectiveCamera;
-  model: THREE.Group;
+  canvas: HTMLCanvasElement;
+  engine: Engine;
+  scene: BScene;
+  camera: PerspectiveCamera;
+  model: TransformNode;
 }
 
 let playerPreview: PreviewState;
@@ -33,31 +44,45 @@ let sliderInputs: {
   label: HTMLSpanElement;
 }[] = [];
 
-function createPreviewState(width: number, height: number, cameraZ: number): PreviewState {
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(width, height);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-  const scene = new THREE.Scene();
-  scene.add(new THREE.AmbientLight(0x556688, 1.0));
-  const dir = new THREE.DirectionalLight(0xffffff, 1.5);
-  dir.position.set(5, 3, 2);
-  scene.add(dir);
-
-  const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 500);
-  camera.position.set(0, 2, cameraZ);
-  camera.lookAt(0, 0, 0);
-
-  const model = new THREE.Group();
-  scene.add(model);
-
-  return { renderer, scene, camera, model };
+function withPreviewScene<T>(previewScene: BScene, fn: () => T): T {
+  const original = getFactoryScene();
+  setFactoryScene(previewScene as any);
+  const result = fn();
+  setFactoryScene(original);
+  return result;
 }
 
-function replaceModel(preview: PreviewState, newModel: THREE.Group): void {
-  preview.scene.remove(preview.model);
+function createPreviewState(width: number, height: number, cameraZ: number): PreviewState {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+
+  const engine = new Engine(canvas, true, {
+    preserveDrawingBuffer: true,
+    alpha: true,
+  });
+  engine.setHardwareScalingLevel(1 / Math.min(window.devicePixelRatio, 2));
+
+  const scene = new BScene(engine);
+  scene.clearColor = new Color4(0, 0, 0, 0);
+
+  new AmbientLight(0x556688, 1.0, scene as any);
+  const dir = new DirectionalLight(0xffffff, 1.5, scene as any);
+  dir.position.set(5, 3, 2);
+
+  const camera = new PerspectiveCamera(45, width / height, 0.1, 500, scene as any);
+  camera.position.set(0, 2, cameraZ);
+  camera.lookAt(0, 0, 0);
+  scene.activeCamera = camera;
+
+  const model = withPreviewScene(scene, () => createTransformNode());
+
+  return { canvas, engine, scene, camera, model };
+}
+
+function replaceModel(preview: PreviewState, newModel: TransformNode): void {
+  preview.model.dispose();
   preview.model = newModel;
-  preview.scene.add(newModel);
 }
 
 function rebuildFighterPreview(
@@ -65,15 +90,19 @@ function rebuildFighterPreview(
   bodyKey: keyof GameSettings['colors'],
   exhaustKey: keyof GameSettings['colors'],
 ): void {
-  const model = createFighter(
-    parseHexColor(settings.colors[bodyKey]),
-    parseHexColor(settings.colors[exhaustKey]),
+  const model = withPreviewScene(preview.scene, () =>
+    createFighter(
+      parseHexColor(settings.colors[bodyKey]),
+      parseHexColor(settings.colors[exhaustKey]),
+    ),
   );
   replaceModel(preview, model);
 }
 
 function rebuildCapitalPreview(): void {
-  const model = createCapitalShip(0, parseHexColor(settings.colors.capitalHull));
+  const model = withPreviewScene(capitalPreview.scene, () =>
+    createCapitalShip(0, parseHexColor(settings.colors.capitalHull)),
+  );
   replaceModel(capitalPreview, model);
 }
 
@@ -149,7 +178,7 @@ function createPreviewCard(
   h3.textContent = title;
   card.appendChild(h3);
 
-  card.appendChild(preview.renderer.domElement);
+  card.appendChild(preview.canvas);
 
   const colorContainer = document.createElement('div');
   colorContainer.className = 'color-pair';
@@ -291,7 +320,7 @@ function animate(): void {
   const t = Date.now() * 0.001;
   for (const p of [playerPreview, allyPreview, enemyPreview, capitalPreview]) {
     p.model.rotation.y = t * 0.5;
-    p.renderer.render(p.scene, p.camera);
+    p.scene.render();
   }
 }
 

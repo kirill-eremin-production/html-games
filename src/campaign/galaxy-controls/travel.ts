@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import { Vector3 } from '../../core';
 import { getSystem } from '../data';
 import {
   getStarPosition,
@@ -8,19 +8,19 @@ import {
   updatePlayerShipPosition,
 } from '../galaxy-scene';
 import { campaign, regenerateContracts, travelToSystem } from '../state';
-import { lerpOrbitTarget, setOrbitTarget, updateCamera } from './camera';
+import { attachGalaxyInput, detachGalaxyInput, lerpOrbitTarget, setOrbitTarget } from './camera';
 import { deselectSystem, updateGalaxyHud } from './hud';
 
 // ── State ────────────────────────────────────────────────────────────────────
 
 let traveling = false;
-const travelFromPos = new THREE.Vector3();
-const travelToPos = new THREE.Vector3();
+const travelFromPos = new Vector3();
+const travelToPos = new Vector3();
 let travelProgress = 0;
 const TRAVEL_DURATION = 1.5; // seconds
 let travelTargetId: string | null = null;
 let travelIsContractTarget = false;
-const _lerpPos = new THREE.Vector3();
+const _lerpPos = new Vector3();
 
 let onStartCombat: (() => void) | null = null;
 
@@ -46,6 +46,7 @@ export function startTravelAnimation(targetId: string): void {
   travelIsContractTarget = campaign.activeContract?.targetSystemId === targetId;
   traveling = true;
 
+  detachGalaxyInput();
   deselectSystem();
   updateGalaxyHud();
 }
@@ -69,7 +70,7 @@ export function updateTravelAnimation(dt: number): void {
     // Center camera on new system
     const sys = getSystem(travelTargetId);
     setOrbitTarget(...sys.position);
-    updateCamera();
+    attachGalaxyInput();
 
     if (travelIsContractTarget && campaign.activeContract) {
       if (onStartCombat) onStartCombat();
@@ -89,5 +90,4 @@ export function updateTravelAnimation(dt: number): void {
 
   // Camera follows smoothly
   lerpOrbitTarget(travelFromPos, travelToPos, ease);
-  updateCamera();
 }

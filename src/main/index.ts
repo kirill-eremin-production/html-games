@@ -1,3 +1,5 @@
+import { SceneOptimizer, SceneOptimizerOptions } from '@babylonjs/core/Misc/sceneOptimizer';
+import { addToScene, camera } from '../core';
 import { combatMode } from '../modes/combat';
 import { explorationMode } from '../modes/exploration';
 import { galaxyMode } from '../modes/galaxy';
@@ -5,7 +7,7 @@ import { menuMode } from '../modes/menu';
 import { registerMode } from '../modes/registry';
 import { stationMode } from '../modes/station';
 import { createFighter, preloadModels } from '../scene/models';
-import { camera, scene } from '../scene/setup';
+import { scene } from '../scene/setup';
 import { createStarfield } from '../scene/starfield';
 import { parseHexColor, settings } from '../settings';
 import '../styles/main.css';
@@ -35,7 +37,7 @@ async function init(): Promise<void> {
     parseHexColor(settings.colors.playerExhaust),
   );
   playerPlane.add(refs.playerModel);
-  scene.add(playerPlane);
+  addToScene(playerPlane);
   playerPlane.position.set(0, 0, 0);
 
   // Init
@@ -55,6 +57,12 @@ async function init(): Promise<void> {
   document.getElementById('settings-btn')!.addEventListener('click', showSettingsScreen);
 
   initTouchControls(pauseGame);
+
+  // Auto-optimize scene when FPS drops
+  SceneOptimizer.OptimizeAsync(
+    scene,
+    SceneOptimizerOptions.ModerateDegradationAllowed(60),
+  );
 
   clock.start();
   gameLoop();

@@ -1,9 +1,14 @@
-import * as THREE from 'three';
 import { playLaserSound } from '../audio/sound';
 import { COMBAT_CONSTANTS } from '../config/combat';
 import { combatConfig } from '../config/combat-session';
+import {
+  EngineMesh,
+  Vector3,
+  addToScene,
+  isEngineMesh,
+  removeFromScene,
+} from '../core';
 import { createCapitalShip } from '../scene/models';
-import { scene } from '../scene/setup';
 import { parseHexColor, settings } from '../settings';
 import { state } from '../state';
 import { disposeObject } from '../utils/dispose';
@@ -15,7 +20,7 @@ import { createLaser } from './weapons';
 
 const C = COMBAT_CONSTANTS;
 
-const SHIP_POSITIONS = C.shipPositions.map(([x, y, z]) => new THREE.Vector3(x, y, z));
+const SHIP_POSITIONS = C.shipPositions.map(([x, y, z]) => new Vector3(x, y, z));
 
 export function spawnCapitalShips(): void {
   const count = settings.counts.capitalShips;
@@ -23,8 +28,8 @@ export function spawnCapitalShips(): void {
   for (let i = 0; i < count; i++) {
     const ship = createCapitalShip(i, hullColor);
     ship.position.copy(SHIP_POSITIONS[i]);
-    ship.lookAt(0, 0, 0);
-    scene.add(ship);
+    ship.lookAt(new Vector3(0, 0, 0));
+    addToScene(ship);
     state.capitalShips.push({
       mesh: ship,
       subsystems: ship.userData.subsystems,
@@ -38,8 +43,8 @@ function updateCapitalShipVisuals(cs: (typeof state.capitalShips)[number], dt: n
   for (const sub of cs.subsystems) {
     if (sub.health <= 0 && sub.mesh.visible) {
       sub.mesh.traverse((child) => {
-        if ((child as THREE.Mesh).isMesh && (child as THREE.Mesh).material) {
-          (child as THREE.Mesh).material = destroyedSubMat;
+        if (isEngineMesh(child) && (child as EngineMesh).material) {
+          (child as EngineMesh).material = destroyedSubMat;
         }
       });
     }
@@ -47,10 +52,10 @@ function updateCapitalShipVisuals(cs: (typeof state.capitalShips)[number], dt: n
   if (cs.subsystems[0].health > 0) cs.mesh.rotation.y += C.shipRotationSpeed * dt;
 }
 
-const _csTargets: THREE.Vector3[] = [];
-const _csDir = new THREE.Vector3();
-const _csOrigin = new THREE.Vector3();
-const _csShotDir = new THREE.Vector3();
+const _csTargets: Vector3[] = [];
+const _csDir = new Vector3();
+const _csOrigin = new Vector3();
+const _csShotDir = new Vector3();
 
 export function updateCapitalShips(dt: number): void {
   for (const cs of state.capitalShips) {

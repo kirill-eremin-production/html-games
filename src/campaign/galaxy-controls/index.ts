@@ -1,5 +1,10 @@
 import { highlightRoutes, selectSystem, updateContractMarker } from '../galaxy-scene';
-import { centerOnCurrentSystem, setupGalaxyCamera, updateCamera } from './camera';
+import {
+  activateGalaxyCamera,
+  centerOnCurrentSystem,
+  deactivateGalaxyCamera,
+  setupGalaxyCamera,
+} from './camera';
 import {
   deselectSystem,
   ensureUI,
@@ -35,12 +40,12 @@ export function enableGalaxyControls(
   );
 
   addInputListeners();
+  activateGalaxyCamera();
 
   if (resetCamera) {
     setupGalaxyCamera();
   } else {
     centerOnCurrentSystem();
-    updateCamera();
   }
 
   highlightRoutes();
@@ -55,6 +60,7 @@ export function enableGalaxyControls(
 export function disableGalaxyControls(): void {
   setInputEnabled(false);
   removeInputListeners();
+  deactivateGalaxyCamera();
   hideHud();
   document.body.classList.remove('galaxy-mode');
 }

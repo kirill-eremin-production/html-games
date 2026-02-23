@@ -1,13 +1,14 @@
-import * as THREE from 'three';
+import type { EngineLineMaterial } from '../../core';
+import { createBufferGeometry, createLine, createLineMaterial } from '../../core';
 import { getSystem } from '../data';
 import { campaign } from '../state';
 import { galaxyGroup, routeLines, starMeshes } from './refs';
 
 export function rebuildRouteLines(): void {
   for (const line of routeLines) {
-    galaxyGroup.remove(line);
-    line.geometry.dispose();
-    (line.material as THREE.LineBasicMaterial).dispose();
+    line.parent = null;
+    line.geometry?.dispose();
+    (line.material as EngineLineMaterial).dispose();
   }
   routeLines.length = 0;
 
@@ -20,14 +21,10 @@ export function rebuildRouteLines(): void {
     if (!from || !to) continue;
 
     const points = [from.position, to.position];
-    const geo = new THREE.BufferGeometry().setFromPoints(points);
-    const mat = new THREE.LineBasicMaterial({
-      color: 0x00ccff,
-      transparent: true,
-      opacity: 0.5,
-    });
-    const line = new THREE.Line(geo, mat);
-    galaxyGroup.add(line);
+    const geo = createBufferGeometry().setFromPoints(points);
+    const mat = createLineMaterial(0x00ccff, true, 0.5);
+    const line = createLine(geo, mat);
+    line.parent = galaxyGroup;
     routeLines.push(line);
   }
 }

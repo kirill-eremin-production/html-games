@@ -1,13 +1,20 @@
-import * as THREE from 'three';
+import {
+  addToScene,
+  createBufferAttribute,
+  createBufferGeometry,
+  createPoints,
+  createPointsMaterial,
+  type EnginePoints,
+  type Vector3,
+} from '../core';
 import { playerPlane } from '../systems/player';
 import type { GameSystem } from '../systems/types';
-import { scene } from './setup';
 
-let starfieldPoints: THREE.Points | null = null;
+let starfieldPoints: EnginePoints | null = null;
 
 export function createStarfield(): void {
   const count = 2500;
-  const geo = new THREE.BufferGeometry();
+  const geo = createBufferGeometry();
   const positions = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
   for (let i = 0; i < count; i++) {
@@ -23,24 +30,24 @@ export function createStarfield(): void {
     colors[i * 3 + 1] = brightness * (tint > 0.3 ? 1.0 : 0.85);
     colors[i * 3 + 2] = brightness;
   }
-  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  const mat = new THREE.PointsMaterial({
+  geo.setAttribute('position', createBufferAttribute(positions, 3));
+  geo.setAttribute('color', createBufferAttribute(colors, 3));
+  const mat = createPointsMaterial({
     size: 1.5,
     vertexColors: true,
     sizeAttenuation: false,
     transparent: true,
     opacity: 0.85,
   });
-  starfieldPoints = new THREE.Points(geo, mat);
-  scene.add(starfieldPoints);
+  starfieldPoints = createPoints(geo, mat);
+  addToScene(starfieldPoints);
 }
 
 export function setStarfieldVisible(visible: boolean): void {
   if (starfieldPoints) starfieldPoints.visible = visible;
 }
 
-export function updateStarfieldPosition(position: THREE.Vector3): void {
+export function updateStarfieldPosition(position: Vector3): void {
   if (starfieldPoints) starfieldPoints.position.copy(position);
 }
 

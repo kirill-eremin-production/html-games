@@ -1,12 +1,13 @@
-import * as THREE from 'three';
+import type { EngineSpriteMaterial } from '../../core';
+import { Vector3 } from '../../core';
 import { EXPLORATION_CONFIG } from '../../config/exploration';
 import { state } from '../../state';
 import { playerPlane } from '../../systems/player';
 import { getExplorationDetail } from './index';
 import { explorationRefs, planetMeshes } from './refs';
 
-const _toPlanet = new THREE.Vector3();
-const _forward = new THREE.Vector3();
+const _toPlanet = new Vector3();
+const _forward = new Vector3();
 
 export function updateExplorationScene(dt: number, elapsed: number): void {
   const detail = getExplorationDetail();
@@ -28,7 +29,7 @@ export function updateExplorationScene(dt: number, elapsed: number): void {
 
   // Star glow pulse
   if (explorationRefs.starGlow) {
-    const mat = explorationRefs.starGlow.material as THREE.SpriteMaterial;
+    const mat = explorationRefs.starGlow.material as EngineSpriteMaterial;
     mat.opacity = 0.5 + Math.sin(elapsed * 2) * 0.1;
   }
 

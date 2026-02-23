@@ -1,21 +1,16 @@
-import * as THREE from 'three';
+import { type ProjectionCamera, Vector3, vec3Project } from '../core';
 
-const _projVec = new THREE.Vector3();
+const _projVec = new Vector3();
 
 /** Projects a world position to screen pixel coordinates.
  *  z < 1 means the point is in front of the camera. */
 export function worldToScreen(
-  worldPos: THREE.Vector3,
-  cam: THREE.Camera,
+  worldPos: Vector3,
+  cam: ProjectionCamera,
   screenW: number,
   screenH: number,
 ): { x: number; y: number; z: number } {
-  _projVec.copy(worldPos).project(cam);
-  return {
-    x: (_projVec.x * 0.5 + 0.5) * screenW,
-    y: (-_projVec.y * 0.5 + 0.5) * screenH,
-    z: _projVec.z,
-  };
+  return vec3Project(worldPos, cam, screenW, screenH, _projVec);
 }
 
 /** Clamps a screen-space position to the visible screen edge.

@@ -1,9 +1,8 @@
-import * as THREE from 'three';
 import { playHitSound } from '../audio/sound';
 import { COMBAT_CONSTANTS } from '../config/combat';
 import { PLAYER_CONFIG } from '../config/player';
 import { emit } from '../events';
-import { scene } from '../scene/setup';
+import { Vector3, removeFromScene } from '../core';
 import { state } from '../state';
 import type { Fighter, LaserData } from '../types';
 import { destroyFighter, destroySubsystem } from './damage';
@@ -14,7 +13,7 @@ import { cleanupExcessBullets } from './weapons';
 
 const C = COMBAT_CONSTANTS;
 
-const _hitWorldPos = new THREE.Vector3();
+const _hitWorldPos = new Vector3();
 
 function hitTestFighters(laser: LaserData, fighters: Fighter[], isPlayerLaser: boolean): boolean {
   for (let j = fighters.length - 1; j >= 0; j--) {
@@ -87,7 +86,7 @@ export function updateBullets(dt: number): void {
       b.mesh.position.addScaledVector(b.velocity, dt);
       b.life -= dt;
       if (b.life <= 0) {
-        scene.remove(b.mesh);
+        removeFromScene(b.mesh);
         arr.splice(i, 1);
         continue;
       }
@@ -111,7 +110,7 @@ export function updateBullets(dt: number): void {
 
       if ((isPlayer || b.team === 'ally') && !hit) hit = hitTestCapitalShips(b);
       if (hit) {
-        scene.remove(b.mesh);
+        removeFromScene(b.mesh);
         arr.splice(i, 1);
       }
     }
@@ -123,9 +122,9 @@ export function updateBullets(dt: number): void {
 // ── GameSystem adapter ──────────────────────────────────────────────────────
 
 function clearAllBullets(): void {
-  for (const b of state.bullets) scene.remove(b.mesh);
-  for (const b of state.allyBullets) scene.remove(b.mesh);
-  for (const b of state.enemyBullets) scene.remove(b.mesh);
+  for (const b of state.bullets) removeFromScene(b.mesh);
+  for (const b of state.allyBullets) removeFromScene(b.mesh);
+  for (const b of state.enemyBullets) removeFromScene(b.mesh);
   state.bullets = [];
   state.allyBullets = [];
   state.enemyBullets = [];

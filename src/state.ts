@@ -43,7 +43,6 @@ export function createInitialState(): GameState {
     allies: [],
     enemies: [],
     capitalShips: [],
-    explosions: [],
     killFeed: [],
     keys: {},
     mouseX: 0,

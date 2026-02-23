@@ -1,6 +1,22 @@
-import * as THREE from 'three';
+import { Constants } from '@babylonjs/core/Engines/constants';
+import { Color4 } from '@babylonjs/core/Maths/math.color';
+import { Sprite as BJSSprite } from '@babylonjs/core/Sprites/sprite';
+import { SpriteManager } from '@babylonjs/core/Sprites/spriteManager';
+import '@babylonjs/core/Sprites/spriteSceneComponent';
+import type { EngineMesh } from '../../core';
+import {
+  DoubleSide,
+  Vector3,
+  camera,
+  createAmbientLight,
+  createMesh,
+  createOctahedronGeometry,
+  createRingGeometry,
+  createSphereGeometry,
+  createUnlitMaterial,
+} from '../../core';
 import { createFighter } from '../../scene/models';
-import { camera } from '../../scene/setup';
+import { scene } from '../../scene/setup';
 import { setStarfieldVisible } from '../../scene/starfield';
 import { parseHexColor, settings } from '../../settings';
 import { STAR_SYSTEMS } from '../data';
@@ -20,13 +36,41 @@ import {
   starScaleCurrent,
 } from './refs';
 import { rebuildRouteLines } from './routes';
-import { STAR_COLORS, getGlowTexture } from './textures';
+import { STAR_COLORS } from './textures';
 import { updateGalaxyScene } from './update';
 
 export { galaxyGroup } from './refs';
 export { updateGalaxyScene } from './update';
 export { updateGalaxyLabels } from './labels';
 export { setGalaxyBrightness, getGalaxyBrightness } from './brightness';
+
+// ── Glow texture data URL for SpriteManager ──────────────────────────────────
+
+function createGlowDataUrl(): string {
+  const size = 128;
+  const cvs = document.createElement('canvas');
+  cvs.width = size;
+  cvs.height = size;
+  const ctx = cvs.getContext('2d')!;
+  const h = size / 2;
+  const g = ctx.createRadialGradient(h, h, 0, h, h, h);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.15, 'rgba(255,255,255,0.6)');
+  g.addColorStop(0.4, 'rgba(255,255,255,0.15)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  return cvs.toDataURL();
+}
+
+function hexToColor4(hex: number, alpha: number): Color4 {
+  return new Color4(
+    ((hex >> 16) & 0xff) / 255,
+    ((hex >> 8) & 0xff) / 255,
+    (hex & 0xff) / 255,
+    alpha,
+  );
+}
 
 // ── Build scene ──────────────────────────────────────────────────────────────
 
@@ -38,8 +82,14 @@ export function buildGalaxyScene(): void {
   starMeshes.clear();
   starHalos.clear();
 
+  // Dispose old halo SpriteManager
+  if (refs.haloManager) {
+    refs.haloManager.dispose();
+    refs.haloManager = null;
+  }
+
   // Galaxy ambient light (dimmer than combat)
-  const ambient = new THREE.AmbientLight(0x334466, 0.6);
+  const ambient = createAmbientLight(0x334466, 0.6);
   galaxyGroup.add(ambient);
 
   // Background spiral galaxy
@@ -47,8 +97,18 @@ export function buildGalaxyScene(): void {
   galaxyGroup.add(createGalaxyNebulae());
 
   // Shared geometry for all star systems (optimized for 1000 systems)
-  const sharedStarGeo = new THREE.SphereGeometry(0.4, 8, 8);
-  const glowTexture = getGlowTexture();
+  const sharedStarGeo = createSphereGeometry(0.4, 8, 8);
+
+  // SpriteManager for star glow halos (single draw call for all 1000)
+  const haloMgr = new SpriteManager(
+    'starHalos',
+    createGlowDataUrl(),
+    STAR_SYSTEMS.length,
+    128,
+    scene,
+  );
+  haloMgr.blendMode = Constants.ALPHA_ADD;
+  refs.haloManager = haloMgr;
 
   // Star systems
   for (let i = 0; i < STAR_SYSTEMS.length; i++) {
@@ -56,50 +116,42 @@ export function buildGalaxyScene(): void {
     const color = STAR_COLORS[i % STAR_COLORS.length];
 
     // Star sphere (shared geometry, emissive — no PointLight needed)
-    const mat = new THREE.MeshBasicMaterial({
+    const mat = createUnlitMaterial({
       color,
     });
-    const mesh = new THREE.Mesh(sharedStarGeo, mat);
+    const mesh = createMesh(sharedStarGeo, mat);
     mesh.position.set(...sys.position);
     mesh.userData.systemId = sys.id;
     galaxyGroup.add(mesh);
     starMeshes.set(sys.id, mesh);
 
-    // Soft glow sprite
-    const spriteMat = new THREE.SpriteMaterial({
-      map: glowTexture,
-      color,
-      transparent: true,
-      opacity: 0.7,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    });
-    const sprite = new THREE.Sprite(spriteMat);
+    // Soft glow sprite (BJS native — batched by SpriteManager)
+    const sprite = new BJSSprite('halo_' + sys.id, haloMgr);
     sprite.position.set(...sys.position);
-    sprite.scale.setScalar(2.5);
-    galaxyGroup.add(sprite);
+    sprite.color = hexToColor4(color, 0.7);
+    sprite.size = 2.5;
     starHalos.set(sys.id, sprite);
   }
 
   // Selection ring (hidden by default)
-  const ringGeo = new THREE.RingGeometry(0.7, 0.9, 32);
-  const ringMat = new THREE.MeshBasicMaterial({
+  const ringGeo = createRingGeometry(0.7, 0.9, 32);
+  const ringMat = createUnlitMaterial({
     color: 0xffff00,
     transparent: true,
     opacity: 0.7,
-    side: THREE.DoubleSide,
+    side: DoubleSide,
   });
-  refs.selectionRing = new THREE.Mesh(ringGeo, ringMat);
+  refs.selectionRing = createMesh(ringGeo, ringMat);
   refs.selectionRing.rotation.x = -Math.PI / 2;
   refs.selectionRing.visible = false;
   galaxyGroup.add(refs.selectionRing);
 
   // Contract target marker (red pulsing diamond)
-  const diamondGeo = new THREE.OctahedronGeometry(0.5, 0);
-  const diamondMat = new THREE.MeshBasicMaterial({
+  const diamondGeo = createOctahedronGeometry(0.5, 0);
+  const diamondMat = createUnlitMaterial({
     color: 0xff3333,
   });
-  refs.contractMarker = new THREE.Mesh(diamondGeo, diamondMat);
+  refs.contractMarker = createMesh(diamondGeo, diamondMat);
   refs.contractMarker.visible = false;
   galaxyGroup.add(refs.contractMarker);
 
@@ -120,11 +172,26 @@ export function buildGalaxyScene(): void {
     starScaleCurrent.set(id, s);
     mesh.scale.setScalar(s);
     const halo = starHalos.get(id);
-    if (halo) halo.scale.setScalar(2.5 * s);
+    if (halo) halo.size = 2.5 * s;
   }
+
+  // Hide halos initially (galaxy starts hidden)
+  setHaloManagerVisible(false);
 
   rebuildRouteLines();
   rebuildLabels();
+}
+
+// ── Halo manager visibility ──────────────────────────────────────────────────
+
+function setHaloManagerVisible(visible: boolean): void {
+  if (!refs.haloManager || !scene.spriteManagers) return;
+  const idx = scene.spriteManagers.indexOf(refs.haloManager);
+  if (visible && idx < 0) {
+    scene.spriteManagers.push(refs.haloManager);
+  } else if (!visible && idx >= 0) {
+    scene.spriteManagers.splice(idx, 1);
+  }
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -137,12 +204,12 @@ export function updatePlayerShipPosition(): void {
   }
 }
 
-export function getStarPosition(systemId: string): THREE.Vector3 | null {
+export function getStarPosition(systemId: string): Vector3 | null {
   const mesh = starMeshes.get(systemId);
   return mesh ? mesh.position.clone() : null;
 }
 
-export function setPlayerShipAt(pos: THREE.Vector3): void {
+export function setPlayerShipAt(pos: Vector3): void {
   if (refs.playerShipModel) {
     refs.playerShipModel.position.set(pos.x, pos.y + 2.5, pos.z);
   }
@@ -180,6 +247,7 @@ export function updateContractMarker(): void {
 export function showGalaxy(): void {
   galaxyGroup.visible = true;
   setStarfieldVisible(false);
+  setHaloManagerVisible(true);
   // Increase near plane to clip sprites/points that are too close to camera
   camera.near = 5;
   camera.updateProjectionMatrix();
@@ -189,6 +257,7 @@ export function showGalaxy(): void {
 export function hideGalaxy(): void {
   galaxyGroup.visible = false;
   setStarfieldVisible(true);
+  setHaloManagerVisible(false);
   // Restore near plane for combat mode
   camera.near = 1;
   camera.updateProjectionMatrix();
@@ -196,7 +265,7 @@ export function hideGalaxy(): void {
   if (refs.labelsContainer) refs.labelsContainer.style.display = 'none';
 }
 
-export function getStarMeshes(): Map<string, THREE.Mesh> {
+export function getStarMeshes(): Map<string, EngineMesh> {
   return starMeshes;
 }
 

@@ -1,6 +1,6 @@
-import * as THREE from 'three';
+import type { TransformNode } from '../../../core';
 import { cloneFighterModel } from '../loader';
 
-export function createFighter(color: number, teamColor: number): THREE.Group {
+export function createFighter(color: number, teamColor: number): TransformNode {
   return cloneFighterModel(color, teamColor);
 }

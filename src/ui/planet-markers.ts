@@ -1,7 +1,6 @@
-import * as THREE from 'three';
 import { getExplorationDetail } from '../campaign/exploration-scene/index';
 import { planetMeshes } from '../campaign/exploration-scene/refs';
-import { camera } from '../scene/setup';
+import { TransformNode, camera } from '../core';
 import { DomPool } from '../utils/dom-pool';
 import { clampToScreenEdge, formatDistance, isOnScreen, worldToScreen } from '../utils/screen';
 
@@ -33,7 +32,7 @@ function getPool(): DomPool {
   return pool;
 }
 
-export function updatePlanetMarkers(playerPlane: THREE.Group): void {
+export function updatePlanetMarkers(playerPlane: TransformNode): void {
   const detail = getExplorationDetail();
   const p = getPool();
   if (!detail || planetMeshes.length === 0) {

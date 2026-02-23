@@ -11,7 +11,8 @@ import {
   updateGalaxyScene,
   updatePlayerShipPosition,
 } from '../campaign/galaxy-scene';
-import { camera, scene } from '../scene/setup';
+import { galaxyCamera } from '../campaign/galaxy-controls/camera';
+import { addToScene } from '../core';
 import { playerPlane } from '../systems/player';
 import type { GalaxyModeContext, GameModeHandler } from './types';
 
@@ -20,7 +21,7 @@ let galaxyBuilt = false;
 function ensureGalaxyBuilt(): void {
   if (!galaxyBuilt) {
     buildGalaxyScene();
-    scene.add(galaxyGroup);
+    addToScene(galaxyGroup);
     galaxyBuilt = true;
   }
 }
@@ -29,7 +30,7 @@ export const galaxyMode: GameModeHandler = {
   update(dt: number) {
     updateGalaxyScene(dt);
     updateTravelAnimation(dt);
-    updateGalaxyLabels(camera);
+    updateGalaxyLabels(galaxyCamera);
   },
 
   enter(context?: GalaxyModeContext) {

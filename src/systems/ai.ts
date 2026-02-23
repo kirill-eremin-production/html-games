@@ -1,7 +1,7 @@
-import * as THREE from 'three';
 import { AI_CONFIG } from '../config/ai';
 import { PLAYER_NAME } from '../constants';
-import { camera } from '../scene/setup';
+import { Quaternion, TransformNode, Vector3, camera } from '../core';
+import { cleanupTeamSources, updateExhaustGlow } from '../scene/models';
 import { state } from '../state';
 import type { Fighter } from '../types';
 import { disposeObject } from '../utils/dispose';
@@ -11,19 +11,19 @@ import { shootFromFighter } from './weapons';
 
 const A = AI_CONFIG;
 
-const _aiToTarget = new THREE.Vector3();
-const _aiCurrentFwd = new THREE.Vector3();
-const _aiCross = new THREE.Vector3();
-const _aiRotQ = new THREE.Quaternion();
-const _aiRollQ = new THREE.Quaternion();
-const _aiFwd = new THREE.Vector3();
-const _tmpVec = new THREE.Vector3();
-const _aiOrbitDir = new THREE.Vector3();
-const _aiSubWorldPos = new THREE.Vector3();
+const _aiToTarget = new Vector3();
+const _aiCurrentFwd = new Vector3();
+const _aiCross = new Vector3();
+const _aiRotQ = new Quaternion();
+const _aiRollQ = new Quaternion();
+const _aiFwd = new Vector3();
+const _tmpVec = new Vector3();
+const _aiOrbitDir = new Vector3();
+const _aiSubWorldPos = new Vector3();
 
 let _nearestTarget: Fighter | null = null;
 
-function findNearestTarget(pos: THREE.Vector3, targets: Fighter[]): Fighter | null {
+function findNearestTarget(pos: Vector3, targets: Fighter[]): Fighter | null {
   _nearestTarget = null;
   let bestDistSq = Infinity;
   for (const t of targets) {
@@ -41,9 +41,9 @@ function updateFighterAI(
   dt: number,
   enemies: Fighter[],
   shootTeam: 'ally' | 'enemy',
-  playerPos: THREE.Vector3 | null,
+  playerPos: Vector3 | null,
   isEnemy: boolean,
-  playerPlane: THREE.Group,
+  playerPlane: TransformNode,
 ): void {
   if (!fighter.ai.target || Math.random() < A.retargetChance) {
     if (isEnemy && Math.random() < A.enemyTargetPlayerChance && playerPos) {
@@ -100,7 +100,7 @@ function updateFighterAI(
     }
   }
 
-  let targetDir: THREE.Vector3;
+  let targetDir: Vector3;
   switch (fighter.ai.state) {
     case 'chase':
       targetDir = dirToTarget;
@@ -141,31 +141,19 @@ function updateFighterAI(
     shootFromFighter(fighter.mesh, dirToTarget, shootTeam, fighter.name, playerPlane);
   }
 
-  // Exhaust glow pulse
-  const pulse =
-    Math.sin(Date.now() * A.exhaustPulseSpeed + fighter.mesh.id * A.exhaustPulsePhaseMultiplier) *
-      0.5 +
-    0.5;
-  const exh = fighter.mesh.getObjectByName('exhaust') as THREE.Mesh | undefined;
-  if (exh) {
-    (exh.material as THREE.MeshBasicMaterial).opacity =
-      A.exhaustOpacityBase + pulse * A.exhaustOpacityRange;
-    exh.scale.setScalar(A.exhaustScaleBase + pulse * A.exhaustScaleRange);
-  }
-
   fighter.healthBar.lookAt(camera.position);
   const hpRatio = fighter.health / fighter.maxHealth;
   fighter.healthFill.scale.x = Math.max(0.01, hpRatio);
   fighter.healthFill.position.x = -(1 - hpRatio) * 2;
 }
 
-export function updateAllies(dt: number, playerPlane: THREE.Group): void {
+export function updateAllies(dt: number, playerPlane: TransformNode): void {
   for (const a of state.allies) {
     updateFighterAI(a, dt, state.enemies, 'ally', null, false, playerPlane);
   }
 }
 
-export function updateEnemies(dt: number, playerPlane: THREE.Group): void {
+export function updateEnemies(dt: number, playerPlane: TransformNode): void {
   for (const e of state.enemies) {
     updateFighterAI(e, dt, state.allies, 'enemy', playerPlane.position, true, playerPlane);
   }
@@ -178,11 +166,14 @@ export const aiSystem: GameSystem = {
   update(dt) {
     updateAllies(dt, playerPlane);
     updateEnemies(dt, playerPlane);
+    // Global exhaust pulse (shared material — one update per team)
+    updateExhaustGlow();
   },
   cleanup() {
     for (const a of state.allies) disposeObject(a.mesh);
     for (const e of state.enemies) disposeObject(e.mesh);
     state.allies = [];
     state.enemies = [];
+    cleanupTeamSources();
   },
 };

@@ -42,10 +42,7 @@ export const COMBAT_CONSTANTS = {
   explosionVelocityFactor: 60,
   explosionLifeBase: 0.4,
   explosionLifeRange: 0.8,
-  explosionTimer: 1.2,
   explosionVelocityDecay: 2,
-  explosionScaleDecay: 0.5,
-  explosionColors: [0xff4400, 0xff6600, 0xff8800, 0xffaa00, 0x00ccff, 0x444444],
 
   // Capital ship destruction
   secondaryExplosionCount: 5,

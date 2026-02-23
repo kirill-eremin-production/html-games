@@ -1,6 +1,18 @@
-import * as THREE from 'three';
+import {
+  DoubleSide,
+  addToScene,
+  createAmbientLight,
+  createMesh,
+  createPBRMaterial,
+  createPointLight,
+  createRingGeometry,
+  createSphereGeometry,
+  createSprite,
+  createSpriteMaterial,
+  createUnlitMaterial,
+} from '../../core';
+import { createIcosahedronGeometry } from '../../core';
 import { EXPLORATION_CONFIG } from '../../config/exploration';
-import { scene } from '../../scene/setup';
 import { getSystemDetail, mulberry32 } from '../data';
 import type { SystemDetail } from '../types';
 import { asteroidMeshes, explorationGroup, explorationRefs, planetMeshes } from './refs';
@@ -11,14 +23,14 @@ let explorationAdded = false;
 
 export function ensureExplorationGroup(): void {
   if (!explorationAdded) {
-    scene.add(explorationGroup);
+    addToScene(explorationGroup);
     explorationAdded = true;
   }
 }
 
 // Shared geometries
-const planetGeo = new THREE.SphereGeometry(1, 32, 32);
-const asteroidGeo = new THREE.IcosahedronGeometry(1, 0);
+const planetGeo = createSphereGeometry(1, 32, 32);
+const asteroidGeo = createIcosahedronGeometry(1, 0);
 
 let currentDetail: SystemDetail | null = null;
 
@@ -30,31 +42,31 @@ export function buildExplorationScene(systemId: string): void {
   const idx = systemId === 'solaris' ? 0 : parseInt(systemId.split('-')[1], 10);
 
   // Ambient light for the star system
-  const ambient = new THREE.AmbientLight(0x222244, 0.3);
+  const ambient = createAmbientLight(0x222244, 0.3);
   explorationGroup.add(ambient);
 
   // Central star — massive
   const starRadius = detail.starSize * EXPLORATION_CONFIG.starRadiusMultiplier;
-  const starMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(starRadius, 48, 48),
-    new THREE.MeshBasicMaterial({ color: detail.starColor }),
+  const starMesh = createMesh(
+    createSphereGeometry(starRadius, 48, 48),
+    createUnlitMaterial({ color: detail.starColor }),
   );
   explorationGroup.add(starMesh);
   explorationRefs.starMesh = starMesh;
 
   // Star point light
-  const starLight = new THREE.PointLight(detail.starColor, 2, 5000000);
+  const starLight = createPointLight(detail.starColor, 2, 5000000);
   explorationGroup.add(starLight);
 
   // Star glow sprite
-  const glowMat = new THREE.SpriteMaterial({
+  const glowMat = createSpriteMaterial({
     color: detail.starColor,
     transparent: true,
     opacity: 0.6,
-    blending: THREE.AdditiveBlending,
+    additive: true,
     depthWrite: false,
   });
-  const glow = new THREE.Sprite(glowMat);
+  const glow = createSprite(glowMat);
   glow.scale.setScalar(detail.starSize * EXPLORATION_CONFIG.starGlowScale);
   explorationGroup.add(glow);
   explorationRefs.starGlow = glow;
@@ -63,8 +75,8 @@ export function buildExplorationScene(systemId: string): void {
   const PLANET_SCALE = EXPLORATION_CONFIG.planetScale;
   for (let i = 0; i < detail.planets.length; i++) {
     const p = detail.planets[i];
-    const mat = new THREE.MeshStandardMaterial({ color: p.color, roughness: 0.7 });
-    const mesh = new THREE.Mesh(planetGeo, mat);
+    const mat = createPBRMaterial({ color: p.color, roughness: 0.7 });
+    const mesh = createMesh(planetGeo, mat);
     mesh.scale.setScalar(p.size * PLANET_SCALE);
     mesh.userData.planetIndex = i;
 
@@ -76,32 +88,32 @@ export function buildExplorationScene(systemId: string): void {
     planetMeshes.push(mesh);
 
     // Orbit line
-    const orbitGeo = new THREE.RingGeometry(
+    const orbitGeo = createRingGeometry(
       p.orbitalDistance - EXPLORATION_CONFIG.orbitRingWidth,
       p.orbitalDistance + EXPLORATION_CONFIG.orbitRingWidth,
       128,
     );
-    const orbitMat = new THREE.MeshBasicMaterial({
+    const orbitMat = createUnlitMaterial({
       color: 0x334466,
       transparent: true,
       opacity: 0.08,
-      side: THREE.DoubleSide,
+      side: DoubleSide,
     });
-    const orbitLine = new THREE.Mesh(orbitGeo, orbitMat);
+    const orbitLine = createMesh(orbitGeo, orbitMat);
     orbitLine.rotation.x = -Math.PI / 2;
     explorationGroup.add(orbitLine);
 
     // Rings for gas giants
     if (p.ringColor !== null) {
       const planetVisualSize = p.size * PLANET_SCALE;
-      const ringGeo = new THREE.RingGeometry(planetVisualSize * 1.4, planetVisualSize * 2.0, 64);
-      const ring = new THREE.Mesh(
+      const ringGeo = createRingGeometry(planetVisualSize * 1.4, planetVisualSize * 2.0, 64);
+      const ring = createMesh(
         ringGeo,
-        new THREE.MeshBasicMaterial({
+        createUnlitMaterial({
           color: p.ringColor,
           transparent: true,
           opacity: 0.45,
-          side: THREE.DoubleSide,
+          side: DoubleSide,
         }),
       );
       ring.rotation.x = Math.PI / 3;
@@ -120,11 +132,11 @@ export function buildExplorationScene(systemId: string): void {
       const y = (rng() - 0.5) * 40000;
       const size = 2000 + rng() * 5000;
 
-      const mat = new THREE.MeshStandardMaterial({
+      const mat = createPBRMaterial({
         color: 0x666666 + Math.floor(rng() * 0x333333),
         roughness: 0.9,
       });
-      const mesh = new THREE.Mesh(asteroidGeo, mat);
+      const mesh = createMesh(asteroidGeo, mat);
       mesh.position.set(r * Math.cos(angle), y, r * Math.sin(angle));
       mesh.scale.setScalar(size);
       mesh.rotation.set(rng() * Math.PI, rng() * Math.PI, rng() * Math.PI);

@@ -1,5 +1,5 @@
+import { renderer } from '../core';
 import { updateCurrentMode } from '../modes/registry';
-import { camera, renderer, scene } from '../scene/setup';
 import { clock } from './refs';
 
 const TARGET_FPS = 60;
@@ -15,5 +15,5 @@ export function gameLoop(timestamp = 0): void {
   const dt = Math.min(clock.getDelta(), 0.05);
 
   updateCurrentMode(dt);
-  renderer.render(scene, camera);
+  renderer.render();
 }

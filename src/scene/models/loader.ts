@@ -1,5 +1,14 @@
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import {
+  Color,
+  type EngineMesh,
+  MeshPhongMaterial,
+  type TransformNode,
+  Vector3,
+  cloneModel,
+  isEngineMesh,
+  loadModel,
+  traverseNode,
+} from '../../core';
 import { SUBSYSTEM_HP } from '../../constants';
 import type { Subsystem } from '../../types';
 import {
@@ -13,21 +22,13 @@ import {
 
 // ─── Templates (populated by preloadModels) ─────────────────────────────────
 
-let fighterTemplate: THREE.Group | null = null;
-let capitalShipTemplate: THREE.Group | null = null;
-
-const loader = new GLTFLoader();
-
-function load(url: string): Promise<THREE.Group> {
-  return new Promise((resolve, reject) => {
-    loader.load(url, (gltf) => resolve(gltf.scene), undefined, reject);
-  });
-}
+let fighterTemplate: TransformNode | null = null;
+let capitalShipTemplate: TransformNode | null = null;
 
 export async function preloadModels(): Promise<void> {
   const [fighter, capitalShip] = await Promise.all([
-    load('./models/fighter.glb'),
-    load('./models/capital-ship.glb'),
+    loadModel('./models/fighter.glb'),
+    loadModel('./models/capital-ship.glb'),
   ]);
   fighterTemplate = fighter;
   capitalShipTemplate = capitalShip;
@@ -38,17 +39,17 @@ export async function preloadModels(): Promise<void> {
 const SUBSYSTEM_NAMES = ['engines', 'bridge', 'turrets', 'comms', 'hangar'] as const;
 const SUBSYSTEM_LABELS = ['Двигатели', 'Мостик', 'Турели', 'Связь', 'Ангар'] as const;
 
-export function cloneFighterModel(bodyColor: number, exhaustColor: number): THREE.Group {
-  const group = fighterTemplate!.clone();
+export function cloneFighterModel(bodyColor: number, exhaustColor: number): TransformNode {
+  const group = cloneModel(fighterTemplate!);
 
   const bodyMat = createBodyMat(bodyColor);
   const accentMat = createAccentMat(bodyColor);
   const glowMat = createExhaustMat(exhaustColor);
   const haloMat = createGlowHaloMat(exhaustColor);
 
-  group.traverse((child) => {
-    if (!(child as THREE.Mesh).isMesh) return;
-    const mesh = child as THREE.Mesh;
+  traverseNode(group, (child) => {
+    if (!isEngineMesh(child)) return;
+    const mesh = child as EngineMesh;
     const n = mesh.name;
     if (n.startsWith('body_')) mesh.material = bodyMat;
     else if (n.startsWith('accent_')) mesh.material = accentMat;
@@ -64,22 +65,22 @@ export function cloneFighterModel(bodyColor: number, exhaustColor: number): THRE
 
 // ─── Capital Ship cloning ───────────────────────────────────────────────────
 
-export function cloneCapitalShipModel(index: number, hullColor: number): THREE.Group {
-  const group = capitalShipTemplate!.clone();
+export function cloneCapitalShipModel(index: number, hullColor: number): TransformNode {
+  const group = cloneModel(capitalShipTemplate!);
 
   // Apply hull colors to the hull group
-  const hc = new THREE.Color(hullColor);
-  const hullMat = new THREE.MeshPhongMaterial({
+  const hc = new Color(hullColor);
+  const hullMat = new MeshPhongMaterial({
     color: hc,
     emissive: hc.clone().multiplyScalar(0.33),
     emissiveIntensity: 0.15,
   });
-  const detailMat = new THREE.MeshPhongMaterial({
+  const detailMat = new MeshPhongMaterial({
     color: hc.clone().multiplyScalar(0.82),
     emissive: hc.clone().multiplyScalar(0.33),
     emissiveIntensity: 0.1,
   });
-  const bowMat = new THREE.MeshPhongMaterial({
+  const bowMat = new MeshPhongMaterial({
     color: hc,
     emissive: hc.clone().multiplyScalar(0.5),
     emissiveIntensity: 0.2,
@@ -87,9 +88,9 @@ export function cloneCapitalShipModel(index: number, hullColor: number): THREE.G
 
   const hullGroup = group.getObjectByName('hull');
   if (hullGroup) {
-    hullGroup.traverse((child) => {
-      if (!(child as THREE.Mesh).isMesh) return;
-      const mesh = child as THREE.Mesh;
+    traverseNode(hullGroup, (child) => {
+      if (!isEngineMesh(child)) return;
+      const mesh = child as EngineMesh;
       const n = mesh.name;
       if (n.startsWith('hull_')) mesh.material = n === 'hull_bow' ? bowMat : hullMat;
       else if (n.startsWith('detail_')) mesh.material = detailMat;
@@ -99,7 +100,7 @@ export function cloneCapitalShipModel(index: number, hullColor: number): THREE.G
 
   // Build subsystem metadata from named groups
   const subsystems: Subsystem[] = SUBSYSTEM_NAMES.map((name, i) => {
-    const subGroup = group.getObjectByName(name) as THREE.Group;
+    const subGroup = group.getObjectByName(name) as TransformNode;
     const extras = subGroup?.userData ?? {};
     const c = extras.center ?? [0, 0, 0];
     return {
@@ -107,7 +108,7 @@ export function cloneCapitalShipModel(index: number, hullColor: number): THREE.G
       mesh: subGroup,
       health: SUBSYSTEM_HP,
       maxHealth: SUBSYSTEM_HP,
-      center: new THREE.Vector3(c[0], c[1], c[2]),
+      center: new Vector3(c[0], c[1], c[2]),
       radius: (extras.radius ?? 10) * 1.5,
     };
   });

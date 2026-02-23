@@ -1,14 +1,14 @@
-import * as THREE from 'three';
 import { UI_CONFIG } from '../config/ui';
+import { TransformNode, Vector3 } from '../core';
 import { state } from '../state';
 
 const M = UI_CONFIG.minimap;
 const minimapCanvas = document.getElementById('minimap-canvas') as HTMLCanvasElement;
 const mCtx = minimapCanvas.getContext('2d')!;
-const _mmDir = new THREE.Vector3();
+const _mmDir = new Vector3();
 const TWO_PI = Math.PI * 2;
 
-export function drawMinimap(playerPlane: THREE.Group): void {
+export function drawMinimap(playerPlane: TransformNode): void {
   mCtx.clearRect(0, 0, M.size, M.size);
   const cx = M.center,
     cy = M.center,

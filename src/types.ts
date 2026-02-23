@@ -1,18 +1,18 @@
-import * as THREE from 'three';
 import type { FlightModelId } from './config/flight-models';
+import type { EngineMesh, TransformNode, Vector3 } from './core';
 
 export interface FighterAI {
   state: 'chase' | 'evade' | 'orbit';
   timer: number;
-  evadeDir: THREE.Vector3;
-  target: { mesh: { position: THREE.Vector3 }; name: string } | null;
+  evadeDir: Vector3;
+  target: { mesh: { position: Vector3 }; name: string } | null;
 }
 
 export interface Fighter {
-  mesh: THREE.Group;
+  mesh: TransformNode;
   name: string;
-  healthBar: THREE.Group;
-  healthFill: THREE.Mesh;
+  healthBar: TransformNode;
+  healthFill: EngineMesh;
   health: number;
   maxHealth: number;
   speed: number;
@@ -22,38 +22,27 @@ export interface Fighter {
 
 export interface Subsystem {
   name: string;
-  mesh: THREE.Group | THREE.Mesh;
+  mesh: TransformNode | EngineMesh;
   health: number;
   maxHealth: number;
-  center: THREE.Vector3;
+  center: Vector3;
   radius: number;
 }
 
 export interface CapitalShip {
-  mesh: THREE.Group;
+  mesh: TransformNode;
   subsystems: Subsystem[];
   alive: boolean;
   turretTimer: number;
 }
 
 export interface LaserData {
-  mesh: THREE.Mesh;
-  velocity: THREE.Vector3;
+  mesh: EngineMesh;
+  velocity: Vector3;
   life: number;
   team: 'player' | 'ally' | 'enemy';
   damage: number;
   shooterName: string;
-}
-
-export interface ExplosionParticle {
-  mesh: THREE.Mesh;
-  velocity: THREE.Vector3;
-  life: number;
-}
-
-export interface Explosion {
-  particles: ExplosionParticle[];
-  timer: number;
 }
 
 export interface KillFeedEntry {
@@ -92,7 +81,6 @@ export interface GameState {
   allies: Fighter[];
   enemies: Fighter[];
   capitalShips: CapitalShip[];
-  explosions: Explosion[];
   killFeed: KillFeedEntry[];
   keys: Record<string, boolean>;
   mouseX: number;

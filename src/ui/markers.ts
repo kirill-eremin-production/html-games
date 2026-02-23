@@ -1,6 +1,5 @@
-import * as THREE from 'three';
 import { CAPITAL_CLOSE_RANGE_SQ, CURSOR_PROXIMITY_FACTOR, LOCK_PICK_RADIUS } from '../constants';
-import { camera } from '../scene/setup';
+import { TransformNode, Vector3, camera } from '../core';
 import { state } from '../state';
 import type { LockedTarget } from '../types';
 import { DomPool } from '../utils/dom-pool';
@@ -15,7 +14,7 @@ const pool = new DomPool(markersContainer, () => {
   return el;
 });
 
-const _mrkPos = new THREE.Vector3();
+const _mrkPos = new Vector3();
 const ENEMY_RANGE_SQ = 800 * 800;
 const SHIP_RANGE_SQ = 1500 * 1500;
 
@@ -25,7 +24,7 @@ function renderCapitalShipMarkers(
   usedCount: number,
   w: number,
   h: number,
-  playerPlane: THREE.Group,
+  playerPlane: TransformNode,
 ): number {
   for (const cs of state.capitalShips) {
     if (!cs.alive) continue;
@@ -74,7 +73,7 @@ function renderLockedTarget(
   usedCount: number,
   w: number,
   h: number,
-  playerPlane: THREE.Group,
+  playerPlane: TransformNode,
 ): number {
   let dist3d: number;
   let name: string;
@@ -113,7 +112,7 @@ function renderLockedTarget(
 
 // ── Main update ────────────────────────────────────────────────────────────
 
-export function updateTargetMarkers(playerPlane: THREE.Group): void {
+export function updateTargetMarkers(playerPlane: TransformNode): void {
   const w = window.innerWidth;
   const h = window.innerHeight;
   const cursorScreenX = (state.mouseX * 0.5 + 0.5) * w;
@@ -177,7 +176,7 @@ export function updateTargetMarkers(playerPlane: THREE.Group): void {
 
 // ── Target lock toggle ─────────────────────────────────────────────────────
 
-export function toggleTargetLock(playerPlane: THREE.Group): void {
+export function toggleTargetLock(playerPlane: TransformNode): void {
   if (state.lockedTarget) {
     state.lockedTarget = null;
     return;

@@ -1,10 +1,9 @@
-import * as THREE from 'three';
 import { COMBAT_CONSTANTS } from '../config/combat';
 import { combatConfig } from '../config/combat-session';
 import { PLAYER_CONFIG } from '../config/player';
+import { Vector3, removeFromScene } from '../core';
 import { emit, off, on } from '../events';
 import type { EventMap } from '../events';
-import { scene } from '../scene/setup';
 import { state } from '../state';
 import type { CapitalShip, Fighter, Subsystem } from '../types';
 import { showMessage } from '../ui/hud';
@@ -73,7 +72,7 @@ function handleCapitalShipDestroyed(e: EventMap['capital-ship-destroyed']): void
   for (let k = 0; k < C.secondaryExplosionCount; k++) {
     setTimeout(() => {
       if (!ship.mesh.parent) return;
-      const offset = new THREE.Vector3(
+      const offset = new Vector3(
         (Math.random() - 0.5) * C.secondaryExplosionSpread.x,
         (Math.random() - 0.5) * C.secondaryExplosionSpread.y,
         (Math.random() - 0.5) * C.secondaryExplosionSpread.z,
@@ -82,7 +81,7 @@ function handleCapitalShipDestroyed(e: EventMap['capital-ship-destroyed']): void
     }, k * C.secondaryExplosionDelay);
   }
   setTimeout(() => {
-    scene.remove(ship.mesh);
+    removeFromScene(ship.mesh);
   }, C.shipRemoveDelay);
 
   state.score += C.capitalShipKillScore;
