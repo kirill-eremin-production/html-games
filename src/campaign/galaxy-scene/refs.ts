@@ -34,8 +34,8 @@ export const pulse = { time: 0 };
 export const projVec = new Vector3();
 
 // Constants
-export const BASE_MAIN_OPACITY = 0.34;
-export const BASE_BRIGHT_OPACITY = 0.13;
+export const BASE_MAIN_OPACITY = 3.4;
+export const BASE_BRIGHT_OPACITY = 1.3;
 export const NEARBY_SCALE = 1.0;
 export const FAR_SCALE = 0.5;
 export const SCALE_LERP_SPEED = 3.0;

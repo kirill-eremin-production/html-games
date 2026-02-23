@@ -317,7 +317,7 @@ export function createBackgroundStars(): TransformNode {
   mainMat.alphaMode = Constants.ALPHA_ADD;
   mainMat.setFloat('pointSize', 0.25);
   mainMat.setFloat('halfHeight', halfH);
-  mainMat.setFloat('opacity', 0.34);
+  mainMat.setFloat('opacity', 3.4);
   refs.mainStarsMat = mainMat;
 
   const mainMesh = new BMesh('galaxyMainStars', scene);
@@ -367,7 +367,7 @@ export function createBackgroundStars(): TransformNode {
   brightMat.alphaMode = Constants.ALPHA_ADD;
   brightMat.setFloat('pointSize', 0.7);
   brightMat.setFloat('halfHeight', halfH);
-  brightMat.setFloat('opacity', 0.13);
+  brightMat.setFloat('opacity', 1.3);
   brightMat.setFloat('uTime', 0);
   refs.brightStarsMat = brightMat;
 
