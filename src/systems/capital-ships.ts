@@ -37,6 +37,7 @@ export function spawnCapitalShips(): void {
 
 function updateCapitalShipVisuals(cs: (typeof state.capitalShips)[number], dt: number): void {
   for (const sub of cs.subsystems) {
+    if (!sub.mesh) continue;
     if (sub.health <= 0 && sub.mesh.visible) {
       sub.mesh.traverse((child) => {
         if (isEngineMesh(child) && (child as EngineMesh).material) {

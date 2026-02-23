@@ -9,7 +9,6 @@ import {
   createAdditiveMaterial,
   createCylinderGeometry,
   createMesh,
-  removeFromScene,
 } from '@/shared/core';
 import { GUN_OFFSET_L, GUN_OFFSET_R } from '../scene/models';
 import { state } from '@/shared/state';
@@ -63,6 +62,7 @@ export function createLaser(
   const mat = isPlayer ? laserMatPlayer : isEnemy ? laserMatEnemy : laserMatAlly;
 
   const mesh = createMesh(geo, mat);
+  mesh.renderingGroupId = 1;
   mesh.position.copyFrom(origin);
   _laserDir.copyFrom(direction).normalize();
   _laserQuat.setFromUnitVectors(_laserAxis, _laserDir);
@@ -95,7 +95,7 @@ export function cleanupExcessBullets(): void {
     const removeCount = total - W.cleanupTarget;
     const toRemove = Math.min(removeCount, target.length);
     for (let i = 0; i < toRemove; i++) {
-      removeFromScene(target[i].mesh);
+      target[i].mesh.dispose();
     }
     target.splice(0, toRemove);
   }
