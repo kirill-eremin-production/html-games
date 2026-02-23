@@ -1,4 +1,4 @@
-import type { GameModeHandler } from './types';
+import type { GameModeHandler } from '../types';
 
 export const menuMode: GameModeHandler = {
   update() {},

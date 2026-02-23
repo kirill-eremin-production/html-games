@@ -6,35 +6,34 @@ import {
   startProximityHum,
   stopEngineHum,
   stopProximityHum,
-} from '../audio';
-
-import { clearExplorationScene, hideExploration } from '../campaign/exploration-scene/index';
-import { updateExplorationScene } from '../campaign/exploration-scene/update';
-import { onCombatEnd } from '../campaign/mode-manager';
-import { isCampaignActive } from '../campaign/state';
-import { applyCombatConfig, combatConfig } from '../config/combat-session';
-import { refs } from '../main/refs';
-import { createFighter } from '../scene/models';
-import { camera } from '../scene/setup';
-import { parseHexColor, settings } from '../settings';
-import { resetNameCounters, state } from '../state';
-import { aiSystem } from '../systems/ai';
-import { capitalShipSystem, spawnCapitalShips } from '../systems/capital-ships';
-import { combatHudSystem, damageEffectSystem, proximityAudioSystem } from '../systems/combat-ui';
-import { damageSystem } from '../systems/damage';
+} from '@/audio';
+import { clearExplorationScene, hideExploration } from '@/campaign/exploration-scene/index';
+import { updateExplorationScene } from '@/campaign/exploration-scene/update';
+import { onCombatEnd } from '@/campaign/mode-manager';
+import { isCampaignActive } from '@/campaign/state';
+import { applyCombatConfig, combatConfig } from '@/config/combat-session';
+import { refs } from '@/main/refs';
+import { createFighter } from '@/scene/models';
+import { camera } from '@/scene/setup';
+import { parseHexColor, settings } from '@/settings';
+import { resetNameCounters, state } from '@/state';
+import { aiSystem } from '@/systems/ai';
+import { capitalShipSystem, spawnCapitalShips } from '@/systems/capital-ships';
+import { combatHudSystem, damageEffectSystem, proximityAudioSystem } from '@/systems/combat-ui';
+import { damageSystem } from '@/systems/damage';
 import {
   playerDeath as playerDeathOriginal,
   playerPlane,
   resetPlayerTransform,
-} from '../systems/player';
-import { flightCoreSystems, weaponSystems } from '../systems/presets';
-import { spawnAlly, spawnEnemy, spawnerSystem } from '../systems/spawner';
-import type { GameSystem } from '../systems/types';
-import { cleanupSystems, initSystems, updateSystems } from '../systems/types';
-import { hideHUD, resetCachedShipHTML, showHUD, showMessage } from '../ui/hud';
-import { clearKillFeed } from '../ui/kill-feed';
+} from '@/systems/player';
+import { flightCoreSystems, weaponSystems } from '@/systems/presets';
+import { spawnAlly, spawnEnemy, spawnerSystem } from '@/systems/spawner';
+import type { GameSystem } from '@/systems/types';
+import { cleanupSystems, initSystems, updateSystems } from '@/systems/types';
+import { hideHUD, resetCachedShipHTML, showHUD, showMessage } from '@/ui/hud';
+import { clearKillFeed } from '@/ui/kill-feed';
 
-import type { CombatModeContext, GameModeHandler } from './types';
+import type { CombatModeContext, GameModeHandler } from '../types';
 
 // ── Combat systems ──────────────────────────────────────────────────────────
 // Add new combat mechanics here — each system handles its own init/update/cleanup.

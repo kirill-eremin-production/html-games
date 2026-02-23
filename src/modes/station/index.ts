@@ -1,6 +1,6 @@
-import { hideStation, showStation } from '../campaign/station-ui';
+import { hideStation, showStation } from '@/campaign/station-ui';
 
-import type { GameModeHandler, StationModeContext } from './types';
+import type { GameModeHandler, StationModeContext } from '../types';
 
 export const stationMode: GameModeHandler = {
   update() {},

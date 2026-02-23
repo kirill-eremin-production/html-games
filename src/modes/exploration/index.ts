@@ -1,32 +1,25 @@
-import {
-  initAudio,
-  isAudioInitialized,
-  resumeAudio,
-  startEngineHum,
-  stopEngineHum,
-} from '../audio';
-
-import { hideExplorationHud, setupExplorationHud } from '../campaign/exploration-scene/hud';
+import { initAudio, isAudioInitialized, resumeAudio, startEngineHum, stopEngineHum } from '@/audio';
+import { hideExplorationHud, setupExplorationHud } from '@/campaign/exploration-scene/hud';
 import {
   buildExplorationScene,
   clearExplorationScene,
   ensureExplorationGroup,
   hideExploration,
   showExploration,
-} from '../campaign/exploration-scene/index';
-import { EXPLORATION_CONFIG } from '../config/exploration';
-import { camera } from '../scene/setup';
-import { setStarfieldVisible } from '../scene/starfield';
-import { state } from '../state';
-import { explorationHudSystem, explorationSceneSystem } from '../systems/exploration-hud';
-import { playerPlane, resetPlayerTransform } from '../systems/player';
-import { flightCoreSystems } from '../systems/presets';
-import type { GameSystem } from '../systems/types';
-import { cleanupSystems, updateSystems } from '../systems/types';
-import { hideHUD, showHUD } from '../ui/hud';
-import { hidePlanetMarkers } from '../ui/planet-markers';
+} from '@/campaign/exploration-scene/index';
+import { EXPLORATION_CONFIG } from '@/config/exploration';
+import { camera } from '@/scene/setup';
+import { setStarfieldVisible } from '@/scene/starfield';
+import { state } from '@/state';
+import { explorationHudSystem, explorationSceneSystem } from '@/systems/exploration-hud';
+import { playerPlane, resetPlayerTransform } from '@/systems/player';
+import { flightCoreSystems } from '@/systems/presets';
+import type { GameSystem } from '@/systems/types';
+import { cleanupSystems, updateSystems } from '@/systems/types';
+import { hideHUD, showHUD } from '@/ui/hud';
+import { hidePlanetMarkers } from '@/ui/planet-markers';
 
-import type { ExplorationModeContext, GameModeHandler } from './types';
+import type { ExplorationModeContext, GameModeHandler } from '../types';
 
 // ── Exploration systems ─────────────────────────────────────────────────────
 // No AI, no capital ships, no spawner, no damage — just flight + scene + HUD

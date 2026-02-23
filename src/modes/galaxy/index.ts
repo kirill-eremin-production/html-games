@@ -1,6 +1,6 @@
-import { disableGalaxyControls, enableGalaxyControls } from '../campaign/galaxy-controls';
-import { updateTravelAnimation } from '../campaign/galaxy-controls';
-import { galaxyCamera } from '../campaign/galaxy-controls/camera';
+import { disableGalaxyControls, enableGalaxyControls } from '@/campaign/galaxy-controls';
+import { updateTravelAnimation } from '@/campaign/galaxy-controls';
+import { galaxyCamera } from '@/campaign/galaxy-controls/camera';
 import {
   buildGalaxyScene,
   galaxyGroup,
@@ -11,11 +11,11 @@ import {
   updateGalaxyLabels,
   updateGalaxyScene,
   updatePlayerShipPosition,
-} from '../campaign/galaxy-scene';
-import { addToScene } from '../core';
-import { playerPlane } from '../systems/player';
+} from '@/campaign/galaxy-scene';
+import { addToScene } from '@/core';
+import { playerPlane } from '@/systems/player';
 
-import type { GalaxyModeContext, GameModeHandler } from './types';
+import type { GalaxyModeContext, GameModeHandler } from '../types';
 
 let galaxyBuilt = false;
 
