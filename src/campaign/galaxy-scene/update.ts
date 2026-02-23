@@ -1,4 +1,4 @@
-import type { MeshBasicMaterial } from '../../core';
+import type { MeshBasicMaterial } from '@/shared/core';
 import { galaxyCamera } from '../galaxy-controls/camera';
 import { campaign } from '../state';
 

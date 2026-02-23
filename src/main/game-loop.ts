@@ -1,4 +1,4 @@
-import { renderer } from '../core';
+import { renderer } from '@/shared/core';
 import { updateCurrentMode } from '../modes/registry';
 
 import { clock } from './refs';

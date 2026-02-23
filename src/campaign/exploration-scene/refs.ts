@@ -1,5 +1,5 @@
-import type { EngineMesh, EngineSprite, TransformNode } from '../../core';
-import { createTransformNode } from '../../core';
+import type { EngineMesh, EngineSprite, TransformNode } from '@/shared/core';
+import { createTransformNode } from '@/shared/core';
 
 export const explorationGroup = createTransformNode();
 explorationGroup.visible = false;

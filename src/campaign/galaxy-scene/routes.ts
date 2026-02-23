@@ -1,5 +1,5 @@
-import type { EngineLineMaterial } from '../../core';
-import { createBufferGeometry, createLine, createLineMaterial } from '../../core';
+import type { EngineLineMaterial } from '@/shared/core';
+import { createBufferGeometry, createLine, createLineMaterial } from '@/shared/core';
 import { getSystem } from '../data';
 import { campaign } from '../state';
 

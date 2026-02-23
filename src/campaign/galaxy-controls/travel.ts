@@ -1,4 +1,4 @@
-import { Vector3 } from '../../core';
+import { Vector3 } from '@/shared/core';
 import { getSystem } from '../data';
 import {
   getStarPosition,

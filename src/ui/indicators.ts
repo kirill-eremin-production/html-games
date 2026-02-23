@@ -1,7 +1,7 @@
-import { TransformNode, camera } from '../core';
+import { TransformNode, camera } from '@/shared/core';
 import { state } from '../state';
-import { DomPool } from '../utils/dom-pool';
-import { clampToScreenEdge, formatDistance, worldToScreen } from '../utils/screen';
+import { DomPool } from '../shared/utils/dom-pool';
+import { clampToScreenEdge, formatDistance, worldToScreen } from '../shared/utils/screen';
 
 const indicatorsContainer = document.getElementById('enemy-indicators')!;
 const pool = new DomPool(indicatorsContainer, () => {

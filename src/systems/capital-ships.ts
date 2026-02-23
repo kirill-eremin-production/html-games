@@ -2,12 +2,12 @@ import { playLaserSound } from '../audio';
 
 import { COMBAT_CONSTANTS } from '../config/combat';
 import { combatConfig } from '../config/combat-session';
-import { EngineMesh, Vector3, addToScene, isEngineMesh, removeFromScene } from '../core';
+import { EngineMesh, Vector3, addToScene, isEngineMesh, removeFromScene } from '@/shared/core';
 import { createCapitalShip } from '../scene/models';
 import { parseHexColor, settings } from '../settings';
 import { state } from '../state';
-import { disposeObject } from '../utils/dispose';
-import { addDirectionNoise } from '../utils/math';
+import { disposeObject } from '../shared/utils/dispose';
+import { addDirectionNoise } from '../shared/utils/math';
 
 import { destroyedSubMat } from './explosions';
 import { playerPlane } from './player';

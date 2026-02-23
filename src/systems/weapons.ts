@@ -10,11 +10,11 @@ import {
   createCylinderGeometry,
   createMesh,
   removeFromScene,
-} from '../core';
+} from '@/shared/core';
 import { GUN_OFFSET_L, GUN_OFFSET_R } from '../scene/models';
 import { state } from '../state';
 import type { LaserData } from '../types';
-import { addDirectionNoise } from '../utils/math';
+import { addDirectionNoise } from '../shared/utils/math';
 
 const W = WEAPON_CONFIG;
 

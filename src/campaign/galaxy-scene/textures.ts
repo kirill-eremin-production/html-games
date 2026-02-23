@@ -1,5 +1,5 @@
-import type { CanvasTexture } from '../../core';
-import { createTextureFromCanvas } from '../../core';
+import type { CanvasTexture } from '@/shared/core';
+import { createTextureFromCanvas } from '@/shared/core';
 
 let glowTexture: CanvasTexture | null = null;
 let dotTexture: CanvasTexture | null = null;

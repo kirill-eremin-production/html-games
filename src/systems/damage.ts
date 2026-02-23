@@ -1,14 +1,14 @@
 import { COMBAT_CONSTANTS } from '../config/combat';
 import { combatConfig } from '../config/combat-session';
 import { PLAYER_CONFIG } from '../config/player';
-import { Vector3, removeFromScene } from '../core';
+import { Vector3, removeFromScene } from '@/shared/core';
 import { emit, off, on } from '../events';
 import type { EventMap } from '../events';
 import { state } from '../state';
 import type { CapitalShip, Fighter, Subsystem } from '../types';
 import { showMessage } from '../ui/hud';
 import { addKillFeedEntry } from '../ui/kill-feed';
-import { disposeObject } from '../utils/dispose';
+import { disposeObject } from '../shared/utils/dispose';
 
 import { createExplosion } from './explosions';
 import type { GameSystem } from './types';

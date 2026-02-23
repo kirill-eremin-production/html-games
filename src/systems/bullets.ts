@@ -2,7 +2,7 @@ import { playHitSound } from '../audio';
 
 import { COMBAT_CONSTANTS } from '../config/combat';
 import { PLAYER_CONFIG } from '../config/player';
-import { Vector3, removeFromScene } from '../core';
+import { Vector3, removeFromScene } from '@/shared/core';
 import { emit } from '../events';
 import { state } from '../state';
 import type { Fighter, LaserData } from '../types';

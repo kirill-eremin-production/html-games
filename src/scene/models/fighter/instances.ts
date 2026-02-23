@@ -4,7 +4,7 @@ import type { TransformNode as BTransformNode } from '@babylonjs/core/Meshes/tra
 import type { Node } from '@babylonjs/core/node';
 
 import { AI_CONFIG } from '../../../config/ai';
-import { TransformNode } from '../../../core';
+import { TransformNode } from '@/shared/core';
 import { cloneFighterModel } from '../loader';
 
 // ── Team source cache ───────────────────────────────────────────────────────

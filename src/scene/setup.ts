@@ -8,7 +8,7 @@ import {
   HemisphereLight,
   PerspectiveCamera,
   setFactoryScene,
-} from '../core';
+} from '@/shared/core';
 
 // ── Canvas + Engine ──────────────────────────────────────────────────────────
 const canvas = document.createElement('canvas');

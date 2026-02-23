@@ -1,4 +1,4 @@
-import type { Vector3 } from '../core';
+import type { Vector3 } from '@/shared/core';
 
 /** Adds uniform random noise to a direction vector and re-normalizes.
  *  Mutates the vector in-place. */

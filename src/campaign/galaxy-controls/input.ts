@@ -1,4 +1,4 @@
-import { Raycaster, Vector2 } from '../../core';
+import { Raycaster, Vector2 } from '@/shared/core';
 import { getStarMeshes, selectSystem } from '../galaxy-scene';
 
 import { galaxyCamera } from './camera';

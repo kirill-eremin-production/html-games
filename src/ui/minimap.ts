@@ -1,5 +1,5 @@
 import { UI_CONFIG } from '../config/ui';
-import { TransformNode, Vector3 } from '../core';
+import { TransformNode, Vector3 } from '@/shared/core';
 import { state } from '../state';
 
 const M = UI_CONFIG.minimap;

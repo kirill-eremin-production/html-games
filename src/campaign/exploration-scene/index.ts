@@ -11,8 +11,8 @@ import {
   createSprite,
   createSpriteMaterial,
   createUnlitMaterial,
-} from '../../core';
-import { createIcosahedronGeometry } from '../../core';
+} from '@/shared/core';
+import { createIcosahedronGeometry } from '@/shared/core';
 import { getSystemDetail, mulberry32 } from '../data';
 import type { SystemDetail } from '../types';
 

@@ -1,7 +1,7 @@
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { Vector3 as BVector3 } from '@babylonjs/core/Maths/math.vector';
 
-import type { Vector3 } from '../../core';
+import type { Vector3 } from '@/shared/core';
 import { canvas, camera as combatCamera, scene } from '../../scene/setup';
 import { getSystem } from '../data';
 import { campaign } from '../state';

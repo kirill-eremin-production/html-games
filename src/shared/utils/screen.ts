@@ -1,4 +1,4 @@
-import { type ProjectionCamera, Vector3, vec3Project } from '../core';
+import { type ProjectionCamera, Vector3, vec3Project } from '@/shared/core';
 
 const _projVec = new Vector3();
 

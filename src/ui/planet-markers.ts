@@ -1,8 +1,8 @@
 import { getExplorationDetail } from '../campaign/exploration-scene/index';
 import { planetMeshes } from '../campaign/exploration-scene/refs';
-import { TransformNode, camera } from '../core';
-import { DomPool } from '../utils/dom-pool';
-import { clampToScreenEdge, formatDistance, isOnScreen, worldToScreen } from '../utils/screen';
+import { TransformNode, camera } from '@/shared/core';
+import { DomPool } from '../shared/utils/dom-pool';
+import { clampToScreenEdge, formatDistance, isOnScreen, worldToScreen } from '../shared/utils/screen';
 
 let container: HTMLElement | null = null;
 

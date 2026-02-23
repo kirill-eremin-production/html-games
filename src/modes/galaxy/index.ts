@@ -12,7 +12,7 @@ import {
   updateGalaxyScene,
   updatePlayerShipPosition,
 } from '@/campaign/galaxy-scene';
-import { addToScene } from '@/core';
+import { addToScene } from '@/shared/core';
 import { playerPlane } from '@/systems/player';
 
 import type { GalaxyModeContext, GameModeHandler } from '../types';

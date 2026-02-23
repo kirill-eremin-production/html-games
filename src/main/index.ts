@@ -1,6 +1,6 @@
 import { SceneOptimizer, SceneOptimizerOptions } from '@babylonjs/core/Misc/sceneOptimizer';
 
-import { addToScene, camera } from '../core';
+import { addToScene, camera } from '@/shared/core';
 import { combatMode } from '../modes/combat';
 import { explorationMode } from '../modes/exploration';
 import { galaxyMode } from '../modes/galaxy';

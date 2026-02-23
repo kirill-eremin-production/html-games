@@ -6,7 +6,7 @@ import {
   createBufferGeometry,
   createPoints,
   createPointsMaterial,
-} from '../core';
+} from '@/shared/core';
 import { playerPlane } from '../systems/player';
 import type { GameSystem } from '../systems/types';
 

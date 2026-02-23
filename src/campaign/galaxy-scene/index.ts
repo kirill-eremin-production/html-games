@@ -4,7 +4,7 @@ import { Sprite as BJSSprite } from '@babylonjs/core/Sprites/sprite';
 import { SpriteManager } from '@babylonjs/core/Sprites/spriteManager';
 import '@babylonjs/core/Sprites/spriteSceneComponent';
 
-import type { EngineMesh } from '../../core';
+import type { EngineMesh } from '@/shared/core';
 import {
   DoubleSide,
   Vector3,
@@ -15,7 +15,7 @@ import {
   createRingGeometry,
   createSphereGeometry,
   createUnlitMaterial,
-} from '../../core';
+} from '@/shared/core';
 import { createFighter } from '../../scene/models';
 import { scene } from '../../scene/setup';
 import { setStarfieldVisible } from '../../scene/starfield';

@@ -1,11 +1,11 @@
-import type { CanvasTexture, TransformNode } from '../../core';
+import type { CanvasTexture, TransformNode } from '@/shared/core';
 import {
   Color,
   createSprite,
   createSpriteMaterial,
   createTextureFromCanvas,
   createTransformNode,
-} from '../../core';
+} from '@/shared/core';
 
 import { baseNebulaOpacities, nebulaMats } from './refs';
 

@@ -9,7 +9,7 @@ import {
   isEngineMesh,
   loadModel,
   traverseNode,
-} from '../../core';
+} from '@/shared/core';
 import type { Subsystem } from '../../types';
 
 import {

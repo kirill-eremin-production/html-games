@@ -1,5 +1,5 @@
 import type { FlightModelId } from './config/flight-models';
-import type { EngineMesh, TransformNode, Vector3 } from './core';
+import type { EngineMesh, TransformNode, Vector3 } from '@/shared/core';
 
 export interface FighterAI {
   state: 'chase' | 'evade' | 'orbit';

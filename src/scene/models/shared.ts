@@ -6,7 +6,7 @@ import {
   createPlaneGeometry,
   createTransformNode,
   createUnlitMaterial,
-} from '../../core';
+} from '@/shared/core';
 
 const healthBarBgGeo = createPlaneGeometry(4, 0.4);
 const healthBarBgMat = createUnlitMaterial({ color: 0x220000, side: DoubleSide });

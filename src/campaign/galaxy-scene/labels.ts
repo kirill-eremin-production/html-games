@@ -1,5 +1,5 @@
-import type { ProjectionCamera } from '../../core';
-import { worldToScreen } from '../../utils/screen';
+import type { ProjectionCamera } from '@/shared/core';
+import { worldToScreen } from '../../shared/utils/screen';
 import { getSystem, systemHasStation } from '../data';
 import { campaign } from '../state';
 

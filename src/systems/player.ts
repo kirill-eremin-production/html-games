@@ -11,7 +11,7 @@ import {
   Vector3,
   camera,
   createTransformNode,
-} from '../core';
+} from '@/shared/core';
 import { actions, aim } from '../input';
 import { GUN_OFFSET_L, GUN_OFFSET_R } from '../scene/models';
 import { state } from '../state';

@@ -10,7 +10,7 @@ import {
   createTransformNode,
   getFactoryScene,
   setFactoryScene,
-} from '../core';
+} from '@/shared/core';
 import { createCapitalShip, createFighter } from '../scene/models';
 import {
   type GameSettings,

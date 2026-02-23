@@ -4,8 +4,8 @@ import { ShaderMaterial } from '@babylonjs/core/Materials/shaderMaterial';
 import { Mesh as BMesh } from '@babylonjs/core/Meshes/mesh';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
 
-import type { TransformNode } from '../../core';
-import { createTransformNode } from '../../core';
+import type { TransformNode } from '@/shared/core';
+import { createTransformNode } from '@/shared/core';
 import { scene } from '../../scene/setup';
 
 import { refs } from './refs';

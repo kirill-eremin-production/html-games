@@ -115,7 +115,7 @@ export {
 } from './factories';
 
 // ── Scene / renderer (re-exported from scene/setup) ──
-export { camera, handleResize, renderer, scene } from '../scene/setup';
+export { camera, handleResize, renderer, scene } from '@/scene/setup';
 
 // ── Type aliases for Three.js compat ──
 export type { Scene } from '@babylonjs/core/scene';

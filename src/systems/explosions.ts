@@ -6,7 +6,7 @@ import { ParticleSystem } from '@babylonjs/core/Particles/particleSystem';
 import { playExplosionSound } from '../audio';
 
 import { COMBAT_CONSTANTS } from '../config/combat';
-import { type Vector3, createUnlitMaterial } from '../core';
+import { type Vector3, createUnlitMaterial } from '@/shared/core';
 import { scene } from '../scene/setup';
 
 import type { GameSystem } from './types';
