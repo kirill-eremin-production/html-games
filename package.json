@@ -13,7 +13,8 @@
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:e2e": "npx playwright test"
   },
   "lint-staged": {
     "*.{ts,css,json,html}": "prettier --write",
@@ -27,6 +28,7 @@
     "@babylonjs/loaders": "^8.52.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.3.0",

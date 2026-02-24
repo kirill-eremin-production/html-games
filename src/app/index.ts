@@ -1,3 +1,16 @@
+/**
+ * @module app/index
+ * @description Точка входа приложения Space Combat.
+ *
+ * Выполняет полную инициализацию игры:
+ * 1. Регистрирует все игровые режимы (menu, combat, exploration и т.д.)
+ * 2. Предзагружает GLTF-модели
+ * 3. Создаёт модель игрока и добавляет её на сцену
+ * 4. Настраивает starfield и начальную позицию камеры
+ * 5. Привязывает обработчики UI-кнопок и клавиатуры
+ * 6. Запускает Babylon.js SceneOptimizer для автоматической оптимизации при падении FPS
+ * 7. Запускает игровые часы и основной цикл рендеринга
+ */
 import { SceneOptimizer, SceneOptimizerOptions } from '@babylonjs/core/Misc/sceneOptimizer';
 
 import { addToScene } from '@/shared/core';
@@ -28,6 +41,11 @@ import { registerMode } from './mode-registry';
 import { pauseGame, quitBattle, resumeGame } from './pause';
 import { startCampaign, startQuickPlay } from './start';
 
+/**
+ * Инициализирует приложение: регистрирует режимы, загружает ассеты,
+ * создаёт модель игрока, настраивает обработчики событий
+ * и запускает игровой цикл.
+ */
 async function init(): Promise<void> {
   // Register game modes
   registerMode('menu', menuMode);
