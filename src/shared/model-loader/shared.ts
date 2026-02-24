@@ -16,11 +16,11 @@ export function addHealthBar(
 ): { bar: TransformNode; fill: EngineMesh } {
   const barGroup = createTransformNode();
   const bg = createMesh(healthBarBgGeo, healthBarBgMat);
-  barGroup.add(bg);
+  bg.parent = barGroup;
   const fg = createMesh(createPlaneGeometry(4, 0.4), createUnlitMaterial({ color, side: 2 }));
   fg.name = 'healthFill';
-  barGroup.add(fg);
+  fg.parent = barGroup;
   barGroup.position.y = 3;
-  group.add(barGroup);
+  barGroup.parent = group;
   return { bar: barGroup, fill: fg };
 }

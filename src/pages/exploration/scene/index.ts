@@ -45,7 +45,7 @@ export function buildExplorationScene(systemId: string): void {
 
   // Ambient light for the star system
   const ambient = createAmbientLight(0x222244, 0.3);
-  explorationGroup.add(ambient);
+  ambient.parent = explorationGroup;
 
   // Central star — massive
   const starRadius = detail.starSize * EXPLORATION_CONFIG.starRadiusMultiplier;
@@ -53,12 +53,12 @@ export function buildExplorationScene(systemId: string): void {
     createSphereGeometry(starRadius, 48, 48),
     createUnlitMaterial({ color: detail.starColor }),
   );
-  explorationGroup.add(starMesh);
+  starMesh.parent = explorationGroup;
   explorationRefs.starMesh = starMesh;
 
   // Star point light
   const starLight = createPointLight(detail.starColor, 2, 5000000);
-  explorationGroup.add(starLight);
+  starLight.parent = explorationGroup;
 
   // Planets — much larger than the player ship
   const PLANET_SCALE = EXPLORATION_CONFIG.planetScale;
@@ -66,16 +66,15 @@ export function buildExplorationScene(systemId: string): void {
     const p = detail.planets[i];
     const mat = createPBRMaterial({ color: p.color, roughness: 0.7 });
     const mesh = createMesh(planetGeo, mat);
-    mesh.scale.setAll(p.size * PLANET_SCALE);
-    mesh.userData.planetIndex = i;
+    mesh.scaling.setAll(p.size * PLANET_SCALE);
+    mesh.metadata.planetIndex = i;
 
     const x = p.orbitalDistance * Math.cos(p.initialAngle);
     const z = p.orbitalDistance * Math.sin(p.initialAngle);
     mesh.position.set(x, 0, z);
 
-    explorationGroup.add(mesh);
+    mesh.parent = explorationGroup;
     planetMeshes.push(mesh);
-
   }
 
   // Asteroid belt
@@ -95,10 +94,10 @@ export function buildExplorationScene(systemId: string): void {
       });
       const mesh = createMesh(asteroidGeo, mat);
       mesh.position.set(r * Math.cos(angle), y, r * Math.sin(angle));
-      mesh.scale.setAll(size);
+      mesh.scaling.setAll(size);
       mesh.rotation.set(rng() * Math.PI, rng() * Math.PI, rng() * Math.PI);
 
-      explorationGroup.add(mesh);
+      mesh.parent = explorationGroup;
       asteroidMeshes.push(mesh);
     }
   }
@@ -107,7 +106,7 @@ export function buildExplorationScene(systemId: string): void {
 export function clearExplorationScene(): void {
   // Dispose children (not just remove) — removing only sets parent=null,
   // which leaves the node as a root scene node still rendering.
-  const children = [...explorationGroup.children];
+  const children = [...explorationGroup.getChildTransformNodes(true)];
   for (const child of children) {
     child.dispose();
   }
@@ -123,9 +122,9 @@ export function getExplorationDetail(): SystemDetail | null {
 }
 
 export function showExploration(): void {
-  explorationGroup.visible = true;
+  explorationGroup.setEnabled(true);
 }
 
 export function hideExploration(): void {
-  explorationGroup.visible = false;
+  explorationGroup.setEnabled(false);
 }

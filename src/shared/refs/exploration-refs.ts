@@ -2,7 +2,7 @@ import type { EngineMesh } from '@/shared/core';
 import { createTransformNode } from '@/shared/core';
 
 export const explorationGroup = createTransformNode();
-explorationGroup.visible = false;
+explorationGroup.setEnabled(false);
 
 export const planetMeshes: EngineMesh[] = [];
 export const asteroidMeshes: EngineMesh[] = [];

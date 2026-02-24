@@ -31,10 +31,10 @@ export function updateGalaxyScene(dt: number): void {
   }
 
   // Contract marker animation
-  if (refs.contractMarker && refs.contractMarker.visible) {
+  if (refs.contractMarker && refs.contractMarker.isEnabled()) {
     refs.contractMarker.rotation.y += dt * 2;
     refs.contractMarker.position.y =
-      refs.contractMarker.userData.baseY + Math.sin(pulse.time * 4) * 0.5;
+      refs.contractMarker.metadata.baseY + Math.sin(pulse.time * 4) * 0.5;
   }
 
   // Rotate player ship model gently
@@ -43,7 +43,7 @@ export function updateGalaxyScene(dt: number): void {
   }
 
   // Selection ring pulse
-  if (refs.selectionRing && refs.selectionRing.visible) {
+  if (refs.selectionRing && refs.selectionRing.isEnabled()) {
     const mat = refs.selectionRing.material as MeshBasicMaterial;
     mat.opacity = 0.5 + Math.sin(pulse.time * 4) * 0.2;
   }
@@ -67,10 +67,10 @@ export function updateGalaxyScene(dt: number): void {
     if (Math.abs(diff) > 0.005) {
       const next = current + diff * Math.min(1, dt * SCALE_LERP_SPEED);
       starScaleCurrent.set(id, next);
-      mesh.scale.setAll(next);
+      mesh.scaling.setAll(next);
     } else if (current !== target) {
       starScaleCurrent.set(id, target);
-      mesh.scale.setAll(target);
+      mesh.scaling.setAll(target);
     }
 
     // Distance-based halo fade — prevents giant sprite rectangles near camera

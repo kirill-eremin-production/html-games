@@ -1,8 +1,14 @@
 import { playLaserSound } from '@/shared/audio';
 import { COMBAT_CONSTANTS } from '@/shared/config/combat';
 import { combatConfig } from '@/shared/config/combat-session';
-import { EngineMesh, Vector3, addToScene, isEngineMesh } from '@/shared/core';
-import { disposeObject } from '@/shared/lib/dispose';
+import {
+  EngineMesh,
+  Vector3,
+  addToScene,
+  disposeNode,
+  isEngineMesh,
+  traverseNode,
+} from '@/shared/core';
 import { addDirectionNoise } from '@/shared/lib/math';
 import { parseHexColor, settings } from '@/shared/settings';
 import { state } from '@/shared/state';
@@ -28,7 +34,7 @@ export function spawnCapitalShips(): void {
     addToScene(ship);
     state.capitalShips.push({
       mesh: ship,
-      subsystems: ship.userData.subsystems,
+      subsystems: ship.metadata.subsystems,
       alive: true,
       turretTimer: 2 + Math.random() * 3,
     });
@@ -38,8 +44,8 @@ export function spawnCapitalShips(): void {
 function updateCapitalShipVisuals(cs: (typeof state.capitalShips)[number], dt: number): void {
   for (const sub of cs.subsystems) {
     if (!sub.mesh) continue;
-    if (sub.health <= 0 && sub.mesh.visible) {
-      sub.mesh.traverse((child) => {
+    if (sub.health <= 0 && sub.mesh.isEnabled()) {
+      traverseNode(sub.mesh, (child) => {
         if (isEngineMesh(child) && (child as EngineMesh).material) {
           (child as EngineMesh).material = destroyedSubMat;
         }
@@ -90,7 +96,7 @@ export function updateCapitalShips(dt: number): void {
           : combatConfig.turretAccuracy;
       addDirectionNoise(_csDir, inaccuracy);
 
-      const shipName = `Корабль-${cs.mesh.userData.index + 1}`;
+      const shipName = `Корабль-${cs.mesh.metadata.index + 1}`;
       const shots = C.turretBurstMin + Math.floor(Math.random() * C.turretBurstRandomExtra);
       for (let i = 0; i < shots; i++) {
         _csOrigin.set(
@@ -116,7 +122,7 @@ export const capitalShipSystem: GameSystem = {
     updateCapitalShips(dt);
   },
   cleanup() {
-    for (const cs of state.capitalShips) disposeObject(cs.mesh);
+    for (const cs of state.capitalShips) disposeNode(cs.mesh);
     state.capitalShips = [];
   },
 };

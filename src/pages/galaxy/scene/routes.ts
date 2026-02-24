@@ -53,7 +53,7 @@ export function rebuildRouteLines(): void {
   rangeCircle.mesh = createMesh(discGeo, discMat);
   rangeCircle.mesh.position.set(cx, cy + 0.02, cz);
   rangeCircle.mesh.rotation.x = -Math.PI / 2;
-  galaxyGroup.add(rangeCircle.mesh);
+  rangeCircle.mesh.parent = galaxyGroup;
 
   // Circle outline
   const circlePoints = buildCirclePoints(cx, cy, cz, range);

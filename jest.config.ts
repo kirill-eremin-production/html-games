@@ -7,6 +7,11 @@ const config: Config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
+  transform: {
+    '\\.tsx?$': 'ts-jest',
+    'node_modules/@babylonjs/.+\\.js$': 'ts-jest',
+  },
+  transformIgnorePatterns: ['node_modules/(?!@babylonjs/)'],
 };
 
 export default config;

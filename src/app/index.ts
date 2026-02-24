@@ -13,7 +13,7 @@
  */
 import { SceneOptimizer, SceneOptimizerOptions } from '@babylonjs/core/Misc/sceneOptimizer';
 
-import { addToScene } from '@/shared/core';
+import { Vector3, addToScene } from '@/shared/core';
 import { camera } from '@/shared/engine';
 import { scene } from '@/shared/engine';
 import { preloadModels } from '@/shared/model-loader';
@@ -63,14 +63,14 @@ async function init(): Promise<void> {
     parseHexColor(settings.colors.playerBody),
     parseHexColor(settings.colors.playerExhaust),
   );
-  playerPlane.add(refs.playerModel);
+  refs.playerModel.parent = playerPlane;
   addToScene(playerPlane);
   playerPlane.position.set(0, 0, 0);
 
   // Init
   createStarfield();
   camera.position.set(-10.5, 3.75, 0);
-  camera.lookAt(0, 0, 0);
+  camera.setTarget(new Vector3(0, 0, 0));
 
   // Event listeners
   setupInputListeners();

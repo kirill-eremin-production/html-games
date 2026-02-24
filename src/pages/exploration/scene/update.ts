@@ -44,7 +44,7 @@ export function updateExplorationScene(dt: number, elapsed: number): void {
 
   // Slow down near planets (exploration only)
   if (nearestIdx >= 0 && state.flightModel === 'exploration') {
-    const planetRadius = planetMeshes[nearestIdx].scale.x;
+    const planetRadius = planetMeshes[nearestIdx].scaling.x;
     const slowdownDist = planetRadius * EXPLORATION_CONFIG.planetSlowdownMultiplier;
     if (minDist < slowdownDist) {
       // Only slow down when flying towards the planet, not away

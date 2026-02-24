@@ -75,10 +75,9 @@ export const explorationMode: GameModeHandler = {
     state.explorationTime = 0;
 
     // Camera
-    camera.near = 1;
-    camera.updateProjectionMatrix();
+    camera.minZ = 1;
     camera.position.set(sx - 10.5, sy + 3.75, sz);
-    camera.lookAt(playerPlane.position);
+    camera.setTarget(playerPlane.position);
 
     // HUD
     showHUD();

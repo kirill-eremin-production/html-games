@@ -6,72 +6,52 @@ import { Vector3 } from './vector3';
 
 let _camId = 0;
 
+interface CameraOptions {
+  /** Угол обзора по вертикали в градусах (по умолчанию 50). */
+  fov?: number;
+  /** Ближняя плоскость отсечения — объекты ближе не рисуются (по умолчанию 0.1). */
+  near?: number;
+  /** Дальняя плоскость отсечения — объекты дальше не рисуются (по умолчанию 2000). */
+  far?: number;
+  /** BJS-сцена, к которой привязывается камера. */
+  scene?: Scene;
+}
+
 /**
- * PerspectiveCamera — extends BJS FreeCamera with convenience API.
- * fov is stored in degrees and converted to radians for BJS.
+ * Игровая камера на основе BJS `FreeCamera`.
+ *
+ * Отключает встроенное управление BJS (мышь, клавиатура) — игра двигает камеру сама.
+ * Подставляет расширенный {@link Vector3} в `position` и `upVector`,
+ * чтобы можно было писать `camera.position.lerp(...).normalize()` по цепочке.
  */
 export class PerspectiveCamera extends FreeCamera {
-  private _fovDeg: number;
-  aspect: number;
-
-  constructor(fov = 50, aspect = 1, near = 0.1, far = 2000, scene?: Scene) {
+  constructor({ fov = 50, near = 0.1, far = 2000, scene }: CameraOptions = {}) {
     super(`camera_${_camId++}`, BVector3.Zero(), scene ?? undefined);
-    this._fovDeg = fov;
-    this.aspect = aspect;
+
+    this.inputs.clear();
+
     this.minZ = near;
     this.maxZ = far;
     this.fov = (fov * Math.PI) / 180;
-    this.inputs.clear();
-    // Replace BJS Vector3 with extended Vector3 for chaining support
+
+    // Заменяем BJS Vector3 на расширенный Vector3 для поддержки chaining
     this.position = new Vector3();
     this.upVector = new Vector3(0, 1, 0);
   }
 
-  get near(): number {
-    return this.minZ;
-  }
-  set near(v: number) {
-    this.minZ = v;
+  override get position(): Vector3 {
+    return super.position as Vector3;
   }
 
-  get far(): number {
-    return this.maxZ;
-  }
-  set far(v: number) {
-    this.maxZ = v;
+  override set position(v: Vector3) {
+    super.position = v;
   }
 
-  get fovDeg(): number {
-    return this._fovDeg;
+  override get upVector(): Vector3 {
+    return super.upVector as Vector3;
   }
 
-  set fovDeg(v: number) {
-    this._fovDeg = v;
-    this.fov = (v * Math.PI) / 180;
-  }
-
-  get up(): BVector3 {
-    return this.upVector;
-  }
-  set up(v: BVector3) {
-    this.upVector.copyFrom(v);
-  }
-
-  /** lookAt accepts either a Vector3 or (x, y, z). */
-  lookAt(x: number | Vector3 | BVector3, y?: number, z?: number): this {
-    if (typeof x === 'number') {
-      this.setTarget(new BVector3(x, y!, z!));
-    } else {
-      this.setTarget(new BVector3(x.x, x.y, x.z));
-    }
-    return this;
-  }
-
-  /** Recalculate fov in radians after changing fovDeg. */
-  updateProjectionMatrix(): void {
-    this.fov = (this._fovDeg * Math.PI) / 180;
+  override set upVector(v: Vector3) {
+    super.upVector = v;
   }
 }
-
-export { PerspectiveCamera as EngineCamera };
-export { PerspectiveCamera as Camera };

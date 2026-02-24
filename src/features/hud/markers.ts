@@ -46,14 +46,14 @@ function renderCapitalShipMarkers(
       el.style.top = scr.y + 'px';
       const dist3d = Math.sqrt(shipDistSq);
       el.children[1].textContent = Math.floor(dist3d) + 'm';
-      el.children[2].textContent = `Корабль-${cs.mesh.userData.index + 1}`;
+      el.children[2].textContent = `Корабль-${cs.mesh.metadata.index + 1}`;
       (el.children[0] as HTMLElement).style.width = '28px';
       (el.children[0] as HTMLElement).style.height = '28px';
     } else {
       // Close: individual subsystem markers
       for (const sub of cs.subsystems) {
         if (sub.health <= 0) continue;
-        _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.matrixWorld);
+        _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.getWorldMatrix());
         const d = playerPlane.position.distanceTo(_mrkPos);
         const scr = worldToScreen(_mrkPos, camera, w, h);
         if (scr.z >= 1 || scr.x < -20 || scr.x > w + 20 || scr.y < -20 || scr.y > h + 20) continue;
@@ -88,7 +88,7 @@ function renderLockedTarget(
     _mrkPos.copyFrom(lt.fighter.mesh.position);
     name = lt.fighter.name;
   } else {
-    _mrkPos.copyFrom(lt.subsystem.center).applyMatrix4(lt.ship.mesh.matrixWorld);
+    _mrkPos.copyFrom(lt.subsystem.center).applyMatrix4(lt.ship.mesh.getWorldMatrix());
     dist3d = playerPlane.position.distanceTo(_mrkPos);
     name = lt.subsystem.name;
   }
@@ -214,7 +214,7 @@ export function toggleTargetLock(playerPlane: TransformNode): void {
     if (playerPlane.position.distanceToSquared(cs.mesh.position) > SHIP_RANGE_SQ) continue;
     for (const sub of cs.subsystems) {
       if (sub.health <= 0) continue;
-      _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.matrixWorld);
+      _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.getWorldMatrix());
       const scr = worldToScreen(_mrkPos, camera, w, h);
       if (scr.z >= 1) continue;
       const dSq = (scr.x - cursorScreenX) ** 2 + (scr.y - cursorScreenY) ** 2;
@@ -239,7 +239,7 @@ export function toggleTargetLock(playerPlane: TransformNode): void {
       if (!cs.alive) continue;
       for (const sub of cs.subsystems) {
         if (sub.health <= 0) continue;
-        _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.matrixWorld);
+        _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.getWorldMatrix());
         const dSq = playerPlane.position.distanceToSquared(_mrkPos);
         if (dSq < bestDist3dSq) {
           bestDist3dSq = dSq;

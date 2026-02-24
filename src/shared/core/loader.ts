@@ -1,4 +1,5 @@
-import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
+import { LoadAssetContainerAsync } from '@babylonjs/core/Loading/sceneLoader';
+import { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { InstancedMesh } from '@babylonjs/core/Meshes/instancedMesh';
 import type { TransformNode as BTransformNode } from '@babylonjs/core/Meshes/transformNode';
 import type { AssetContainer } from '@babylonjs/core/assetContainer';
@@ -9,46 +10,42 @@ import { getFactoryScene } from './factories';
 import { TransformNode } from './transform-node';
 
 /**
- * Keep references to loaded asset containers so they are not garbage-collected.
- * Without this, geometry/material GPU buffers owned by the container can be
- * freed intermittently, causing cloned/instanced meshes to become invisible.
+ * Ссылки на загруженные контейнеры ассетов — защита от сборщика мусора.
+ * Без них GPU-буферы геометрии и материалов могут быть освобождены,
+ * и клоны/инстансы станут невидимыми.
  */
 const _loadedContainers: AssetContainer[] = [];
 
 /**
- * Load a GLTF/GLB model and return its root as a TransformNode.
- * Uses LoadAssetContainerAsync, then adds assets to the scene so that
- * geometry and materials are fully registered. The template root is
- * disabled so it never renders until explicitly cloned.
+ * Загружает GLTF/GLB-модель и возвращает корневой {@link TransformNode}.
+ *
+ * Модель загружается через `LoadAssetContainerAsync`, после чего все ассеты
+ * (меши, материалы, текстуры) регистрируются в сцене. Корневой узел выключен —
+ * он служит шаблоном для клонирования через {@link cloneModel}.
+ *
+ * ```ts
+ * const template = await loadModel('./models/fighter.glb');
+ * const instance = cloneModel(template);
+ * instance.setEnabled(true);
+ * ```
  */
 export async function loadModel(url: string): Promise<TransformNode> {
   const scene = getFactoryScene();
 
-  const lastSlash = url.lastIndexOf('/');
-  const rootUrl = lastSlash >= 0 ? url.substring(0, lastSlash + 1) : '';
-  const filename = lastSlash >= 0 ? url.substring(lastSlash + 1) : url;
+  const container = await LoadAssetContainerAsync(url, scene);
 
-  const container = await SceneLoader.LoadAssetContainerAsync(rootUrl, filename, scene);
-
-  // Keep a reference to prevent GC from disposing GPU resources
   _loadedContainers.push(container);
 
-  // Add all container assets (meshes, materials, textures) to the scene
-  // so that clones and instances can properly reference them.
   container.addAllToScene();
 
-  // Create our extended TransformNode as the root
   const root = new TransformNode('__gltfRoot__', scene);
-  // Template is only used for cloning — keep it disabled so it never renders
   root.setEnabled(false);
 
   if (container.meshes.length > 0) {
-    // Parent the GLTF root node under our TransformNode
     const bRoot = container.meshes[0];
     bRoot.parent = root;
   }
 
-  // Ensure all nodes have metadata (for userData compat)
   for (const desc of root.getDescendants(false)) {
     if (!desc.metadata) desc.metadata = {};
   }
@@ -56,7 +53,12 @@ export async function loadModel(url: string): Promise<TransformNode> {
   return root;
 }
 
-/** Clone a model (deep clone). Returns a new TransformNode with cloned hierarchy. */
+/**
+ * Глубоко клонирует модель, возвращая новый {@link TransformNode} с полной иерархией.
+ *
+ * Конвертирует `InstancedMesh` (зеркальная геометрия из GLTF) в настоящие меши,
+ * чтобы каждому клону можно было назначить собственный материал.
+ */
 export function cloneModel(group: TransformNode): TransformNode {
   const scene = group.getScene();
   const clone = new TransformNode(group.name, scene);
@@ -69,20 +71,17 @@ export function cloneModel(group: TransformNode): TransformNode {
   clone.scaling.copyFrom(group.scaling);
   clone.metadata = { ...(group.metadata ?? {}) };
 
-  // Clone all direct children (BJS clone recursively clones descendants)
   for (const child of group.getChildren()) {
     if ('clone' in child) {
       (child as BTransformNode).clone(child.name, clone);
     }
   }
 
-  // BJS GLTF loader creates InstancedMesh for mirrored geometry (e.g. wingL from wingR).
-  // InstancedMesh cannot have its own material — convert them to real Mesh clones.
+  // InstancedMesh не может иметь собственный материал — заменяем на настоящий Mesh
   for (const desc of clone.getDescendants(false)) {
     if (desc instanceof InstancedMesh) {
       const inst = desc;
       const sourceMesh = inst.sourceMesh;
-      // Clone the source mesh geometry + material into a real Mesh
       const realMesh = sourceMesh.clone(inst.name, inst.parent);
       if (realMesh) {
         realMesh.position.copyFrom(inst.position);
@@ -95,7 +94,6 @@ export function cloneModel(group: TransformNode): TransformNode {
         realMesh.isVisible = true;
         realMesh.setEnabled(true);
       }
-      // Remove the instance
       inst.dispose();
     }
   }
@@ -103,7 +101,9 @@ export function cloneModel(group: TransformNode): TransformNode {
   return clone;
 }
 
-/** Traverse all descendants of a node, calling fn for each (including the node itself). */
+/**
+ * Обходит узел и всех его потомков, вызывая `fn` для каждого (включая сам узел).
+ */
 export function traverseNode(node: Node, fn: (child: Node) => void): void {
   fn(node);
   for (const desc of node.getDescendants(false)) {
@@ -111,16 +111,17 @@ export function traverseNode(node: Node, fn: (child: Node) => void): void {
   }
 }
 
-/** Find a child by name in a node's subtree. */
+/**
+ * Находит потомка по имени в поддереве узла.
+ * В отличие от `scene.getNodeByName()`, ищет только среди потомков конкретного узла.
+ */
 export function getChildByName(node: Node, name: string): Node | undefined {
   return node.getDescendants(false).find((d) => d.name === name);
 }
 
-/** Check if an object is a Mesh (works with both EngineMesh and raw BJS Mesh). */
-export function isEngineMesh(obj: unknown): boolean {
-  if (!obj || typeof obj !== 'object') return false;
-  // Check for our EngineMesh.isMesh flag or BJS AbstractMesh
-  if ((obj as { isMesh?: boolean }).isMesh) return true;
-  // Check for BJS Mesh by duck-typing (has geometry property via getVerticesData)
-  return 'getBoundingInfo' in obj && 'material' in obj && 'getVerticesData' in obj;
+/**
+ * Проверяет, является ли объект мешем (BJS `AbstractMesh` или наследник).
+ */
+export function isEngineMesh(obj: unknown): obj is AbstractMesh {
+  return obj instanceof AbstractMesh;
 }

@@ -90,7 +90,7 @@ function resetCombatState(): void {
 
   resetPlayerTransform();
   camera.position.set(-10.5, 3.75, 0);
-  camera.lookAt(playerPlane.position);
+  camera.setTarget(playerPlane.position);
 
   // Rebuild player model with current settings colors
   if (refs.playerModel) refs.playerModel.dispose();
@@ -98,7 +98,7 @@ function resetCombatState(): void {
     parseHexColor(settings.colors.playerBody),
     parseHexColor(settings.colors.playerExhaust),
   );
-  playerPlane.add(refs.playerModel);
+  refs.playerModel.parent = playerPlane;
 }
 
 function spawnCombatEntities(): void {

@@ -4,9 +4,14 @@ import type { Scene } from '@babylonjs/core/scene';
 
 import { Color } from './color';
 
-// Counter for auto-naming
 let _matId = 0;
 
+/**
+ * Параметры создания материала.
+ *
+ * Передаются в конструктор {@link EngineMaterial} и применяются единовременно.
+ * Числовые цвета задаются hex-литералами (`0xff0000`), объектные — через {@link Color}.
+ */
 export interface MaterialConfig {
   color?: number | Color;
   emissive?: number | Color;
@@ -15,17 +20,30 @@ export interface MaterialConfig {
   opacity?: number;
   shininess?: number;
   roughness?: number;
+  /** `0` — передние грани (по умолчанию), `2` — двусторонний рендеринг. */
   side?: number;
   depthWrite?: boolean;
+  /** `2` — аддитивный блендинг (AdditiveBlending). */
   blending?: number;
 }
 
+/**
+ * Базовый материал движка — обёртка над BJS `StandardMaterial`.
+ *
+ * Предоставляет единый Three.js-совместимый интерфейс (`color`, `emissive`, `opacity`, `transparent`)
+ * и автоматически синхронизирует расширённый {@link Color} с BJS-свойствами
+ * (`diffuseColor`, `emissiveColor`, `alphaMode`) перед рендерингом.
+ *
+ * Создание — через фабрики:
+ * ```ts
+ * const mat = createPBRMaterial({ color: 0xff0000, emissive: 0x330000 });
+ * const unlit = createUnlitMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 });
+ * ```
+ */
 export class EngineMaterial extends StandardMaterial {
   _emissiveIntensity = 1;
   _transparent = false;
   _blending = 0;
-
-  onBeforeCompile: ((shader: any) => void) | null = null;
 
   constructor(config?: MaterialConfig, scene?: Scene) {
     super(`mat_${_matId++}`, scene ?? undefined);
@@ -34,7 +52,6 @@ export class EngineMaterial extends StandardMaterial {
 
     if (config) this._applyConfig(config);
 
-    // Sync color/emissive fields to BJS properties before rendering
     this.onBindObservable.add(() => this._syncColors());
   }
 
@@ -68,29 +85,12 @@ export class EngineMaterial extends StandardMaterial {
     this._transparent = v;
   }
 
-  get shininess(): number {
-    return this.specularPower;
-  }
-  set shininess(v: number) {
-    this.specularPower = v;
-  }
-
   get depthWrite(): boolean {
     return !this.disableDepthWrite;
   }
   set depthWrite(v: boolean) {
     this.disableDepthWrite = !v;
   }
-
-  // side: 0=front, 2=double
-  get side(): number {
-    return this.backFaceCulling ? 0 : 2;
-  }
-  set side(v: number) {
-    this.backFaceCulling = v !== 2;
-  }
-
-  roughness = 0.5;
 
   _applyConfig(c: MaterialConfig): void {
     if (c.color !== undefined) {
@@ -105,14 +105,13 @@ export class EngineMaterial extends StandardMaterial {
     if (c.transparent !== undefined) this._transparent = c.transparent;
     if (c.opacity !== undefined) this.alpha = c.opacity;
     if (c.shininess !== undefined) this.specularPower = c.shininess;
-    if (c.roughness !== undefined) this.roughness = c.roughness;
+    if (c.roughness !== undefined) this.specularPower = Math.max(1, (1 - c.roughness) * 128);
     if (c.side !== undefined) this.backFaceCulling = c.side !== 2;
     if (c.depthWrite !== undefined) this.disableDepthWrite = !c.depthWrite;
     if (c.blending !== undefined) this._blending = c.blending;
   }
 
-  // Sync our color/emissive fields to BJS before render.
-  // This needs to be called before rendering.
+  /** Синхронизирует color/emissive с BJS-свойствами перед рендерингом. */
   _syncColors(): void {
     this.diffuseColor.r = this._color.r;
     this.diffuseColor.g = this._color.g;
@@ -130,11 +129,18 @@ export class EngineMaterial extends StandardMaterial {
   }
 }
 
-export { EngineMaterial as Material };
 export { EngineMaterial as MeshPhongMaterial };
-export { EngineMaterial as MeshStandardMaterial };
 
-// MeshBasicMaterial — unlit. In BJS: disableLighting = true, use emissiveColor as display color.
+/**
+ * Unlit-материал — без освещения, цвет задаётся через emissiveColor.
+ *
+ * Используется для UI-элементов, свечений, выхлопов двигателей
+ * и других объектов, которые должны выглядеть одинаково независимо от сцены.
+ *
+ * ```ts
+ * const mat = createUnlitMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 });
+ * ```
+ */
 export class MeshBasicMaterial extends EngineMaterial {
   constructor(config?: MaterialConfig, scene?: Scene) {
     super(config, scene);
@@ -142,7 +148,6 @@ export class MeshBasicMaterial extends EngineMaterial {
   }
 
   _syncColors(): void {
-    // For unlit materials, use emissive as the display color
     this.emissiveColor.r = this._color.r;
     this.emissiveColor.g = this._color.g;
     this.emissiveColor.b = this._color.b;
@@ -155,18 +160,25 @@ export class MeshBasicMaterial extends EngineMaterial {
   }
 }
 
-// Sprite material
-export class EngineSpriteMaterial extends EngineMaterial {
-  map: unknown = null;
-}
+/**
+ * Материал для спрайтов (billboard-квадов).
+ * Наследует все свойства {@link EngineMaterial}.
+ */
+export class EngineSpriteMaterial extends EngineMaterial {}
 
-// Points material
+/**
+ * Материал для облаков точек (point clouds).
+ *
+ * Дополнительные поля:
+ * - `size` — размер точки в пикселях
+ * - `vertexColors` — использовать цвета из вершинного буфера
+ * - `sizeAttenuation` — уменьшать размер с расстоянием
+ */
 export class EnginePointsMaterial extends EngineMaterial {
   size = 1;
-  map: unknown = null;
   vertexColors = false;
   sizeAttenuation = true;
 }
 
-// Line material
+/** Материал для линий. Наследует все свойства {@link EngineMaterial}. */
 export class EngineLineMaterial extends EngineMaterial {}

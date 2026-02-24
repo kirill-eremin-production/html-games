@@ -1,50 +1,40 @@
-import { Quaternion as BQuaternion, Matrix } from '@babylonjs/core/Maths/math.vector';
+import { Quaternion as BQuaternion } from '@babylonjs/core/Maths/math.vector';
 import { TransformNode as BTransformNode } from '@babylonjs/core/Meshes/transformNode';
-import type { Node } from '@babylonjs/core/node';
 import type { Scene } from '@babylonjs/core/scene';
 
 import { Quaternion } from './quaternion';
 import { Vector3 } from './vector3';
 
 /**
- * Extended TransformNode — inherits from BJS TransformNode, adds convenience properties.
- * Instances ARE real BJS TransformNodes — no wrapping, no sync layer.
+ * Расширенный узел сцены на основе BJS `TransformNode`.
+ *
+ * Конструктор подставляет расширённый {@link Vector3} в `position`, `rotation`
+ * и `scaling`, что даёт chaining и дополнительные методы (`.applyQuaternion()`,
+ * `.distanceTo()` и т.д.) без обёрток и синхронизации.
+ *
+ * Является настоящим BJS-узлом — работает со всеми API BabylonJS напрямую.
  */
 export class TransformNode extends BTransformNode {
   constructor(name = '', scene?: Scene | null) {
     super(name, scene ?? undefined);
     this.metadata = {};
-    // Replace BJS Vector3 instances with our extended Vector3
-    // (goes through BJS setter → stored in BJS's _position/_rotation/_scaling)
     this.position = new Vector3();
     this.rotation = new Vector3();
     this.scaling = new Vector3(1, 1, 1);
   }
 
-  // ── userData backed by BJS metadata ──
-
-  get userData(): Record<string, any> {
-    return this.metadata;
+  /** Позиция узла с типом расширённого {@link Vector3}. */
+  override get position(): Vector3 {
+    return super.position as Vector3;
   }
 
-  set userData(v: Record<string, any>) {
-    this.metadata = v;
-  }
-
-  // ── visible backed by BJS setEnabled/isEnabled ──
-
-  get visible(): boolean {
-    return this.isEnabled();
-  }
-
-  set visible(v: boolean) {
-    this.setEnabled(v);
+  override set position(v: Vector3) {
+    super.position = v;
   }
 
   /**
-   * Recursively set enabled/disabled for this node and ALL descendants.
-   * Use this instead of `visible` when children are loaded meshes
-   * (BabylonJS `setEnabled` does NOT cascade to children automatically).
+   * Рекурсивно включает/выключает узел и ВСЕХ потомков.
+   * BJS `setEnabled` не каскадируется на детей автоматически.
    */
   setVisibleRecursive(v: boolean): void {
     this.setEnabled(v);
@@ -54,24 +44,10 @@ export class TransformNode extends BTransformNode {
     }
   }
 
-  // ── .scale aliases .scaling ──
-
-  get scale() {
-    return this.scaling;
-  }
-
-  set scale(v) {
-    this.scaling.copyFrom(v);
-  }
-
-  // ── .children returns direct child TransformNodes ──
-
-  get children(): TransformNode[] {
-    return this.getChildTransformNodes(true) as TransformNode[];
-  }
-
-  // ── .quaternion with lazy rotationQuaternion init ──
-
+  /**
+   * Кватернион вращения. Создаётся лениво при первом обращении.
+   * Возвращает расширённый {@link Quaternion} с методами `.multiply()`, `.premultiply()` и т.д.
+   */
   get quaternion(): Quaternion {
     if (!this.rotationQuaternion) this.rotationQuaternion = new Quaternion();
     return this.rotationQuaternion as Quaternion;
@@ -79,38 +55,5 @@ export class TransformNode extends BTransformNode {
 
   set quaternion(q: BQuaternion) {
     this.rotationQuaternion = q;
-  }
-
-  // ── matrixWorld = BJS world matrix ──
-
-  get matrixWorld(): Matrix {
-    return this.getWorldMatrix();
-  }
-
-  // ── add/remove children ──
-
-  add(child: Node): this {
-    child.parent = this;
-    return this;
-  }
-
-  remove(child: Node): this {
-    child.parent = null;
-    return this;
-  }
-
-  // ── traverse all descendants ──
-
-  traverse(fn: (obj: Node) => void): void {
-    fn(this);
-    for (const desc of this.getDescendants(false)) {
-      fn(desc);
-    }
-  }
-
-  // ── find descendant by name ──
-
-  getObjectByName(name: string): Node | undefined {
-    return this.getDescendants(false).find((d) => d.name === name);
   }
 }

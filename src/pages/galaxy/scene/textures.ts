@@ -1,20 +1,21 @@
-import type { CanvasTexture } from '@/shared/core';
+import type { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
+
 import { createTextureFromCanvas } from '@/shared/core';
 
-let glowTexture: CanvasTexture | null = null;
-let dotTexture: CanvasTexture | null = null;
+let glowTexture: DynamicTexture | null = null;
+let dotTexture: DynamicTexture | null = null;
 
-export function getGlowTexture(): CanvasTexture {
+export function getGlowTexture(): DynamicTexture {
   if (!glowTexture) glowTexture = createGlowTexture();
   return glowTexture;
 }
 
-export function getDotTexture(): CanvasTexture {
+export function getDotTexture(): DynamicTexture {
   if (!dotTexture) dotTexture = createDotTexture();
   return dotTexture;
 }
 
-function createGlowTexture(): CanvasTexture {
+function createGlowTexture(): DynamicTexture {
   const size = 128;
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -31,7 +32,7 @@ function createGlowTexture(): CanvasTexture {
   return createTextureFromCanvas(canvas, false);
 }
 
-function createDotTexture(): CanvasTexture {
+function createDotTexture(): DynamicTexture {
   const size = 64;
   const canvas = document.createElement('canvas');
   canvas.width = size;

@@ -1,10 +1,9 @@
 import { COMBAT_CONSTANTS } from '@/shared/config/combat';
 import { combatConfig } from '@/shared/config/combat-session';
 import { PLAYER_CONFIG } from '@/shared/config/player';
-import { Vector3, removeFromScene } from '@/shared/core';
+import { Vector3, disposeNode, removeFromScene } from '@/shared/core';
 import { emit, off, on } from '@/shared/events';
 import type { EventMap } from '@/shared/events';
-import { disposeObject } from '@/shared/lib/dispose';
 import { state } from '@/shared/state';
 import type { CapitalShip, Fighter, Subsystem } from '@/shared/types';
 import type { GameSystem } from '@/shared/types';
@@ -22,7 +21,7 @@ function handleFighterKilled(e: EventMap['fighter-killed']): void {
   const { victim, killerName, killerTeam, victimTeam, isPlayerKill } = e;
 
   createExplosion(victim.mesh.position.clone(), 3);
-  disposeObject(victim.mesh);
+  disposeNode(victim.mesh);
 
   // Remove from array
   const arr = victimTeam === 'enemy' ? state.enemies : state.allies;
@@ -54,7 +53,7 @@ function handleSubsystemDestroyed(e: EventMap['subsystem-destroyed']): void {
   const { subsystem, ship } = e;
 
   createExplosion(
-    subsystem.center.clone().applyMatrix4(ship.mesh.matrixWorld),
+    subsystem.center.clone().applyMatrix4(ship.mesh.getWorldMatrix()),
     C.subsystemExplosionSize,
   );
   state.score += C.subsystemKillScore;

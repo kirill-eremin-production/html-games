@@ -1,13 +1,37 @@
+/**
+ * Абстракция геометрии поверх Babylon.js MeshBuilder.
+ *
+ * Зачем нужен модуль:
+ * - Позволяет создать описание геометрии **отдельно от сцены и меша** — параметры
+ *   сохраняются, а реальная BJS-геометрия генерируется лениво при вызове `_applyToMesh`.
+ * - Одну геометрию можно переиспользовать для множества мешей (например, 1000 звёзд
+ *   в галактике используют один `SphereGeometry`).
+ * - {@link EngineBufferGeometry} хранит произвольные вершинные атрибуты (позиции, цвета)
+ *   для облаков точек и линий.
+ *
+ * @example
+ * ```ts
+ * // Примитив — через фабрику
+ * const geo = createSphereGeometry(1, 32, 32);
+ * const mesh = createMesh(geo, material);
+ *
+ * // Произвольная геометрия — для облака точек
+ * const bufGeo = createBufferGeometry();
+ * bufGeo.setAttribute('position', createBufferAttribute(positions, 3));
+ * bufGeo.setAttribute('color', createBufferAttribute(colors, 3));
+ * const points = createPoints(bufGeo, pointsMaterial);
+ * ```
+ */
 import type { Mesh as BMesh } from '@babylonjs/core/Meshes/mesh';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 
 import type { Vector3 } from './vector3';
 
+/** Типизированный буфер вершинных данных (позиции, цвета и т.д.). */
 export class EngineBufferAttribute {
   array: Float32Array;
   itemSize: number;
-  needsUpdate = false;
   count: number;
 
   constructor(array: Float32Array, itemSize: number) {
@@ -17,23 +41,19 @@ export class EngineBufferAttribute {
   }
 }
 
-// Re-export as BufferAttribute for consumers
-export { EngineBufferAttribute as BufferAttribute };
-
+/**
+ * Геометрия на основе произвольных вершинных буферов.
+ *
+ * Используется для облаков точек (starfield) и линий, где данные задаются
+ * через {@link setAttribute} с `Float32Array`.
+ */
 export class EngineBufferGeometry {
   attributes: Record<string, EngineBufferAttribute> = {};
-  _dirty = true;
-  _disposed = false;
   _pendingRotateZ = 0;
 
   setAttribute(name: string, attr: EngineBufferAttribute): this {
     this.attributes[name] = attr;
-    this._dirty = true;
     return this;
-  }
-
-  getAttribute(name: string): EngineBufferAttribute | undefined {
-    return this.attributes[name];
   }
 
   setFromPoints(points: Vector3[]): this {
@@ -48,8 +68,6 @@ export class EngineBufferGeometry {
   }
 
   _applyToMesh(bMesh: BMesh): void {
-    if (this._disposed) return;
-
     const posAttr = this.attributes['position'];
     if (!posAttr) return;
 
@@ -58,7 +76,7 @@ export class EngineBufferGeometry {
 
     const colorAttr = this.attributes['color'];
     if (colorAttr) {
-      // Convert RGB to RGBA for Babylon.js
+      // RGB → RGBA для Babylon.js
       const rgb = colorAttr.array;
       const rgba = new Float32Array((rgb.length / 3) * 4);
       for (let i = 0; i < rgb.length / 3; i++) {
@@ -70,7 +88,6 @@ export class EngineBufferGeometry {
       vertexData.colors = Array.from(rgba);
     }
 
-    // Generate simple indices if not present
     const vertexCount = posAttr.count;
     const indices = new Array(vertexCount);
     for (let i = 0; i < vertexCount; i++) indices[i] = i;
@@ -78,17 +95,11 @@ export class EngineBufferGeometry {
 
     if (this._pendingRotateZ) _rotateVertexDataZ(vertexData, this._pendingRotateZ);
     vertexData.applyToMesh(bMesh, true);
-    this._dirty = false;
   }
 
   rotateZ(angle: number): this {
     this._pendingRotateZ += angle;
     return this;
-  }
-
-  dispose(): void {
-    this._disposed = true;
-    this.attributes = {};
   }
 }
 
@@ -105,14 +116,10 @@ function _rotateVertexDataZ(vd: VertexData, angle: number): void {
   }
 }
 
-// Re-export as BufferGeometry
-export { EngineBufferGeometry as BufferGeometry };
-
 /**
- * Specific geometry types — these pre-populate attributes from Babylon.js MeshBuilder.
- * They store the creation params and create geometry lazily.
+ * Сфера. Параметры: радиус и количество сегментов.
+ * Используется для планет, звёзд и других округлых объектов.
  */
-
 export class SphereGeometry extends EngineBufferGeometry {
   constructor(
     public _radius: number,
@@ -123,9 +130,7 @@ export class SphereGeometry extends EngineBufferGeometry {
   }
 
   _applyToMesh(bMesh: BMesh): void {
-    if (this._disposed) return;
     const scene = bMesh.getScene();
-    // Use MeshBuilder to create the geometry, then steal its vertexData
     const tmp = MeshBuilder.CreateSphere(
       '_tmp',
       {
@@ -137,10 +142,10 @@ export class SphereGeometry extends EngineBufferGeometry {
     const vd = VertexData.ExtractFromMesh(tmp);
     vd.applyToMesh(bMesh, true);
     tmp.dispose();
-    this._dirty = false;
   }
 }
 
+/** Цилиндр с настраиваемыми радиусами верхнего и нижнего оснований. Используется для лазерных лучей. */
 export class CylinderGeometry extends EngineBufferGeometry {
   constructor(
     public _radiusTop: number,
@@ -152,7 +157,6 @@ export class CylinderGeometry extends EngineBufferGeometry {
   }
 
   _applyToMesh(bMesh: BMesh): void {
-    if (this._disposed) return;
     const scene = bMesh.getScene();
     const tmp = MeshBuilder.CreateCylinder(
       '_tmp',
@@ -168,10 +172,10 @@ export class CylinderGeometry extends EngineBufferGeometry {
     if (this._pendingRotateZ) _rotateVertexDataZ(vd, this._pendingRotateZ);
     vd.applyToMesh(bMesh, true);
     tmp.dispose();
-    this._dirty = false;
   }
 }
 
+/** Плоскость. Используется для полосок здоровья и UI-элементов в 3D-пространстве. */
 export class PlaneGeometry extends EngineBufferGeometry {
   constructor(
     public _width: number,
@@ -181,7 +185,6 @@ export class PlaneGeometry extends EngineBufferGeometry {
   }
 
   _applyToMesh(bMesh: BMesh): void {
-    if (this._disposed) return;
     const scene = bMesh.getScene();
     const tmp = MeshBuilder.CreatePlane(
       '_tmp',
@@ -194,10 +197,10 @@ export class PlaneGeometry extends EngineBufferGeometry {
     const vd = VertexData.ExtractFromMesh(tmp);
     vd.applyToMesh(bMesh, true);
     tmp.dispose();
-    this._dirty = false;
   }
 }
 
+/** Кольцо/диск. Используется для колец выделения и зон дальности. */
 export class RingGeometry extends EngineBufferGeometry {
   constructor(
     public _innerRadius: number,
@@ -208,9 +211,8 @@ export class RingGeometry extends EngineBufferGeometry {
   }
 
   _applyToMesh(bMesh: BMesh): void {
-    if (this._disposed) return;
     const scene = bMesh.getScene();
-    // Babylon.js doesn't have a ring mesh directly, use Disc as approximation
+    // BJS не имеет Ring — используем Disc как аппроксимацию
     const tmp = MeshBuilder.CreateDisc(
       '_tmp',
       {
@@ -222,10 +224,10 @@ export class RingGeometry extends EngineBufferGeometry {
     const vd = VertexData.ExtractFromMesh(tmp);
     vd.applyToMesh(bMesh, true);
     tmp.dispose();
-    this._dirty = false;
   }
 }
 
+/** Октаэдр. Используется для маркеров контрактов. */
 export class OctahedronGeometry extends EngineBufferGeometry {
   constructor(
     public _radius: number,
@@ -235,7 +237,6 @@ export class OctahedronGeometry extends EngineBufferGeometry {
   }
 
   _applyToMesh(bMesh: BMesh): void {
-    if (this._disposed) return;
     const scene = bMesh.getScene();
     const tmp = MeshBuilder.CreatePolyhedron(
       '_tmp',
@@ -248,10 +249,10 @@ export class OctahedronGeometry extends EngineBufferGeometry {
     const vd = VertexData.ExtractFromMesh(tmp);
     vd.applyToMesh(bMesh, true);
     tmp.dispose();
-    this._dirty = false;
   }
 }
 
+/** Икосаэдр. Используется для астероидов. */
 export class IcosahedronGeometry extends EngineBufferGeometry {
   constructor(
     public _radius: number,
@@ -261,7 +262,6 @@ export class IcosahedronGeometry extends EngineBufferGeometry {
   }
 
   _applyToMesh(bMesh: BMesh): void {
-    if (this._disposed) return;
     const scene = bMesh.getScene();
     const tmp = MeshBuilder.CreatePolyhedron(
       '_tmp',
@@ -274,6 +274,5 @@ export class IcosahedronGeometry extends EngineBufferGeometry {
     const vd = VertexData.ExtractFromMesh(tmp);
     vd.applyToMesh(bMesh, true);
     tmp.dispose();
-    this._dirty = false;
   }
 }

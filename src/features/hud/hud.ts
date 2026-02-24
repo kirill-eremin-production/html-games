@@ -67,7 +67,7 @@ export function updateHUD(): void {
     const html = HUD_TEMPLATES.shipStatus(
       state.capitalShips.map((cs) => ({
         alive: cs.alive,
-        index: cs.mesh.userData.index as number,
+        index: cs.mesh.metadata.index as number,
         subsystems: cs.subsystems,
       })),
     );

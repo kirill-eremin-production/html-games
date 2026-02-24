@@ -40,6 +40,7 @@ import {
 } from './refs';
 import { rebuildRouteLines } from './routes';
 import { STAR_COLORS } from './textures';
+
 export { galaxyGroup } from './refs';
 export { updateGalaxyScene } from './update';
 export { updateGalaxyLabels } from './labels';
@@ -78,7 +79,7 @@ function hexToColor4(hex: number, alpha: number): Color4 {
 export function buildGalaxyScene(): void {
   // Dispose previous children (not just remove) — removing only sets parent=null,
   // which leaves the node as a root scene node still rendering.
-  const oldChildren = [...galaxyGroup.children];
+  const oldChildren = [...galaxyGroup.getChildTransformNodes(true)];
   for (const child of oldChildren) {
     child.dispose();
   }
@@ -93,11 +94,11 @@ export function buildGalaxyScene(): void {
 
   // Galaxy ambient light (dimmer than combat)
   const ambient = createAmbientLight(0x334466, 0.6);
-  galaxyGroup.add(ambient);
+  ambient.parent = galaxyGroup;
 
   // Background spiral galaxy
-  galaxyGroup.add(createBackgroundStars());
-  galaxyGroup.add(createGalaxyNebulae());
+  createBackgroundStars().parent = galaxyGroup;
+  createGalaxyNebulae().parent = galaxyGroup;
 
   // Shared geometry for all star systems (optimized for 1000 systems)
   const sharedStarGeo = createSphereGeometry(0.4, 8, 8);
@@ -124,8 +125,8 @@ export function buildGalaxyScene(): void {
     });
     const mesh = createMesh(sharedStarGeo, mat);
     mesh.position.set(...sys.position);
-    mesh.userData.systemId = sys.id;
-    galaxyGroup.add(mesh);
+    mesh.metadata.systemId = sys.id;
+    mesh.parent = galaxyGroup;
     starMeshes.set(sys.id, mesh);
 
     // Soft glow sprite (BJS native — batched by SpriteManager)
@@ -146,8 +147,8 @@ export function buildGalaxyScene(): void {
   });
   refs.selectionRing = createMesh(ringGeo, ringMat);
   refs.selectionRing.rotation.x = -Math.PI / 2;
-  refs.selectionRing.visible = false;
-  galaxyGroup.add(refs.selectionRing);
+  refs.selectionRing.setEnabled(false);
+  refs.selectionRing.parent = galaxyGroup;
 
   // Contract target marker (red pulsing diamond)
   const diamondGeo = createOctahedronGeometry(0.5, 0);
@@ -155,16 +156,16 @@ export function buildGalaxyScene(): void {
     color: 0xff3333,
   });
   refs.contractMarker = createMesh(diamondGeo, diamondMat);
-  refs.contractMarker.visible = false;
-  galaxyGroup.add(refs.contractMarker);
+  refs.contractMarker.setEnabled(false);
+  refs.contractMarker.parent = galaxyGroup;
 
   // Player ship model (small fighter at current system)
   refs.playerShipModel = createFighter(
     parseHexColor(settings.colors.playerBody),
     parseHexColor(settings.colors.playerExhaust),
   );
-  refs.playerShipModel.scale.setAll(0.3);
-  galaxyGroup.add(refs.playerShipModel);
+  refs.playerShipModel.scaling.setAll(0.3);
+  refs.playerShipModel.parent = galaxyGroup;
 
   updatePlayerShipPosition();
   recomputeNearby();
@@ -173,7 +174,7 @@ export function buildGalaxyScene(): void {
   for (const [id, mesh] of starMeshes) {
     const s = nearbySystemIds.has(id) ? NEARBY_SCALE : FAR_SCALE;
     starScaleCurrent.set(id, s);
-    mesh.scale.setAll(s);
+    mesh.scaling.setAll(s);
     const halo = starHalos.get(id);
     if (halo) halo.size = 2.5 * s;
   }
@@ -221,14 +222,14 @@ export function setPlayerShipAt(pos: Vector3): void {
 export function selectSystem(systemId: string | null): void {
   if (!refs.selectionRing) return;
   if (!systemId) {
-    refs.selectionRing.visible = false;
+    refs.selectionRing.setEnabled(false);
     return;
   }
   const mesh = starMeshes.get(systemId);
   if (mesh) {
     refs.selectionRing.position.copyFrom(mesh.position);
     refs.selectionRing.position.y += 0.05;
-    refs.selectionRing.visible = true;
+    refs.selectionRing.setEnabled(true);
   }
 }
 
@@ -238,33 +239,31 @@ export function updateContractMarker(): void {
     const targetMesh = starMeshes.get(campaign.activeContract.targetSystemId);
     if (targetMesh) {
       refs.contractMarker.position.copyFrom(targetMesh.position);
-      refs.contractMarker.userData.baseY = targetMesh.position.y + 3.5;
-      refs.contractMarker.position.y = refs.contractMarker.userData.baseY;
-      refs.contractMarker.visible = true;
+      refs.contractMarker.metadata.baseY = targetMesh.position.y + 3.5;
+      refs.contractMarker.position.y = refs.contractMarker.metadata.baseY;
+      refs.contractMarker.setEnabled(true);
       return;
     }
   }
-  refs.contractMarker.visible = false;
+  refs.contractMarker.setEnabled(false);
 }
 
 export function showGalaxy(): void {
-  galaxyGroup.visible = true;
+  galaxyGroup.setEnabled(true);
   setStarfieldVisible(false);
   setHaloManagerVisible(true);
   // Increase near plane to clip sprites/points that are too close to camera
-  camera.near = 5;
-  camera.updateProjectionMatrix();
+  camera.minZ = 5;
   if (refs.labelsContainer) refs.labelsContainer.style.display = 'block';
 }
 
 export function hideGalaxy(): void {
-  galaxyGroup.visible = false;
+  galaxyGroup.setEnabled(false);
   setStarfieldVisible(true);
   setHaloManagerVisible(false);
   // Restore near plane for combat mode
-  camera.near = 1;
-  camera.updateProjectionMatrix();
-  if (refs.selectionRing) refs.selectionRing.visible = false;
+  camera.minZ = 1;
+  if (refs.selectionRing) refs.selectionRing.setEnabled(false);
   if (refs.labelsContainer) refs.labelsContainer.style.display = 'none';
 }
 

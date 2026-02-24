@@ -6,7 +6,7 @@ import type { EngineLine, EngineMesh, EngineSpriteMaterial, TransformNode } from
 import { Vector3, createTransformNode } from '@/shared/core';
 
 export const galaxyGroup = createTransformNode();
-galaxyGroup.visible = false;
+galaxyGroup.setEnabled(false);
 
 export const starMeshes = new Map<string, EngineMesh>();
 export const starHalos = new Map<string, BJSSprite>();

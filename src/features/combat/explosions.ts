@@ -91,14 +91,19 @@ export function createExplosion(position: Vector3, size = 1): void {
   // No gravity (space)
   ps.gravity = BVector3.Zero();
 
-  // Burst emit, then auto-stop & auto-dispose
+  // Burst: одноразовый выброс частиц, без непрерывной эмиссии
   ps.emitRate = 0;
   ps.manualEmitCount = count;
-  ps.targetStopDuration = 0.1;
-  ps.disposeOnStop = true;
 
+  // BJS disposeOnStop не работает при targetStopDuration < maxLifeTime (race condition:
+  // _started сбрасывается раньше, чем все частицы умрут, и animate() перестаёт вызываться).
+  // Диспозим вручную: ждём maxLifeTime от момента создания + запас.
   active.add(ps);
-  ps.onDisposeObservable.addOnce(() => active.delete(ps));
+  const disposeDelay = (ps.maxLifeTime + 0.2) * 1000;
+  setTimeout(() => {
+    active.delete(ps);
+    ps.dispose();
+  }, disposeDelay);
 
   ps.start();
 }

@@ -1,14 +1,20 @@
+/**
+ * Игровые часы — отмеряют время между кадрами (delta time).
+ *
+ * Используются в game loop для расчёта физики, анимаций и движения
+ * независимо от частоты кадров.
+ */
 export class Clock {
-  private _startTime = 0;
   private _lastTime = 0;
   private _running = false;
 
+  /** Запускает часы. Первый вызов `getDelta()` после старта вернёт 0. */
   start(): void {
-    this._startTime = performance.now() / 1000;
-    this._lastTime = this._startTime;
+    this._lastTime = performance.now() / 1000;
     this._running = true;
   }
 
+  /** Время в секундах, прошедшее с предыдущего вызова `getDelta()`. */
   getDelta(): number {
     if (!this._running) {
       this.start();
@@ -18,9 +24,5 @@ export class Clock {
     const delta = now - this._lastTime;
     this._lastTime = now;
     return delta;
-  }
-
-  getElapsedTime(): number {
-    return performance.now() / 1000 - this._startTime;
   }
 }

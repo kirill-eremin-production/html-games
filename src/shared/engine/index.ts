@@ -35,13 +35,7 @@ bScene.clearColor = new Color4(0x0a / 255, 0x0f / 255, 0x1e / 255, 1);
 setFactoryScene(bScene);
 
 // ── Camera ───────────────────────────────────────────────────────────────────
-export const camera = new PerspectiveCamera(
-  75,
-  window.innerWidth / window.innerHeight,
-  1,
-  5000000,
-  bScene,
-);
+export const camera = new PerspectiveCamera({ fov: 75, near: 1, far: 5000000, scene: bScene });
 bScene.activeCamera = camera;
 
 // ── Lights ───────────────────────────────────────────────────────────────────
@@ -71,7 +65,5 @@ export const renderer = {
 };
 
 export function handleResize(): void {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
   engine.resize();
 }

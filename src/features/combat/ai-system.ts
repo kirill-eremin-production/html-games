@@ -1,8 +1,7 @@
 import { AI_CONFIG } from '@/shared/config/ai';
 import { PLAYER_NAME } from '@/shared/constants';
-import { Quaternion, TransformNode, Vector3 } from '@/shared/core';
+import { Quaternion, TransformNode, Vector3, disposeNode } from '@/shared/core';
 import { camera } from '@/shared/engine';
-import { disposeObject } from '@/shared/lib/dispose';
 import { state } from '@/shared/state';
 import type { Fighter } from '@/shared/types';
 import type { GameSystem } from '@/shared/types';
@@ -62,10 +61,10 @@ function updateFighterAI(
       if (!cs.alive) continue;
       for (const sub of cs.subsystems) {
         if (sub.health > 0) {
-          _aiSubWorldPos.copyFrom(sub.center).applyMatrix4(cs.mesh.matrixWorld);
+          _aiSubWorldPos.copyFrom(sub.center).applyMatrix4(cs.mesh.getWorldMatrix());
           fighter.ai.target = {
             mesh: { position: _aiSubWorldPos.clone() },
-            name: `Корабль-${cs.mesh.userData.index + 1}`,
+            name: `Корабль-${cs.mesh.metadata.index + 1}`,
           };
           break;
         }
@@ -150,7 +149,7 @@ function updateFighterAI(
 
   fighter.healthBar.lookAt(camera.position);
   const hpRatio = fighter.health / fighter.maxHealth;
-  fighter.healthFill.scale.x = Math.max(0.01, hpRatio);
+  fighter.healthFill.scaling.x = Math.max(0.01, hpRatio);
   fighter.healthFill.position.x = -(1 - hpRatio) * 2;
 }
 
@@ -177,8 +176,8 @@ export const aiSystem: GameSystem = {
     updateExhaustGlow();
   },
   cleanup() {
-    for (const a of state.allies) disposeObject(a.mesh);
-    for (const e of state.enemies) disposeObject(e.mesh);
+    for (const a of state.allies) disposeNode(a.mesh);
+    for (const e of state.enemies) disposeNode(e.mesh);
     state.allies = [];
     state.enemies = [];
     cleanupTeamSources();

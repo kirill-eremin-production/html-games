@@ -1,54 +1,25 @@
 import { Vector3 as BVector3, Matrix } from '@babylonjs/core/Maths/math.vector';
 
-import type { Quaternion } from './quaternion';
 import type { Vector3 } from './vector3';
 
-/** Any camera that can provide view/projection matrices. */
+/** Камера, способная предоставить матрицы вида и проекции. */
 export interface ProjectionCamera {
   getViewMatrix(force?: boolean): Matrix;
   getProjectionMatrix(force?: boolean): Matrix;
 }
 
-/** Create a quaternion from an axis and angle. Mutates `out`. */
-export function quatFromAxisAngle(axis: Vector3, angle: number, out: Quaternion): Quaternion {
-  return out.setFromAxisAngle(axis, angle);
-}
-
-/** Create a quaternion that rotates `from` unit vector to `to` unit vector. Mutates `out`. */
-export function quatFromUnitVectors(from: Vector3, to: Vector3, out: Quaternion): Quaternion {
-  return out.setFromUnitVectors(from, to);
-}
-
-/** Squared distance between two Vector3. */
-export function vec3DistSq(a: Vector3, b: Vector3): number {
-  return a.distanceToSquared(b);
-}
-
-/** Distance between two Vector3. */
-export function vec3Dist(a: Vector3, b: Vector3): number {
-  return a.distanceTo(b);
-}
-
-/** target += dir * scalar. Mutates target in-place. */
-export function vec3AddScaled(target: Vector3, dir: Vector3, scalar: number): Vector3 {
-  return target.addScaledVector(dir, scalar);
-}
-
-/** Apply a 4x4 matrix transform to a vector. Mutates vec in-place. */
-export function vec3TransformMatrix(vec: Vector3, matrix: Matrix): Vector3 {
-  return vec.applyMatrix4(matrix);
-}
-
-/** Apply a quaternion rotation to a vector. Mutates vec in-place. */
-export function vec3ApplyQuat(vec: Vector3, q: Quaternion): Vector3 {
-  return vec.applyQuaternion(q);
-}
-
-// Reusable matrix for projection operations
+/** Переиспользуемая матрица VP для проекции/обратной проекции. */
 const _vpMatrix = new Matrix();
 
-/** Project world position to screen pixel coordinates.
- *  z < 1 means the point is in front of the camera. */
+/**
+ * Проецирует мировую позицию в экранные пиксельные координаты.
+ *
+ * Умножает view × projection камеры и трансформирует точку из мирового
+ * пространства в NDC, затем масштабирует в пиксели экрана.
+ * `z < 1` означает, что точка находится перед камерой.
+ *
+ * Использует переиспользуемый `_vpMatrix` — без аллокаций в горячем цикле.
+ */
 export function vec3Project(
   worldPos: Vector3,
   cam: ProjectionCamera,
@@ -67,10 +38,17 @@ export function vec3Project(
   };
 }
 
-// Reusable matrix for unprojection
+/** Переиспользуемая инвертированная VP-матрица для обратной проекции. */
 const _invVP = new Matrix();
 
-/** Unproject a screen-space coordinate to world space. Mutates vec in-place. */
+/**
+ * Обратная проекция экранных координат в мировое пространство.
+ *
+ * Инвертирует VP-матрицу камеры и трансформирует вектор из NDC
+ * обратно в мировые координаты. Мутирует `vec` на месте.
+ *
+ * Используется для определения направления стрельбы по позиции прицела.
+ */
 export function vec3Unproject(vec: Vector3, cam: ProjectionCamera): Vector3 {
   const vm = cam.getViewMatrix(true);
   const pm = cam.getProjectionMatrix(true);

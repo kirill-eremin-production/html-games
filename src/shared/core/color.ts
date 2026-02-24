@@ -1,12 +1,18 @@
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 
+/**
+ * Расширенный цвет на основе BJS `Color3`.
+ *
+ * Добавляет удобные способы задания цвета (hex, HSL)
+ * и мутирующие операции с chaining: `c.clone().multiplyScalar(0.7)`.
+ */
 export class Color extends Color3 {
   constructor(hex?: number) {
     super();
     if (hex !== undefined) this.setHex(hex);
   }
 
-  /** Set color from a hex integer (e.g. 0xff0000 for red). */
+  /** Задаёт цвет из hex-числа (например, `0xff0000` — красный). */
   setHex(hex: number): this {
     this.r = ((hex >> 16) & 0xff) / 255;
     this.g = ((hex >> 8) & 0xff) / 255;
@@ -14,7 +20,7 @@ export class Color extends Color3 {
     return this;
   }
 
-  /** Multiply each channel by scalar. */
+  /** Умножает каждый канал на скаляр (затемнение/осветление). */
   multiplyScalar(s: number): this {
     this.r *= s;
     this.g *= s;
@@ -22,6 +28,7 @@ export class Color extends Color3 {
     return this;
   }
 
+  /** Клонирует как расширенный Color (а не базовый Color3). */
   override clone(): Color {
     const c = new Color();
     c.r = this.r;
@@ -30,7 +37,7 @@ export class Color extends Color3 {
     return c;
   }
 
-  /** Set color from HSL values (all in 0-1 range). */
+  /** Задаёт цвет из HSL (все значения от 0 до 1). */
   setHSL(h: number, s: number, l: number): this {
     if (s === 0) {
       this.r = this.g = this.b = l;
@@ -55,12 +62,4 @@ function hueToRgb(p: number, q: number, t: number): number {
   if (t < 1 / 2) return q;
   if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
   return p;
-}
-
-declare module '@babylonjs/core/Maths/math.color' {
-  interface Color3 {
-    setHex(hex: number): this;
-    multiplyScalar(s: number): this;
-    setHSL(h: number, s: number, l: number): this;
-  }
 }

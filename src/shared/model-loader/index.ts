@@ -6,6 +6,7 @@ import {
   type TransformNode,
   Vector3,
   cloneModel,
+  getChildByName,
   isEngineMesh,
   loadModel,
   traverseNode,
@@ -65,7 +66,7 @@ export function cloneFighterModel(bodyColor: number, exhaustColor: number): Tran
     else if (n.endsWith('glow') || n.endsWith('glow_L')) mesh.material = haloMat;
   });
 
-  group.scale.setAll(1.5);
+  group.scaling.setAll(1.5);
   return group;
 }
 
@@ -105,7 +106,7 @@ export function cloneCapitalShipModel(index: number, hullColor: number): Transfo
     emissiveIntensity: 0.2,
   });
 
-  const hullGroup = findDescendantBysuffix(group, '.hull') ?? group.getObjectByName('hull');
+  const hullGroup = findDescendantBysuffix(group, '.hull') ?? getChildByName(group, 'hull');
   if (hullGroup) {
     traverseNode(hullGroup, (child) => {
       if (!isEngineMesh(child)) return;
@@ -125,7 +126,7 @@ export function cloneCapitalShipModel(index: number, hullColor: number): Transfo
   }
 
   const subsystems: Subsystem[] = SUBSYSTEM_NAMES.map((name, i) => {
-    const subGroup = (findDescendantBysuffix(group, `.${name}`) ?? group.getObjectByName(name)) as
+    const subGroup = (findDescendantBysuffix(group, `.${name}`) ?? getChildByName(group, name)) as
       | TransformNode
       | undefined;
     if (!subGroup) {
@@ -161,8 +162,8 @@ export function cloneCapitalShipModel(index: number, hullColor: number): Transfo
     };
   });
 
-  group.userData.subsystems = subsystems;
-  group.userData.index = index;
-  group.scale.setAll(1.5);
+  group.metadata.subsystems = subsystems;
+  group.metadata.index = index;
+  group.scaling.setAll(1.5);
   return group;
 }

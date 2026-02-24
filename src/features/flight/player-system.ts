@@ -7,6 +7,7 @@ import {
   Quaternion,
   Vector3,
   createTransformNode,
+  getChildByName,
   vec3Unproject,
 } from '@/shared/core';
 import { camera } from '@/shared/engine';
@@ -85,17 +86,17 @@ export function updatePlayer(dt: number): void {
   const glowOpacity = P.glowOpacityBase + speedRatio * P.glowOpacityRange;
   const glowScale = P.glowScaleBase + speedRatio * P.glowScaleRange;
   for (const name of ['exhaust', 'exhaust_L'] as const) {
-    const m = playerPlane.getObjectByName(name) as EngineMesh | undefined;
+    const m = getChildByName(playerPlane, name) as EngineMesh | undefined;
     if (m) {
       (m.material as MeshBasicMaterial).opacity = exhaustOpacity;
-      m.scale.setAll(exhaustScale);
+      m.scaling.setAll(exhaustScale);
     }
   }
   for (const name of ['glow', 'glow_L'] as const) {
-    const m = playerPlane.getObjectByName(name) as EngineMesh | undefined;
+    const m = getChildByName(playerPlane, name) as EngineMesh | undefined;
     if (m) {
       (m.material as MeshBasicMaterial).opacity = glowOpacity;
-      m.scale.setAll(glowScale);
+      m.scaling.setAll(glowScale);
     }
   }
   updateEngineHum(speedRatio);
@@ -110,8 +111,8 @@ export function updatePlayer(dt: number): void {
   camera.position.lerp(camTarget, 1 - Math.exp(-cameraSmoothing * dt));
   const lookTarget = _tmpVec2.copyFrom(playerPlane.position).add(forward.scaleInPlace(lookAhead));
   const up = _tmpVec3.set(0, 1, 0).applyQuaternion(playerPlane.quaternion);
-  camera.up.lerp(up, P.cameraUpLerp * dt).normalize();
-  camera.lookAt(lookTarget);
+  camera.upVector.lerp(up, P.cameraUpLerp * dt).normalize();
+  camera.setTarget(lookTarget);
 
   if (state.invulnTimer > 0) {
     state.invulnTimer -= dt;
@@ -186,5 +187,5 @@ export function playerDeath(): void {
   state.damageFlash = 0;
   state.lastAttacker = '';
   camera.position.set(P.combatCamBack, P.combatCamUp, 0);
-  camera.lookAt(playerPlane.position);
+  camera.setTarget(playerPlane.position);
 }

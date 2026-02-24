@@ -43,7 +43,7 @@ function hitTestCapitalShips(laser: LaserData): boolean {
     for (const sub of cs.subsystems) {
       if (sub.health <= 0) continue;
       try {
-        _hitWorldPos.copyFrom(sub.center).applyMatrix4(cs.mesh.matrixWorld);
+        _hitWorldPos.copyFrom(sub.center).applyMatrix4(cs.mesh.getWorldMatrix());
       } catch (err) {
         console.error('[bullets] matrixWorld error on capital ship hit-test:', err);
         continue;

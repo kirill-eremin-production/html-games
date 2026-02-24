@@ -70,7 +70,7 @@ export function createStarfield(): void {
  * @param visible — `true` для отображения, `false` для скрытия.
  */
 export function setStarfieldVisible(visible: boolean): void {
-  if (starfieldPoints) starfieldPoints.visible = visible;
+  if (starfieldPoints) starfieldPoints.setEnabled(visible);
 }
 
 /**

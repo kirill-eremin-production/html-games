@@ -1,4 +1,6 @@
-import type { CanvasTexture, TransformNode } from '@/shared/core';
+import type { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
+
+import type { TransformNode } from '@/shared/core';
 import {
   Color,
   createSprite,
@@ -9,7 +11,7 @@ import {
 
 import { baseNebulaOpacities, nebulaMats } from './refs';
 
-function createNebulaTexture(hue: number, saturation: number): CanvasTexture {
+function createNebulaTexture(hue: number, saturation: number): DynamicTexture {
   const size = 256;
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -77,8 +79,8 @@ export function createGalaxyNebulae(): TransformNode {
     baseNebulaOpacities.push(cfg.opacity);
     const sprite = createSprite(mat);
     sprite.position.set(...cfg.pos);
-    sprite.scale.setAll(cfg.scale);
-    group.add(sprite);
+    sprite.scaling.setAll(cfg.scale);
+    sprite.parent = group;
   }
 
   // Dark dust lanes — subtractive-looking patches (very dark, low opacity normal blending)
@@ -101,8 +103,8 @@ export function createGalaxyNebulae(): TransformNode {
     });
     const sprite = createSprite(mat);
     sprite.position.set(...cfg.pos);
-    sprite.scale.setAll(cfg.scale);
-    group.add(sprite);
+    sprite.scaling.setAll(cfg.scale);
+    sprite.parent = group;
   }
 
   return group;

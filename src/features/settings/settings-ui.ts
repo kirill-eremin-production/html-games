@@ -11,6 +11,7 @@ import {
   MeshPhongMaterial,
   PerspectiveCamera,
   type TransformNode,
+  Vector3,
   cloneModel,
   getFactoryScene,
   isEngineMesh,
@@ -70,9 +71,9 @@ function createPreviewState(width: number, height: number, cameraZ: number): Pre
   const dir = new DirectionalLight(0xffffff, 1.5, scene as any);
   dir.position.set(5, 3, 2);
 
-  const camera = new PerspectiveCamera(45, width / height, 0.1, 500, scene as any);
+  const camera = new PerspectiveCamera({ fov: 45, near: 0.1, far: 500, scene: scene as any });
   camera.position.set(0, 2, cameraZ);
-  camera.lookAt(0, 0, 0);
+  camera.setTarget(new Vector3(0, 0, 0));
   scene.activeCamera = camera;
 
   return { canvas, engine, scene, camera, model: null, template: null };
@@ -181,7 +182,7 @@ function rebuildFighterPreview(
     parseHexColor(settings.colors[exhaustKey]),
     preview.scene,
   );
-  model.scale.setAll(1.5);
+  model.scaling.setAll(1.5);
   preview.model = model;
 }
 
@@ -189,7 +190,7 @@ function rebuildCapitalPreview(): void {
   if (!capitalPreview.template) return;
   if (capitalPreview.model) capitalPreview.model.dispose();
   const model = cloneFromPreview(capitalPreview);
-  model.scale.setAll(1.5);
+  model.scaling.setAll(1.5);
   capitalPreview.model = model;
 }
 

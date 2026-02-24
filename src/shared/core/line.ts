@@ -9,26 +9,23 @@ import type { EngineBufferGeometry } from './geometry';
 import type { EngineLineMaterial } from './material';
 
 /**
- * EngineLine — line rendering.
- * Wraps Babylon.js CreateLines.
+ * Линия на сцене.
+ *
+ * Конвертирует {@link EngineBufferGeometry} с атрибутом `position` в BJS `LinesMesh`.
+ * Цвет берётся из {@link EngineLineMaterial}.
+ *
+ * @example
+ * ```ts
+ * const line = createLineFromPoints(points, 0x00ccff, true, 0.5);
+ * line.parent = parentNode;
+ * // ...
+ * line.dispose();
+ * ```
  */
 export class EngineLine {
   geometry: EngineBufferGeometry | null = null;
   material: EngineLineMaterial | null = null;
-  _linesMesh: LinesMesh | null = null;
-  _scene: Scene | null = null;
-
-  position = new BVector3();
-  name = '';
-  visible = true;
-  metadata: Record<string, any> = {};
-
-  get userData(): Record<string, any> {
-    return this.metadata;
-  }
-  set userData(v: Record<string, any>) {
-    this.metadata = v;
-  }
+  private _linesMesh: LinesMesh | null = null;
 
   get parent(): Node | null {
     return this._linesMesh?.parent ?? null;
@@ -37,9 +34,8 @@ export class EngineLine {
     if (this._linesMesh) this._linesMesh.parent = p;
   }
 
-  /** Create the line mesh from geometry. Must be called after setting geometry. */
+  /** Создаёт `LinesMesh` из текущей геометрии. Вызывается фабрикой после установки `geometry`. */
   build(scene: Scene): void {
-    this._scene = scene;
     if (!this.geometry) return;
 
     const posAttr = this.geometry.attributes['position'];
@@ -55,17 +51,12 @@ export class EngineLine {
 
     if (this._linesMesh) this._linesMesh.dispose();
 
-    this._linesMesh = MeshBuilder.CreateLines(this.name || 'line', { points }, scene);
+    this._linesMesh = MeshBuilder.CreateLines('line', { points }, scene);
 
     if (this.material) {
       const c = this.material.color;
       this._linesMesh.color = new Color3(c.r, c.g, c.b);
     }
-  }
-
-  setEnabled(v: boolean): void {
-    this.visible = v;
-    this._linesMesh?.setEnabled(v);
   }
 
   dispose(): void {

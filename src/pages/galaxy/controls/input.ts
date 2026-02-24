@@ -1,4 +1,4 @@
-import { Raycaster, Vector2 } from '@/shared/core';
+import { Raycaster } from '@/shared/core';
 
 import { getStarMeshes, selectSystem } from '../scene';
 
@@ -16,7 +16,7 @@ let dragStartY = 0;
 
 // Raycaster
 const raycaster = new Raycaster();
-const mouse = new Vector2();
+const mouse = { x: 0, y: 0 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -35,9 +35,9 @@ function pickStar(clientX: number, clientY: number): void {
   raycaster.setFromCamera(mouse, galaxyCamera);
 
   const meshes = Array.from(getStarMeshes().values());
-  const hits = raycaster.intersectObjects(meshes);
-  if (hits.length > 0) {
-    const id = (hits[0].object.metadata as Record<string, any>)?.systemId as string;
+  const hit = raycaster.intersectObjects(meshes);
+  if (hit) {
+    const id = (hit.object.metadata as Record<string, any>)?.systemId as string;
     setSelectedSystemId(id);
     selectSystem(id);
   } else {

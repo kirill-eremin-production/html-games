@@ -1,16 +1,32 @@
+/**
+ * Централизованные фабрики для создания объектов движка.
+ *
+ * Модуль инкапсулирует ссылку на Babylon.js-сцену и предоставляет
+ * типизированные функции для создания мешей, геометрий, материалов,
+ * источников света, спрайтов и линий без необходимости передавать
+ * `scene` в каждый вызов.
+ *
+ * ```ts
+ * const geo = createSphereGeometry(5);
+ * const mat = createUnlitMaterial({ color: 0xff4400, emissive: 0x220000 });
+ * const mesh = createMesh(geo, mat);
+ * addToScene(mesh);
+ * ```
+ */
 import { DirectionalLight as BDirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
 import { PointLight as BPointLight } from '@babylonjs/core/Lights/pointLight';
+import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
+import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Vector3 as BVector3 } from '@babylonjs/core/Maths/math.vector';
 import type { Node } from '@babylonjs/core/node';
 import type { Scene } from '@babylonjs/core/scene';
 
 import {
-  EngineBufferGeometry as BufferGeometryClass,
   CylinderGeometry,
   EngineBufferAttribute,
-  type EngineBufferGeometry,
+  EngineBufferGeometry,
   IcosahedronGeometry,
   OctahedronGeometry,
   PlaneGeometry,
@@ -29,7 +45,6 @@ import {
 import { EngineMesh } from './mesh';
 import { EnginePoints } from './points';
 import { EngineSprite } from './sprite';
-import { CanvasTexture } from './texture';
 import { TransformNode } from './transform-node';
 import { Vector3 } from './vector3';
 
@@ -106,8 +121,8 @@ export function createIcosahedronGeometry(radius: number, detail = 0): Icosahedr
   return new IcosahedronGeometry(radius, detail);
 }
 
-export function createBufferGeometry(): BufferGeometryClass {
-  return new BufferGeometryClass();
+export function createBufferGeometry(): EngineBufferGeometry {
+  return new EngineBufferGeometry();
 }
 
 export function createBufferAttribute(
@@ -118,10 +133,6 @@ export function createBufferAttribute(
 }
 
 // ── Material factories ──────────────────────────────────────────────────────
-export function createStandardMaterial(opts: MaterialConfig = {}): EngineMaterial {
-  return new EngineMaterial(opts, _scene ?? undefined);
-}
-
 export function createPBRMaterial(opts: MaterialConfig = {}): EngineMaterial {
   return new EngineMaterial(opts, _scene ?? undefined);
 }
@@ -145,7 +156,7 @@ export function createAdditiveMaterial(opts: MaterialConfig = {}): MeshBasicMate
 
 export function createSpriteMaterial(
   opts: {
-    map?: CanvasTexture;
+    map?: DynamicTexture;
     color?: number;
     transparent?: boolean;
     opacity?: number;
@@ -154,7 +165,7 @@ export function createSpriteMaterial(
   } = {},
 ): EngineSpriteMaterial {
   const mat = new EngineSpriteMaterial(undefined, _scene ?? undefined);
-  if (opts.map) mat.map = opts.map;
+  if (opts.map) mat.emissiveTexture = opts.map;
   if (opts.color !== undefined) mat.color.setHex(opts.color);
   mat.transparent = opts.transparent ?? true;
   if (opts.opacity !== undefined) mat.opacity = opts.opacity;
@@ -166,7 +177,7 @@ export function createSpriteMaterial(
 export function createPointsMaterial(
   opts: {
     size?: number;
-    map?: CanvasTexture;
+    map?: DynamicTexture;
     vertexColors?: boolean;
     transparent?: boolean;
     opacity?: number;
@@ -177,7 +188,7 @@ export function createPointsMaterial(
 ): EnginePointsMaterial {
   const mat = new EnginePointsMaterial(undefined, _scene ?? undefined);
   if (opts.size !== undefined) mat.size = opts.size;
-  if (opts.map) mat.map = opts.map;
+  if (opts.map) mat.emissiveTexture = opts.map;
   if (opts.vertexColors !== undefined) mat.vertexColors = opts.vertexColors;
   mat.transparent = opts.transparent ?? true;
   if (opts.opacity !== undefined) mat.opacity = opts.opacity;
@@ -187,11 +198,7 @@ export function createPointsMaterial(
   return mat;
 }
 
-export function createLineMaterial(
-  color: number,
-  transparent = false,
-  opacity = 1,
-): EngineLineMaterial {
+function createLineMaterial(color: number, transparent = false, opacity = 1): EngineLineMaterial {
   const mat = new EngineLineMaterial(undefined, _scene ?? undefined);
   mat.color.setHex(color);
   mat.transparent = transparent;
@@ -217,7 +224,7 @@ export function createLineFromPoints(
   transparent = false,
   opacity = 1,
 ): EngineLine {
-  const geo = new BufferGeometryClass().setFromPoints(points);
+  const geo = new EngineBufferGeometry().setFromPoints(points);
   const mat = createLineMaterial(color, transparent, opacity);
   return createLine(geo, mat);
 }
@@ -271,7 +278,7 @@ export class HemisphereLight extends HemisphericLight {
   }
 }
 
-export class PointLightWrapper extends BPointLight {
+class PointLightWrapper extends BPointLight {
   constructor(color: number, intensity: number, distance?: number, scene?: Scene) {
     super('pointLight', BVector3.Zero(), scene ?? _scene ?? undefined);
     this.diffuse = hexToColor3(color);
@@ -279,46 +286,30 @@ export class PointLightWrapper extends BPointLight {
     if (distance) this.range = distance;
   }
 }
-export { PointLightWrapper as PointLight };
 
-// ── Material utilities ──────────────────────────────────────────────────────
-export function setMaterialOpacity(mat: EngineMaterial | EngineMaterial[], opacity: number): void {
-  const mats = Array.isArray(mat) ? mat : [mat];
-  for (const m of mats) m.opacity = opacity;
-}
-
-export function setMaterialColor(mat: EngineMaterial, color: number): void {
-  mat.color.setHex(color);
-}
-
+// ── Texture utilities ───────────────────────────────────────────────────────
 export function createTextureFromCanvas(
   canvas: HTMLCanvasElement,
   generateMipmaps = true,
-): CanvasTexture {
-  const tex = new CanvasTexture(canvas, _scene ?? undefined);
-  tex.generateMipmaps = generateMipmaps;
+): DynamicTexture {
+  const scene = _scene ?? undefined;
+  const tex = new DynamicTexture(
+    `canvasTex`,
+    { width: canvas.width, height: canvas.height },
+    scene,
+    generateMipmaps,
+  );
+  const ctx = tex.getContext();
+  ctx.drawImage(canvas, 0, 0);
+  tex.update();
+  if (!generateMipmaps) {
+    tex.updateSamplingMode(Texture.LINEAR_LINEAR);
+  }
   return tex;
-}
-
-// ── Mesh utilities ──────────────────────────────────────────────────────────
-export function isEngineMesh(obj: unknown): boolean {
-  return (obj as { isMesh?: boolean }).isMesh === true;
 }
 
 export function createAmbientLight(color: number, intensity: number): AmbientLight {
   return new AmbientLight(color, intensity);
-}
-
-export function createDirectionalLight(color: number, intensity: number): DirectionalLight {
-  return new DirectionalLight(color, intensity);
-}
-
-export function createHemisphereLight(
-  skyColor: number,
-  groundColor: number,
-  intensity: number,
-): HemisphereLight {
-  return new HemisphereLight(skyColor, groundColor, intensity);
 }
 
 export function createPointLight(
