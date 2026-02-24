@@ -1,4 +1,4 @@
 node_modules
 .DS_Store
-e2e/screenshots/
+e2e/screenshots/failures
 test-results/

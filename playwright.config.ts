@@ -8,7 +8,9 @@ export default defineConfig({
     baseURL: 'http://localhost:5173',
     headless: true,
     viewport: { width: 1280, height: 720 },
+    screenshot: 'only-on-failure',
   },
+  outputDir: 'e2e/screenshots/failures',
   projects: [
     {
       name: 'chromium',
