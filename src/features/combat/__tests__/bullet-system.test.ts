@@ -9,7 +9,9 @@ import { state } from '@/shared/state';
 import { FighterAIComponent } from '@/entities/ai/fighter-ai';
 import { CapitalShipComponent } from '@/entities/combat/capital-ship';
 import { ProjectileComponent } from '@/entities/combat/projectile';
+import { SubsystemComponent } from '@/entities/combat/subsystem';
 import { WeaponComponent } from '@/entities/combat/weapon';
+import { queryFightersForUI } from '@/entities/ecs-queries';
 import { TransformComponent } from '@/entities/physics/transform';
 import { VelocityComponent } from '@/entities/physics/velocity';
 import { HealthBarComponent } from '@/entities/rendering/health-bar';
@@ -18,6 +20,7 @@ import { DamageBufferComponent } from '@/entities/stats/damage-buffer';
 import { HealthComponent } from '@/entities/stats/health';
 import { LifetimeComponent } from '@/entities/stats/lifetime';
 import { NameComponent } from '@/entities/stats/name';
+import { ParentEntityComponent } from '@/entities/stats/parent-entity';
 import { TeamComponent } from '@/entities/stats/team';
 
 import { collisionSystem } from '../collision-system';
@@ -70,7 +73,6 @@ jest.mock('@/features/flight/player-system', () => {
 
 jest.mock('../damage-system', () => ({
   destroyFighter: jest.fn(),
-  destroySubsystem: jest.fn(),
 }));
 
 jest.mock('../explosions', () => ({ createExplosion: jest.fn() }));
@@ -257,8 +259,8 @@ describe('ECS Bullet Pipeline', () => {
       });
     });
 
-    describe('hitTestCapitalShips', () => {
-      it('наносит урон подсистеме при попадании', () => {
+    describe('hitTestSubsystems', () => {
+      it('наносит урон подсистеме при попадании (через DamageBuffer)', () => {
         const { Matrix } = jest.requireActual('@babylonjs/core/Maths/math.vector');
 
         createProjectileECS(0, 0, 0, { damage: 20, team: 'player' });
@@ -270,25 +272,80 @@ describe('ECS Bullet Pipeline', () => {
           metadata: { index: 0 },
         } as any;
 
-        const subsystems = [
-          {
-            center: new Vector3(0, 0, 0),
-            radius: 20,
-            health: 100,
-            maxHealth: 100,
-            name: 'Турели',
-            mesh: {},
-          },
-        ];
-
+        // Создаём корабль
         const csId = world.createEntity();
         world.addComponent(csId, new TransformComponent(csMesh.position, csMesh.quaternion));
         world.addComponent(csId, new MeshComponent(csMesh));
-        world.addComponent(csId, new CapitalShipComponent(subsystems as any, true, 5));
+        world.addComponent(csId, new CapitalShipComponent(true, 5));
+        world.addComponent(csId, new TeamComponent('enemy'));
+
+        // Создаём подсистему как отдельную ECS-сущность
+        const subMesh = makeMockMesh(0, 0, 0);
+        const subId = world.createEntity();
+        const subHealth = new HealthComponent(100, 100);
+        world.addComponent(subId, new TransformComponent(subMesh.position, subMesh.quaternion));
+        world.addComponent(subId, new MeshComponent(csMesh)); // используем меш корабля для getWorldMatrix
+        world.addComponent(subId, new SubsystemComponent('turrets', new Vector3(0, 0, 0), 20));
+        world.addComponent(subId, subHealth);
+        world.addComponent(subId, new NameComponent('Турели'));
+        world.addComponent(subId, new ParentEntityComponent(csId));
+        world.addComponent(subId, new DamageBufferComponent());
+        world.addComponent(subId, new TeamComponent('enemy'));
 
         collisionSystem.update!(0);
+        healthSystem.update!(0);
 
-        expect(subsystems[0].health).toBe(80); // 100 - 20
+        expect(subHealth.current).toBe(80); // 100 - 20
+      });
+
+      it('healthSystem обрабатывает подсистемы и уничтожает корабль когда все мертвы', () => {
+        const { Matrix } = jest.requireActual('@babylonjs/core/Maths/math.vector');
+        const { emit: mockEmit } = jest.requireMock('@/shared/events') as any;
+
+        const csMesh = {
+          position: new Vector3(0, 0, 0),
+          quaternion: new Quaternion(),
+          getWorldMatrix: () => Matrix.Identity(),
+          metadata: { index: 0 },
+        } as any;
+
+        // Создаём корабль
+        const csId = world.createEntity();
+        world.addComponent(csId, new TransformComponent(csMesh.position, csMesh.quaternion));
+        world.addComponent(csId, new MeshComponent(csMesh));
+        world.addComponent(csId, new CapitalShipComponent(true, 5));
+        world.addComponent(csId, new TeamComponent('enemy'));
+
+        // Создаём единственную подсистему с 10 HP
+        const subMesh = makeMockMesh(0, 0, 0);
+        const subId = world.createEntity();
+        const subHealth = new HealthComponent(10, 10);
+        world.addComponent(subId, new TransformComponent(subMesh.position, subMesh.quaternion));
+        world.addComponent(subId, new MeshComponent(csMesh));
+        world.addComponent(subId, new SubsystemComponent('turrets', new Vector3(0, 0, 0), 20));
+        world.addComponent(subId, subHealth);
+        world.addComponent(subId, new NameComponent('Турели'));
+        world.addComponent(subId, new ParentEntityComponent(csId));
+        world.addComponent(subId, new DamageBufferComponent());
+        world.addComponent(subId, new TeamComponent('enemy'));
+
+        // Снаряд попадает в подсистему
+        createProjectileECS(0, 0, 0, { damage: 50, team: 'player' });
+
+        collisionSystem.update!(0);
+        healthSystem.update!(0);
+
+        // Подсистема убита
+        expect(subHealth.current).toBe(0);
+
+        // Должны быть вызваны события: subsystem-destroyed и capital-ship-destroyed
+        const emitCalls = mockEmit.mock.calls.map((c: any[]) => c[0]);
+        expect(emitCalls).toContain('subsystem-destroyed');
+        expect(emitCalls).toContain('capital-ship-destroyed');
+
+        // Корабль помечен как мёртвый
+        const capitalShip = world.getComponent(csId, CapitalShipComponent)!;
+        expect(capitalShip.alive).toBe(false);
       });
     });
 
@@ -318,6 +375,34 @@ describe('ECS Bullet Pipeline', () => {
 
         expect(state.playerHealth).toBe(100);
       });
+    });
+  });
+
+  // ── queryFightersForUI regression ─────────────────────────────────────────
+
+  describe('queryFightersForUI', () => {
+    it('не возвращает подсистемы кораблей (регрессия)', () => {
+      // Создаём истребителя — должен попасть в результат
+      createFighterECS(0, 0, 0, 'enemy');
+
+      // Создаём подсистему с тем же набором компонентов, что и UI-query
+      const subMesh = makeMockMesh(10, 0, 0);
+      const subId = world.createEntity();
+      world.addComponent(subId, new TransformComponent(subMesh.position, subMesh.quaternion));
+      world.addComponent(subId, new MeshComponent(subMesh));
+      world.addComponent(subId, new SubsystemComponent('turrets', new Vector3(0, 0, 0), 20));
+      world.addComponent(subId, new HealthComponent(100, 100));
+      world.addComponent(subId, new NameComponent('Турели'));
+      world.addComponent(subId, new ParentEntityComponent(0 as any));
+      world.addComponent(subId, new DamageBufferComponent());
+      world.addComponent(subId, new TeamComponent('enemy'));
+
+      const result = queryFightersForUI();
+
+      // Должен быть только истребитель, не подсистема
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('test');
+      expect(result.every((r) => r.name !== 'Турели')).toBe(true);
     });
   });
 });

@@ -1,10 +1,10 @@
 import type { TransformNode, Vector3 } from '@/shared/core';
 import { world } from '@/shared/ecs/combat-world';
 import type { EntityId } from '@/shared/ecs/types';
-import type { CapitalShip } from '@/shared/types';
 
 import { FighterAIComponent } from '@/entities/ai/fighter-ai';
 import { CapitalShipComponent } from '@/entities/combat/capital-ship';
+import { SubsystemComponent, type SubsystemType } from '@/entities/combat/subsystem';
 import { WeaponComponent } from '@/entities/combat/weapon';
 import { TransformComponent } from '@/entities/physics/transform';
 import { VelocityComponent } from '@/entities/physics/velocity';
@@ -13,6 +13,7 @@ import { MeshComponent } from '@/entities/rendering/mesh';
 import { DamageBufferComponent } from '@/entities/stats/damage-buffer';
 import { HealthComponent } from '@/entities/stats/health';
 import { NameComponent } from '@/entities/stats/name';
+import { ParentEntityComponent } from '@/entities/stats/parent-entity';
 import { TeamComponent } from '@/entities/stats/team';
 
 /** Результат запроса истребителя — все компоненты доступны напрямую */
@@ -139,24 +140,61 @@ export function queryAliveCapitalShips(): CapitalShipQueryResult[] {
   return queryAllCapitalShips().filter((cs) => cs.capitalShip.alive);
 }
 
-/** Создать CapitalShip proxy из ECS-данных (для event совместимости) */
-export function capitalShipProxy(cs: CapitalShipQueryResult): CapitalShip {
-  return {
-    mesh: cs.mesh.mesh,
-    subsystems: cs.capitalShip.subsystems,
-    get alive() {
-      return cs.capitalShip.alive;
-    },
-    set alive(v: boolean) {
-      cs.capitalShip.alive = v;
-    },
-    get turretTimer() {
-      return cs.capitalShip.turretTimer;
-    },
-    set turretTimer(v: number) {
-      cs.capitalShip.turretTimer = v;
-    },
-  };
+// ── Subsystems ──────────────────────────────────────────────────────────────
+
+/** Результат запроса подсистемы */
+export interface SubsystemQueryResult {
+  entity: EntityId;
+  transform: TransformComponent;
+  mesh: MeshComponent;
+  subsystem: SubsystemComponent;
+  health: HealthComponent;
+  name: NameComponent;
+  parent: ParentEntityComponent;
+  damageBuffer: DamageBufferComponent;
+}
+
+/** Запросить все подсистемы */
+export function queryAllSubsystems(): SubsystemQueryResult[] {
+  const raw = world.query(
+    TransformComponent,
+    MeshComponent,
+    SubsystemComponent,
+    HealthComponent,
+    NameComponent,
+    ParentEntityComponent,
+    DamageBufferComponent,
+  );
+  const results: SubsystemQueryResult[] = [];
+  for (const {
+    entity,
+    components: [transform, mesh, subsystem, health, name, parent, damageBuffer],
+  } of raw) {
+    results.push({ entity, transform, mesh, subsystem, health, name, parent, damageBuffer });
+  }
+  return results;
+}
+
+/** Запросить живые подсистемы (health > 0) */
+export function queryAliveSubsystems(): SubsystemQueryResult[] {
+  return queryAllSubsystems().filter((s) => s.health.current > 0);
+}
+
+/** Запросить подсистемы конкретного корабля */
+export function querySubsystemsByParent(parentId: EntityId): SubsystemQueryResult[] {
+  return queryAllSubsystems().filter((s) => s.parent.parentId === parentId);
+}
+
+/** Запросить подсистему по типу для конкретного корабля */
+export function querySubsystemByType(
+  parentId: EntityId,
+  type: SubsystemType,
+): SubsystemQueryResult | null {
+  return (
+    queryAllSubsystems().find(
+      (s) => s.parent.parentId === parentId && s.subsystem.subsystemType === type,
+    ) ?? null
+  );
 }
 
 // ── UI Helpers ──────────────────────────────────────────────────────────────
@@ -176,8 +214,9 @@ export function queryFightersForUI(): FighterMinimalData[] {
     entity,
     components: [transform, mesh, team, name, health],
   } of raw) {
-    // Пропускаем снаряды — у них нет NameComponent... но на всякий случай проверяем
+    // Пропускаем игрока и подсистемы кораблей (у них теперь тоже есть TeamComponent)
     if (team.team === 'player') continue;
+    if (world.hasComponent(entity, SubsystemComponent)) continue;
     results.push({
       entity,
       position: transform.position,

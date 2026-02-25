@@ -11,11 +11,16 @@ import { clampToScreenEdge, worldToScreen } from '@/shared/lib/screen';
 import { state } from '@/shared/state';
 import type { LockedTarget } from '@/shared/types';
 
+import { CapitalShipComponent } from '@/entities/combat/capital-ship';
+import { SubsystemComponent } from '@/entities/combat/subsystem';
 import {
-  capitalShipProxy,
   queryAliveCapitalShips,
+  queryAliveSubsystems,
   queryFightersByTeam,
 } from '@/entities/ecs-queries';
+import { MeshComponent } from '@/entities/rendering/mesh';
+import { HealthComponent } from '@/entities/stats/health';
+import { NameComponent } from '@/entities/stats/name';
 
 const markersContainer = document.getElementById('target-markers')!;
 const pool = new DomPool(markersContainer, () => {
@@ -56,10 +61,10 @@ function renderCapitalShipMarkers(
       (el.children[0] as HTMLElement).style.width = '28px';
       (el.children[0] as HTMLElement).style.height = '28px';
     } else {
-      // Close: individual subsystem markers
-      for (const sub of cs.capitalShip.subsystems) {
-        if (sub.health <= 0) continue;
-        _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.mesh.getWorldMatrix());
+      // Close: individual subsystem markers (ECS query)
+      const subsystems = queryAliveSubsystems().filter((s) => s.parent.parentId === cs.entity);
+      for (const sub of subsystems) {
+        _mrkPos.copyFrom(sub.subsystem.center).applyMatrix4(cs.mesh.mesh.getWorldMatrix());
         const d = playerPlane.position.distanceTo(_mrkPos);
         const scr = worldToScreen(_mrkPos, camera, w, h);
         if (scr.z >= 1 || scr.x < -20 || scr.x > w + 20 || scr.y < -20 || scr.y > h + 20) continue;
@@ -68,7 +73,7 @@ function renderCapitalShipMarkers(
         el.style.left = scr.x + 'px';
         el.style.top = scr.y + 'px';
         el.children[1].textContent = Math.floor(d) + 'm';
-        el.children[2].textContent = sub.name;
+        el.children[2].textContent = sub.name.name;
         (el.children[0] as HTMLElement).style.width = '21px';
         (el.children[0] as HTMLElement).style.height = '21px';
       }
@@ -94,9 +99,14 @@ function renderLockedTarget(
     _mrkPos.copyFrom(lt.fighter.mesh.position);
     name = lt.fighter.name;
   } else {
-    _mrkPos.copyFrom(lt.subsystem.center).applyMatrix4(lt.ship.mesh.getWorldMatrix());
+    // Подсистема — получаем данные через ECS
+    const subComp = world.getComponent(lt.subsystemEntity, SubsystemComponent);
+    const parentMesh = world.getComponent(lt.parentEntity, MeshComponent);
+    const nameComp = world.getComponent(lt.subsystemEntity, NameComponent);
+    if (!subComp || !parentMesh) return usedCount;
+    _mrkPos.copyFrom(subComp.center).applyMatrix4(parentMesh.mesh.getWorldMatrix());
     dist3d = playerPlane.position.distanceTo(_mrkPos);
-    name = lt.subsystem.name;
+    name = nameComp?.name ?? '?';
   }
 
   let scr = worldToScreen(_mrkPos, camera, w, h);
@@ -138,7 +148,10 @@ export function updateTargetMarkers(playerPlane: TransformNode): void {
         state.lockedTarget = null;
       }
     } else {
-      if (lt.subsystem.health <= 0 || !lt.ship.alive) {
+      // Подсистема: проверяем жива ли сущность и здоровье > 0
+      const subHealth = world.getComponent(lt.subsystemEntity, HealthComponent);
+      const parentShip = world.getComponent(lt.parentEntity, CapitalShipComponent);
+      if (!subHealth || subHealth.current <= 0 || !parentShip || !parentShip.alive) {
         state.lockedTarget = null;
       }
     }
@@ -222,19 +235,24 @@ export function toggleTargetLock(playerPlane: TransformNode): void {
     }
   }
 
-  // Screen-pick: capital ship subsystems near cursor
-  for (const cs of queryAliveCapitalShips()) {
-    if (playerPlane.position.distanceToSquared(cs.mesh.mesh.position) > SHIP_RANGE_SQ) continue;
-    for (const sub of cs.capitalShip.subsystems) {
-      if (sub.health <= 0) continue;
-      _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.mesh.getWorldMatrix());
-      const scr = worldToScreen(_mrkPos, camera, w, h);
-      if (scr.z >= 1) continue;
-      const dSq = (scr.x - cursorScreenX) ** 2 + (scr.y - cursorScreenY) ** 2;
-      if (dSq < pickRadiusSq && dSq < bestScreenDistSq) {
-        bestScreenDistSq = dSq;
-        bestTarget = { kind: 'subsystem', subsystem: sub, ship: capitalShipProxy(cs) };
-      }
+  // Screen-pick: capital ship subsystems near cursor (ECS query)
+  const aliveSubs = queryAliveSubsystems();
+  for (const sub of aliveSubs) {
+    const parentMesh = world.getComponent(sub.parent.parentId, MeshComponent);
+    if (!parentMesh) continue;
+    if (playerPlane.position.distanceToSquared(parentMesh.mesh.position) > SHIP_RANGE_SQ) continue;
+
+    _mrkPos.copyFrom(sub.subsystem.center).applyMatrix4(parentMesh.mesh.getWorldMatrix());
+    const scr = worldToScreen(_mrkPos, camera, w, h);
+    if (scr.z >= 1) continue;
+    const dSq = (scr.x - cursorScreenX) ** 2 + (scr.y - cursorScreenY) ** 2;
+    if (dSq < pickRadiusSq && dSq < bestScreenDistSq) {
+      bestScreenDistSq = dSq;
+      bestTarget = {
+        kind: 'subsystem',
+        subsystemEntity: sub.entity,
+        parentEntity: sub.parent.parentId,
+      };
     }
   }
 
@@ -252,15 +270,18 @@ export function toggleTargetLock(playerPlane: TransformNode): void {
         };
       }
     }
-    for (const cs of queryAliveCapitalShips()) {
-      for (const sub of cs.capitalShip.subsystems) {
-        if (sub.health <= 0) continue;
-        _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.mesh.getWorldMatrix());
-        const dSq = playerPlane.position.distanceToSquared(_mrkPos);
-        if (dSq < bestDist3dSq) {
-          bestDist3dSq = dSq;
-          bestTarget = { kind: 'subsystem', subsystem: sub, ship: capitalShipProxy(cs) };
-        }
+    for (const sub of aliveSubs) {
+      const parentMesh = world.getComponent(sub.parent.parentId, MeshComponent);
+      if (!parentMesh) continue;
+      _mrkPos.copyFrom(sub.subsystem.center).applyMatrix4(parentMesh.mesh.getWorldMatrix());
+      const dSq = playerPlane.position.distanceToSquared(_mrkPos);
+      if (dSq < bestDist3dSq) {
+        bestDist3dSq = dSq;
+        bestTarget = {
+          kind: 'subsystem',
+          subsystemEntity: sub.entity,
+          parentEntity: sub.parent.parentId,
+        };
       }
     }
   }

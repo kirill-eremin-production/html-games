@@ -146,6 +146,45 @@ describe('Damage System', () => {
       expect(mockWorld.destroyEntity).toHaveBeenCalledWith(42);
     });
 
+    it('вызывает getEntityByMesh ДО unregisterMeshEntity (регрессия)', () => {
+      const { getEntityByMesh, unregisterMeshEntity } = jest.requireMock(
+        '@/shared/ecs/entity-index',
+      ) as any;
+      const { world: mockWorld } = jest.requireMock('@/shared/ecs/combat-world') as any;
+
+      // Отслеживаем порядок вызовов
+      const callOrder: string[] = [];
+      getEntityByMesh.mockImplementation(() => {
+        callOrder.push('getEntityByMesh');
+        return 42;
+      });
+      unregisterMeshEntity.mockImplementation(() => {
+        callOrder.push('unregisterMeshEntity');
+      });
+      mockWorld.destroyEntity.mockImplementation(() => {
+        callOrder.push('destroyEntity');
+      });
+
+      const victim = makeFighter('Фантом-1');
+
+      emit('fighter-killed', {
+        victim,
+        killerName: 'Ас',
+        killerTeam: 'player',
+        victimTeam: 'enemy',
+        isPlayerKill: true,
+      });
+
+      // getEntityByMesh ДОЛЖЕН быть вызван до unregisterMeshEntity,
+      // иначе маппинг mesh→entity уже удалён и entityId === null
+      const getIdx = callOrder.indexOf('getEntityByMesh');
+      const unregIdx = callOrder.indexOf('unregisterMeshEntity');
+      expect(getIdx).toBeGreaterThanOrEqual(0);
+      expect(unregIdx).toBeGreaterThanOrEqual(0);
+      expect(getIdx).toBeLessThan(unregIdx);
+      expect(mockWorld.destroyEntity).toHaveBeenCalledWith(42);
+    });
+
     it('добавляет запись в respawnQueue', () => {
       const victim = makeFighter('Фантом-1');
 

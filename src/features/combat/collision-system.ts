@@ -11,8 +11,8 @@ import type { GameSystem } from '@/shared/types';
 import { ProjectileComponent } from '@/entities/combat/projectile';
 import {
   type FighterQueryResult,
-  capitalShipProxy,
-  queryAliveCapitalShips,
+  type SubsystemQueryResult,
+  queryAliveSubsystems,
   queryFightersByTeam,
 } from '@/entities/ecs-queries';
 import { TransformComponent } from '@/entities/physics/transform';
@@ -21,7 +21,6 @@ import { TeamComponent } from '@/entities/stats/team';
 
 import { playerPlane } from '@/features/flight/player-system';
 
-import { destroySubsystem } from './damage-system';
 import { createExplosion } from './explosions';
 
 const C = COMBAT_CONSTANTS;
@@ -53,28 +52,36 @@ function hitTestFighters(
   return false;
 }
 
-function hitTestCapitalShips(
+/**
+ * Проверяет столкновения снаряда с подсистемами капитальных кораблей.
+ * Подсистемы — отдельные ECS-сущности, урон через DamageBuffer.
+ */
+function hitTestSubsystems(
   projPos: Vector3,
   projDamage: number,
   projShooterName: string,
+  projTeam: string,
+  subsystems: SubsystemQueryResult[],
 ): boolean {
-  const ships = queryAliveCapitalShips();
-  for (const cs of ships) {
-    for (const sub of cs.capitalShip.subsystems) {
-      if (sub.health <= 0) continue;
-      try {
-        _hitWorldPos.copyFrom(sub.center).applyMatrix4(cs.mesh.mesh.getWorldMatrix());
-      } catch {
-        continue;
-      }
-      if (projPos.distanceToSquared(_hitWorldPos) < sub.radius * sub.radius) {
-        sub.health -= projDamage;
-        createExplosion(projPos.clone(), C.hitCapitalExplosionSize);
-        if (sub.health <= 0) {
-          destroySubsystem(sub, capitalShipProxy(cs), projShooterName || '?');
-        }
-        return true;
-      }
+  for (const sub of subsystems) {
+    // Получаем world matrix родительского корабля для трансформации
+    const parentMesh = world.getComponent(sub.parent.parentId, MeshComponent);
+    if (!parentMesh) continue;
+
+    try {
+      _hitWorldPos.copyFrom(sub.subsystem.center).applyMatrix4(parentMesh.mesh.getWorldMatrix());
+    } catch {
+      continue;
+    }
+
+    if (projPos.distanceToSquared(_hitWorldPos) < sub.subsystem.radius * sub.subsystem.radius) {
+      sub.damageBuffer.hits.push({
+        amount: projDamage,
+        shooterName: projShooterName,
+        shooterTeam: projTeam as 'player' | 'ally' | 'enemy',
+      });
+      createExplosion(projPos.clone(), C.hitCapitalExplosionSize);
+      return true;
     }
   }
   return false;
@@ -84,9 +91,10 @@ function hitTestCapitalShips(
 export const collisionSystem: GameSystem = {
   id: 'collision',
   update() {
-    // Кэшируем пулы истребителей на этот кадр
+    // Кэшируем пулы на этот кадр
     const enemies = queryFightersByTeam('enemy');
     const allies = queryFightersByTeam('ally');
+    const aliveSubsystems = queryAliveSubsystems();
 
     const projectiles = world.query(
       TransformComponent,
@@ -132,9 +140,9 @@ export const collisionSystem: GameSystem = {
         }
       }
 
-      // Снаряды игрока и союзников попадают по капитальным кораблям
+      // Снаряды игрока и союзников попадают по подсистемам кораблей
       if ((isPlayer || isAlly) && !hit) {
-        hit = hitTestCapitalShips(pos, proj.damage, proj.shooterName);
+        hit = hitTestSubsystems(pos, proj.damage, proj.shooterName, team.team, aliveSubsystems);
       }
 
       if (hit) {

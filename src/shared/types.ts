@@ -1,7 +1,10 @@
-import type { EngineMesh, TransformNode, Vector3 } from '@/shared/core';
+import type { TransformNode } from '@/shared/core';
 import type { EntityId } from '@/shared/ecs/types';
 
 // ── Types shared across layers ──────────────────────────────────────────────
+
+/** Тип подсистемы капитального корабля */
+export type SubsystemType = 'engines' | 'bridge' | 'turrets' | 'comms' | 'hangar';
 
 export interface CombatConfig {
   enemies: number;
@@ -34,34 +37,6 @@ export interface Fighter {
   name: string;
 }
 
-/** Подсистема капитального корабля (двигатели, мостик и т.д.) */
-export interface Subsystem {
-  /** Название подсистемы */
-  name: string;
-  /** 3D-объект подсистемы */
-  mesh: TransformNode | EngineMesh;
-  /** Текущее здоровье */
-  health: number;
-  /** Максимальное здоровье */
-  maxHealth: number;
-  /** Центр подсистемы в мировых координатах */
-  center: Vector3;
-  /** Радиус хитбокса */
-  radius: number;
-}
-
-/** Капитальный корабль */
-export interface CapitalShip {
-  /** 3D-объект корабля на сцене */
-  mesh: TransformNode;
-  /** Подсистемы корабля */
-  subsystems: Subsystem[];
-  /** Жив ли корабль */
-  alive: boolean;
-  /** Таймер перезарядки турелей (сек) */
-  turretTimer: number;
-}
-
 /** Запись в ленте уничтожений */
 export interface KillFeedEntry {
   /** Имя убийцы */
@@ -87,7 +62,7 @@ export interface RespawnEntry {
 /** Захваченная цель игрока — истребитель или подсистема корабля */
 export type LockedTarget =
   | { kind: 'fighter'; entityId: EntityId; fighter: Fighter }
-  | { kind: 'subsystem'; subsystem: Subsystem; ship: CapitalShip };
+  | { kind: 'subsystem'; subsystemEntity: EntityId; parentEntity: EntityId };
 
 /** Глобальное состояние игры */
 export interface GameState {

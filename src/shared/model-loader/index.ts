@@ -19,7 +19,7 @@ import {
   createGlowHaloMat,
   noseMat,
 } from '@/shared/materials/fighter-materials';
-import type { Subsystem } from '@/shared/types';
+import type { SubsystemType } from '@/shared/types';
 
 // ─── Templates (populated by preloadModels) ─────────────────────────────────
 
@@ -37,8 +37,25 @@ export async function preloadModels(): Promise<void> {
 
 // ─── Fighter cloning ────────────────────────────────────────────────────────
 
-const SUBSYSTEM_NAMES = ['engines', 'bridge', 'turrets', 'comms', 'hangar'] as const;
+const SUBSYSTEM_NAMES: readonly SubsystemType[] = [
+  'engines',
+  'bridge',
+  'turrets',
+  'comms',
+  'hangar',
+];
 const SUBSYSTEM_LABELS = ['Двигатели', 'Мостик', 'Турели', 'Связь', 'Ангар'] as const;
+
+/** Raw subsystem data stored in mesh metadata (before ECS entity creation) */
+export interface SubsystemRawData {
+  type: SubsystemType;
+  label: string;
+  mesh: TransformNode | undefined;
+  health: number;
+  maxHealth: number;
+  center: Vector3;
+  radius: number;
+}
 
 export function cloneFighterModel(bodyColor: number, exhaustColor: number): TransformNode {
   const group = cloneModel(fighterTemplate!);
@@ -125,14 +142,15 @@ export function cloneCapitalShipModel(index: number, hullColor: number): Transfo
     if ('computeWorldMatrix' in desc) (desc as TransformNode).computeWorldMatrix(true);
   }
 
-  const subsystems: Subsystem[] = SUBSYSTEM_NAMES.map((name, i) => {
+  const subsystems: SubsystemRawData[] = SUBSYSTEM_NAMES.map((name, i) => {
     const subGroup = (findDescendantBysuffix(group, `.${name}`) ?? getChildByName(group, name)) as
       | TransformNode
       | undefined;
     if (!subGroup) {
       return {
-        name: SUBSYSTEM_LABELS[i],
-        mesh: undefined as unknown as TransformNode,
+        type: name,
+        label: SUBSYSTEM_LABELS[i],
+        mesh: undefined,
         health: SUBSYSTEM_HP,
         maxHealth: SUBSYSTEM_HP,
         center: new Vector3(),
@@ -153,7 +171,8 @@ export function cloneCapitalShipModel(index: number, hullColor: number): Transfo
     const autoRadius = Math.max(dx, dy, dz) / 2;
 
     return {
-      name: SUBSYSTEM_LABELS[i],
+      type: name,
+      label: SUBSYSTEM_LABELS[i],
       mesh: subGroup,
       health: SUBSYSTEM_HP,
       maxHealth: SUBSYSTEM_HP,

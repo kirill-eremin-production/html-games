@@ -1,11 +1,16 @@
 import { world } from '@/shared/ecs/combat-world';
+import { emit } from '@/shared/events';
 import type { GameSystem } from '@/shared/types';
 
 import { FighterAIComponent } from '@/entities/ai/fighter-ai';
+import { CapitalShipComponent } from '@/entities/combat/capital-ship';
+import { SubsystemComponent } from '@/entities/combat/subsystem';
+import { querySubsystemsByParent } from '@/entities/ecs-queries';
 import { MeshComponent } from '@/entities/rendering/mesh';
 import { DamageBufferComponent } from '@/entities/stats/damage-buffer';
 import { HealthComponent } from '@/entities/stats/health';
 import { NameComponent } from '@/entities/stats/name';
+import { ParentEntityComponent } from '@/entities/stats/parent-entity';
 import { TeamComponent } from '@/entities/stats/team';
 
 import { destroyFighter } from './damage-system';
@@ -32,21 +37,48 @@ export const healthSystem: GameSystem = {
         health.current -= hit.amount;
 
         if (health.current <= 0) {
-          // Только истребители обрабатываются через destroyFighter
-          if (!world.hasComponent(entity, FighterAIComponent)) continue;
+          // Истребители обрабатываются через destroyFighter
+          if (world.hasComponent(entity, FighterAIComponent)) {
+            const victimTeam = team.team as 'ally' | 'enemy';
+            const isPlayerKill = hit.shooterTeam === 'player';
 
-          const victimTeam = team.team as 'ally' | 'enemy';
-          const isPlayerKill = hit.shooterTeam === 'player';
+            destroyFighter(
+              { mesh: mesh.mesh, name: name.name } as Parameters<typeof destroyFighter>[0],
+              hit.shooterName || '?',
+              hit.shooterTeam,
+              victimTeam === 'enemy',
+              isPlayerKill,
+            );
+            break;
+          }
 
-          // Создаём минимальный Fighter-like для совместимости с damageSystem
-          destroyFighter(
-            { mesh: mesh.mesh, name: name.name } as Parameters<typeof destroyFighter>[0],
-            hit.shooterName || '?',
-            hit.shooterTeam,
-            victimTeam === 'enemy',
-            isPlayerKill,
-          );
-          break;
+          // Подсистемы кораблей обрабатываются отдельно
+          if (world.hasComponent(entity, SubsystemComponent)) {
+            health.current = 0;
+            const parent = world.getComponent(entity, ParentEntityComponent);
+            if (!parent) break;
+
+            emit('subsystem-destroyed', {
+              subsystemEntity: entity,
+              parentEntity: parent.parentId,
+              subsystemName: name.name,
+              killerName: hit.shooterName || '?',
+            });
+
+            // Проверяем, все ли подсистемы мертвы → корабль уничтожен
+            const siblings = querySubsystemsByParent(parent.parentId);
+            if (siblings.every((s) => s.health.current <= 0)) {
+              const capitalShip = world.getComponent(parent.parentId, CapitalShipComponent);
+              if (capitalShip) {
+                capitalShip.alive = false;
+                emit('capital-ship-destroyed', {
+                  shipEntity: parent.parentId,
+                  killerName: hit.shooterName || '?',
+                });
+              }
+            }
+            break;
+          }
         }
       }
       buf.hits.length = 0;

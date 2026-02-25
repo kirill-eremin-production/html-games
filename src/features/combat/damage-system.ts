@@ -7,10 +7,12 @@ import { getEntityByMesh, unregisterMeshEntity } from '@/shared/ecs/entity-index
 import { emit, off, on } from '@/shared/events';
 import type { EventMap } from '@/shared/events';
 import { state } from '@/shared/state';
-import type { CapitalShip, Fighter, Subsystem } from '@/shared/types';
+import type { Fighter } from '@/shared/types';
 import type { GameSystem } from '@/shared/types';
 
+import { SubsystemComponent } from '@/entities/combat/subsystem';
 import { queryAllCapitalShips } from '@/entities/ecs-queries';
+import { MeshComponent } from '@/entities/rendering/mesh';
 
 import { showMessage } from '@/features/hud/hud';
 import { addKillFeedEntry } from '@/features/hud/kill-feed';
@@ -25,10 +27,10 @@ function handleFighterKilled(e: EventMap['fighter-killed']): void {
   const { victim, killerName, killerTeam, victimTeam, isPlayerKill } = e;
 
   createExplosion(victim.mesh.position.clone(), 3);
-  unregisterMeshEntity(victim.mesh);
 
-  // Уничтожаем ECS entity через EntityIndex (O(1))
+  // Уничтожаем ECS entity через EntityIndex (O(1)) — ДО unregister
   const entityId = getEntityByMesh(victim.mesh);
+  unregisterMeshEntity(victim.mesh);
   if (entityId !== null) world.destroyEntity(entityId);
 
   disposeNode(victim.mesh);
@@ -55,39 +57,40 @@ function handleFighterKilled(e: EventMap['fighter-killed']): void {
 }
 
 function handleSubsystemDestroyed(e: EventMap['subsystem-destroyed']): void {
-  const { subsystem, ship } = e;
+  const { subsystemEntity, parentEntity, subsystemName } = e;
 
-  createExplosion(
-    subsystem.center.clone().applyMatrix4(ship.mesh.getWorldMatrix()),
-    C.subsystemExplosionSize,
-  );
-  state.score += C.subsystemKillScore;
-  showMessage(`${subsystem.name} УНИЧТОЖЕНА! +${C.subsystemKillScore}`, 2);
-
-  // Check if whole ship is dead
-  if (ship.subsystems.every((s) => s.health <= 0)) {
-    ship.alive = false;
-    emit('capital-ship-destroyed', { ship, killerName: e.killerName });
+  // Получаем мировую позицию подсистемы для взрыва
+  const subComponent = world.getComponent(subsystemEntity, SubsystemComponent);
+  const parentMesh = world.getComponent(parentEntity, MeshComponent);
+  if (subComponent && parentMesh) {
+    const worldPos = subComponent.center.clone().applyMatrix4(parentMesh.mesh.getWorldMatrix());
+    createExplosion(worldPos, C.subsystemExplosionSize);
   }
+
+  state.score += C.subsystemKillScore;
+  showMessage(`${subsystemName} УНИЧТОЖЕНА! +${C.subsystemKillScore}`, 2);
 }
 
 function handleCapitalShipDestroyed(e: EventMap['capital-ship-destroyed']): void {
-  const { ship } = e;
+  const { shipEntity } = e;
 
-  createExplosion(ship.mesh.position.clone(), C.mainExplosionSize);
+  const shipMesh = world.getComponent(shipEntity, MeshComponent);
+  if (!shipMesh) return;
+
+  createExplosion(shipMesh.mesh.position.clone(), C.mainExplosionSize);
   for (let k = 0; k < C.secondaryExplosionCount; k++) {
     setTimeout(() => {
-      if (!ship.mesh.parent) return;
+      if (!shipMesh.mesh.parent) return;
       const offset = new Vector3(
         (Math.random() - 0.5) * C.secondaryExplosionSpread.x,
         (Math.random() - 0.5) * C.secondaryExplosionSpread.y,
         (Math.random() - 0.5) * C.secondaryExplosionSpread.z,
       );
-      createExplosion(ship.mesh.position.clone().add(offset), C.secondaryExplosionSize);
+      createExplosion(shipMesh.mesh.position.clone().add(offset), C.secondaryExplosionSize);
     }, k * C.secondaryExplosionDelay);
   }
   setTimeout(() => {
-    removeFromScene(ship.mesh);
+    removeFromScene(shipMesh.mesh);
   }, C.shipRemoveDelay);
 
   state.score += C.capitalShipKillScore;
@@ -121,14 +124,6 @@ export function destroyFighter(
     victimTeam: isEnemyVictim ? 'enemy' : 'ally',
     isPlayerKill,
   });
-}
-
-export function destroySubsystem(
-  subsystem: Subsystem,
-  ship: CapitalShip,
-  killerName: string,
-): void {
-  emit('subsystem-destroyed', { subsystem, ship, killerName });
 }
 
 // ── Setup / Teardown ─────────────────────────────────────────────────────────

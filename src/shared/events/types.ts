@@ -1,4 +1,5 @@
-import type { CapitalShip, Fighter, Subsystem } from '@/shared/types';
+import type { EntityId } from '@/shared/ecs/types';
+import type { Fighter } from '@/shared/types';
 
 /** Команда юнита */
 export type Team = 'player' | 'ally' | 'enemy';
@@ -19,18 +20,20 @@ export interface FighterKilledEvent {
 
 /** Данные события уничтожения подсистемы капитального корабля */
 export interface SubsystemDestroyedEvent {
-  /** Уничтоженная подсистема */
-  subsystem: Subsystem;
-  /** Корабль-владелец подсистемы */
-  ship: CapitalShip;
+  /** EntityId уничтоженной подсистемы */
+  subsystemEntity: EntityId;
+  /** EntityId корабля-владельца */
+  parentEntity: EntityId;
+  /** Имя подсистемы (для HUD) */
+  subsystemName: string;
   /** Имя убийцы */
   killerName: string;
 }
 
 /** Данные события уничтожения капитального корабля */
 export interface CapitalShipDestroyedEvent {
-  /** Уничтоженный корабль */
-  ship: CapitalShip;
+  /** EntityId уничтоженного корабля */
+  shipEntity: EntityId;
   /** Имя убийцы */
   killerName: string;
 }

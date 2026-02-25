@@ -10,7 +10,7 @@ import { FighterAIComponent } from '@/entities/ai/fighter-ai';
 import {
   type FighterQueryResult,
   findNearestFighter,
-  queryAliveCapitalShips,
+  queryAliveSubsystems,
   queryAllFighters,
 } from '@/entities/ecs-queries';
 import { cleanupTeamSources, updateExhaustGlow } from '@/entities/objects/space-ships';
@@ -55,21 +55,21 @@ function updateFighterAI(
     }
   }
 
-  // Союзники могут целиться в подсистемы кораблей
+  // Союзники могут целиться в подсистемы кораблей (плоский query)
   if (!isEnemy && Math.random() < A.allyTargetCapitalChance) {
-    const ships = queryAliveCapitalShips();
-    for (const cs of ships) {
-      for (const sub of cs.capitalShip.subsystems) {
-        if (sub.health > 0) {
-          _aiSubWorldPos.copyFrom(sub.center).applyMatrix4(cs.mesh.mesh.getWorldMatrix());
-          f.ai.target = {
-            mesh: { position: _aiSubWorldPos.clone() },
-            name: `Корабль-${cs.mesh.mesh.metadata.index + 1}`,
-          };
-          break;
-        }
+    const aliveSubs = queryAliveSubsystems();
+    if (aliveSubs.length > 0) {
+      const sub = aliveSubs[0];
+      const parentMesh = world.getComponent(sub.parent.parentId, MeshComponent);
+      if (parentMesh) {
+        _aiSubWorldPos
+          .copyFrom(sub.subsystem.center)
+          .applyMatrix4(parentMesh.mesh.getWorldMatrix());
+        f.ai.target = {
+          mesh: { position: _aiSubWorldPos.clone() },
+          name: `Корабль-${(parentMesh.mesh.metadata?.index ?? 0) + 1}`,
+        };
       }
-      if (f.ai.target) break;
     }
   }
 

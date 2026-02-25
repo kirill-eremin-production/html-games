@@ -2,7 +2,11 @@ import { combatConfig } from '@/shared/config/combat-session';
 import { settings } from '@/shared/settings';
 import { state } from '@/shared/state';
 
-import { queryAllCapitalShips, queryFightersByTeam } from '@/entities/ecs-queries';
+import {
+  queryAllCapitalShips,
+  queryFightersByTeam,
+  querySubsystemsByParent,
+} from '@/entities/ecs-queries';
 
 import { HUD_TEMPLATES } from './hud-templates';
 
@@ -69,11 +73,18 @@ export function updateHUD(): void {
 
   if (state.phase === 1) {
     const html = HUD_TEMPLATES.shipStatus(
-      capitalShips.map((cs) => ({
-        alive: cs.capitalShip.alive,
-        index: cs.mesh.mesh.metadata.index as number,
-        subsystems: cs.capitalShip.subsystems,
-      })),
+      capitalShips.map((cs) => {
+        const subsystems = querySubsystemsByParent(cs.entity);
+        return {
+          alive: cs.capitalShip.alive,
+          index: cs.mesh.mesh.metadata.index as number,
+          subsystems: subsystems.map((s) => ({
+            name: s.name.name,
+            health: s.health.current,
+            maxHealth: s.health.max,
+          })),
+        };
+      }),
     );
     if (html !== cachedShipHTML) {
       cachedShipHTML = html;

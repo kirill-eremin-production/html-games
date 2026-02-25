@@ -16,14 +16,18 @@ import { parseHexColor, settings } from '@/shared/settings';
 import type { GameSystem } from '@/shared/types';
 
 import { CapitalShipComponent } from '@/entities/combat/capital-ship';
+import { SubsystemComponent } from '@/entities/combat/subsystem';
 import { createCapitalShipEntity } from '@/entities/ecs-adapters';
 import {
   type CapitalShipQueryResult,
   queryAllCapitalShips,
   queryFightersByTeam,
+  querySubsystemByType,
+  querySubsystemsByParent,
 } from '@/entities/ecs-queries';
 import { createCapitalShip } from '@/entities/objects/space-ships/capital-ship/create-capital-ship';
 import { MeshComponent } from '@/entities/rendering/mesh';
+import { ParentEntityComponent } from '@/entities/stats/parent-entity';
 
 import { playerPlane } from '../flight/player-system';
 
@@ -47,17 +51,23 @@ export function spawnCapitalShips(): void {
 }
 
 function updateCapitalShipVisuals(cs: CapitalShipQueryResult, dt: number): void {
-  for (const sub of cs.capitalShip.subsystems) {
-    if (!sub.mesh) continue;
-    if (sub.health <= 0 && sub.mesh.isEnabled()) {
-      traverseNode(sub.mesh, (child) => {
+  const subsystems = querySubsystemsByParent(cs.entity);
+  for (const sub of subsystems) {
+    if (!sub.mesh.mesh) continue;
+    if (sub.health.current <= 0 && sub.mesh.mesh.isEnabled()) {
+      traverseNode(sub.mesh.mesh, (child) => {
         if (isEngineMesh(child) && (child as EngineMesh).material) {
           (child as EngineMesh).material = destroyedSubMat;
         }
       });
     }
   }
-  if (cs.capitalShip.subsystems[0].health > 0) cs.mesh.mesh.rotation.y += C.shipRotationSpeed * dt;
+
+  // Вращение корабля, если двигатели живы
+  const engines = querySubsystemByType(cs.entity, 'engines');
+  if (engines && engines.health.current > 0) {
+    cs.mesh.mesh.rotation.y += C.shipRotationSpeed * dt;
+  }
 }
 
 const _csTargets: Vector3[] = [];
@@ -69,8 +79,10 @@ export function updateCapitalShips(dt: number): void {
   const ships = queryAllCapitalShips();
   for (const cs of ships) {
     if (!cs.capitalShip.alive) continue;
-    const turretSub = cs.capitalShip.subsystems[2];
-    if (turretSub.health <= 0) {
+
+    // Проверяем, живы ли турели
+    const turretSub = querySubsystemByType(cs.entity, 'turrets');
+    if (!turretSub || turretSub.health.current <= 0) {
       updateCapitalShipVisuals(cs, dt);
       continue;
     }
@@ -96,9 +108,11 @@ export function updateCapitalShips(dt: number): void {
 
       const tgt = _csTargets[Math.floor(Math.random() * _csTargets.length)];
       _csDir.copyFrom(tgt).subtractInPlace(shipPos).normalize();
-      const bridgeSub = cs.capitalShip.subsystems[1];
+
+      // Проверяем, жив ли мостик (влияет на точность)
+      const bridgeSub = querySubsystemByType(cs.entity, 'bridge');
       const inaccuracy =
-        bridgeSub.health <= 0
+        !bridgeSub || bridgeSub.health.current <= 0
           ? combatConfig.turretAccuracy * C.turretInaccuracyMultiplier
           : combatConfig.turretAccuracy;
       addDirectionNoise(_csDir, inaccuracy);
@@ -129,6 +143,17 @@ export const capitalShipSystem: GameSystem = {
     updateCapitalShips(dt);
   },
   cleanup() {
+    // Уничтожаем подсистемы (дочерние сущности)
+    const subsystems = world.query(SubsystemComponent, MeshComponent, ParentEntityComponent);
+    for (const {
+      entity,
+      components: [, mesh],
+    } of subsystems) {
+      unregisterMeshEntity(mesh.mesh);
+      world.destroyEntity(entity);
+    }
+
+    // Уничтожаем корабли
     const ships = world.query(CapitalShipComponent, MeshComponent);
     for (const {
       entity,
