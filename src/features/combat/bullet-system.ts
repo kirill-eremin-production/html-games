@@ -2,12 +2,13 @@ import { playHitSound } from '@/shared/audio';
 import { COMBAT_CONSTANTS } from '@/shared/config/combat';
 import { PLAYER_CONFIG } from '@/shared/config/player';
 import { Vector3 } from '@/shared/core';
-import { findProjectileEntity } from '@/shared/ecs/adapters';
 import { world } from '@/shared/ecs/combat-world';
 import { emit } from '@/shared/events';
 import { state } from '@/shared/state';
 import type { Fighter, LaserData } from '@/shared/types';
 import type { GameSystem } from '@/shared/types';
+
+import { findProjectileEntity } from '@/entities/ecs-adapters';
 
 import { playerPlane } from '@/features/flight/player-system';
 

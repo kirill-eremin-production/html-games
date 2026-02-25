@@ -6,8 +6,8 @@ import { parseHexColor, settings } from '@/shared/settings';
 import { resetNameCounters, state } from '@/shared/state';
 
 import { createFighter } from '@/entities/objects/space-ships';
-import { spawnCapitalShips } from '@/entities/objects/space-ships/capital-ship/capital-ship-system';
 
+import { spawnCapitalShips } from '@/features/combat/capital-ship-system';
 import { spawnAlly, spawnEnemy } from '@/features/combat/spawner-system';
 import { playerPlane, resetPlayerTransform } from '@/features/flight/player-system';
 import { resetCachedShipHTML } from '@/features/hud/hud';

@@ -1,13 +1,13 @@
 import { COMBAT_CONSTANTS } from '@/shared/config/combat';
 import { combatConfig } from '@/shared/config/combat-session';
 import { Vector3, addToScene } from '@/shared/core';
-import { createFighterEntity } from '@/shared/ecs/adapters';
 import { world } from '@/shared/ecs/combat-world';
 import { addHealthBar } from '@/shared/model-loader/shared';
 import { parseHexColor, settings } from '@/shared/settings';
 import { nextAllyName, nextEnemyName, state } from '@/shared/state';
 import type { GameSystem } from '@/shared/types';
 
+import { createFighterEntity } from '@/entities/ecs-adapters';
 import { createFighterInstanced } from '@/entities/objects/space-ships';
 
 import { playerPlane } from '@/features/flight/player-system';

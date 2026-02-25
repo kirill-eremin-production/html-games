@@ -9,12 +9,12 @@ import {
   createCylinderGeometry,
   createMesh,
 } from '@/shared/core';
-import { createProjectileEntity, findProjectileEntity } from '@/shared/ecs/adapters';
 import { world } from '@/shared/ecs/combat-world';
 import { addDirectionNoise } from '@/shared/lib/math';
 import { state } from '@/shared/state';
 import type { LaserData } from '@/shared/types';
 
+import { createProjectileEntity, findProjectileEntity } from '@/entities/ecs-adapters';
 import { GUN_OFFSET_L, GUN_OFFSET_R } from '@/entities/objects/space-ships';
 
 const W = WEAPON_CONFIG;

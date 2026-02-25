@@ -9,18 +9,19 @@ import {
   isEngineMesh,
   traverseNode,
 } from '@/shared/core';
-import { createCapitalShipEntity, findCapitalShipEntity } from '@/shared/ecs/adapters';
 import { world } from '@/shared/ecs/combat-world';
 import { addDirectionNoise } from '@/shared/lib/math';
 import { parseHexColor, settings } from '@/shared/settings';
 import { state } from '@/shared/state';
 import type { GameSystem } from '@/shared/types';
 
-import { destroyedSubMat } from '@/features/combat/explosions';
-import { createLaser } from '@/features/combat/weapons';
-import { playerPlane } from '@/features/flight/player-system';
+import { createCapitalShipEntity, findCapitalShipEntity } from '@/entities/ecs-adapters';
+import { createCapitalShip } from '@/entities/objects/space-ships/capital-ship/create-capital-ship';
 
-import { createCapitalShip } from './create-capital-ship';
+import { playerPlane } from '../flight/player-system';
+
+import { destroyedSubMat } from './explosions';
+import { createLaser } from './weapons';
 
 const C = COMBAT_CONSTANTS;
 

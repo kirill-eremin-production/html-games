@@ -1,4 +1,6 @@
 import type { EngineMesh, TransformNode, Vector3 } from '@/shared/core';
+import type { EntityId } from '@/shared/ecs/types';
+import type { World } from '@/shared/ecs/world';
 import type { CapitalShip, Fighter, FighterAI, LaserData, Subsystem } from '@/shared/types';
 
 import { FighterAIComponent } from '@/entities/ai/fighter-ai';
@@ -10,9 +12,6 @@ import { VelocityComponent } from '@/entities/physics/velocity';
 import { HealthComponent } from '@/entities/stats/health';
 import { NameComponent } from '@/entities/stats/name';
 import { TeamComponent } from '@/entities/stats/team';
-
-import type { EntityId } from './types';
-import type { World } from './world';
 
 // ── Fighter ─────────────────────────────────────────────────────────────────
 

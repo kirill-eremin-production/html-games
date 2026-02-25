@@ -13,9 +13,8 @@ import { state } from '@/shared/state';
 import type { CombatModeContext, GameModeHandler, GameSystem } from '@/shared/types';
 import { cleanupSystems, initSystems, updateSystems } from '@/shared/types';
 
-import { capitalShipSystem } from '@/entities/objects/space-ships/capital-ship/capital-ship-system';
-
 import { aiSystem } from '@/features/combat/ai-system';
+import { capitalShipSystem } from '@/features/combat/capital-ship-system';
 import { damageSystem } from '@/features/combat/damage-system';
 import { spawnerSystem } from '@/features/combat/spawner-system';
 import { playerPlane } from '@/features/flight/player-system';

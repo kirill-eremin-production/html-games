@@ -2,13 +2,14 @@ import { COMBAT_CONSTANTS } from '@/shared/config/combat';
 import { combatConfig } from '@/shared/config/combat-session';
 import { PLAYER_CONFIG } from '@/shared/config/player';
 import { Vector3, disposeNode, removeFromScene } from '@/shared/core';
-import { findFighterEntity } from '@/shared/ecs/adapters';
 import { world } from '@/shared/ecs/combat-world';
 import { emit, off, on } from '@/shared/events';
 import type { EventMap } from '@/shared/events';
 import { state } from '@/shared/state';
 import type { CapitalShip, Fighter, Subsystem } from '@/shared/types';
 import type { GameSystem } from '@/shared/types';
+
+import { findFighterEntity } from '@/entities/ecs-adapters';
 
 import { showMessage } from '@/features/hud/hud';
 import { addKillFeedEntry } from '@/features/hud/kill-feed';
