@@ -111,8 +111,8 @@ function drawCombatMinimap(
 
   mCtx.fillStyle = '#ff8800';
   for (const cs of queryAliveCapitalShips()) {
-    const ex = cx + (cs.mesh.mesh.position.x - px) * scale;
-    const ey = cy + (cs.mesh.mesh.position.z - pz) * scale;
+    const ex = cx + (cs.transform.position.x - px) * scale;
+    const ey = cy + (cs.transform.position.z - pz) * scale;
     if (ex > M.padding && ex < M.size - M.padding && ey > M.padding && ey < M.size - M.padding) {
       mCtx.fillRect(
         ex - M.capitalShipMarkerSize,

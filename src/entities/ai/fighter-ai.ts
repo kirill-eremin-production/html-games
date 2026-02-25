@@ -6,6 +6,6 @@ export class FighterAIComponent {
     public state: 'chase' | 'evade' | 'orbit',
     public timer: number,
     public evadeDir: Vector3,
-    public target: { mesh: { position: Vector3 }; name: string } | null,
+    public target: { position: Vector3; name: string } | null,
   ) {}
 }

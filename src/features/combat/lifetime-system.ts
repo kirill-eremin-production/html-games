@@ -1,8 +1,7 @@
 import { world } from '@/shared/ecs/combat-world';
-import { unregisterMeshEntity } from '@/shared/ecs/entity-index';
 import type { GameSystem } from '@/shared/types';
 
-import { MeshComponent } from '@/entities/rendering/mesh';
+import { destroyEntityWithVisuals } from '@/entities/ecs-adapters/entity-cleanup';
 import { LifetimeComponent } from '@/entities/stats/lifetime';
 
 import { cleanupExcessBullets } from './weapons';
@@ -11,16 +10,14 @@ import { cleanupExcessBullets } from './weapons';
 export const lifetimeSystem: GameSystem = {
   id: 'lifetime',
   update(dt: number) {
-    const entities = world.query(LifetimeComponent, MeshComponent);
+    const entities = world.query(LifetimeComponent);
     for (const {
       entity,
-      components: [lifetime, mesh],
+      components: [lifetime],
     } of entities) {
       lifetime.remaining -= dt;
       if (lifetime.remaining <= 0) {
-        unregisterMeshEntity(mesh.mesh);
-        mesh.mesh.dispose();
-        world.destroyEntity(entity);
+        destroyEntityWithVisuals(entity);
       }
     }
     cleanupExcessBullets();

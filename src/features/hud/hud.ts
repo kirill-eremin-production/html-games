@@ -77,7 +77,7 @@ export function updateHUD(): void {
         const subsystems = querySubsystemsByParent(cs.entity);
         return {
           alive: cs.capitalShip.alive,
-          index: cs.mesh.mesh.metadata.index as number,
+          index: cs.capitalShip.shipIndex,
           subsystems: subsystems.map((s) => ({
             name: s.name.name,
             health: s.health.current,

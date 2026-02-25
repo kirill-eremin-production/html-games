@@ -7,9 +7,10 @@ import { setPlayerEntityId } from '@/shared/refs/player-entity';
 import { parseHexColor, settings } from '@/shared/settings';
 import { resetNameCounters, state } from '@/shared/state';
 
+import { CapitalShipComponent } from '@/entities/combat/capital-ship';
 import { createPlayerEntity } from '@/entities/ecs-adapters';
-import { queryAllCapitalShips } from '@/entities/ecs-queries';
 import { createFighter } from '@/entities/objects/space-ships';
+import { TransformComponent } from '@/entities/physics/transform';
 
 import { spawnCapitalShips } from '@/features/combat/capital-ship-system';
 import { spawnAlly, spawnEnemy } from '@/features/combat/spawner-system';
@@ -76,9 +77,9 @@ export function spawnCombatEntities(): void {
   for (let i = 0; i < allyCount; i++) spawnAlly(playerPlane.position);
 
   const enemyCount = combatConfig.enemies;
-  const ships = queryAllCapitalShips();
+  const ships = world.query(TransformComponent, CapitalShipComponent);
   for (let i = 0; i < enemyCount; i++) {
     const shipIdx = i % Math.max(1, ships.length);
-    spawnEnemy(ships[shipIdx].mesh.mesh.position);
+    spawnEnemy(ships[shipIdx].components[0].position);
   }
 }

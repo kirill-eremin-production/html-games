@@ -1,12 +1,12 @@
 import { AI_CONFIG } from '@/shared/config/ai';
 import { PLAYER_NAME } from '@/shared/constants';
-import { Quaternion, TransformNode, Vector3, disposeNode } from '@/shared/core';
+import { Quaternion, Vector3 } from '@/shared/core';
 import { world } from '@/shared/ecs/combat-world';
-import { unregisterMeshEntity } from '@/shared/ecs/entity-index';
 import { camera } from '@/shared/engine';
 import type { GameSystem } from '@/shared/types';
 
 import { FighterAIComponent } from '@/entities/ai/fighter-ai';
+import { destroyEntityWithVisuals } from '@/entities/ecs-adapters/entity-cleanup';
 import {
   type FighterQueryResult,
   findNearestFighter,
@@ -14,7 +14,6 @@ import {
   queryAllFighters,
 } from '@/entities/ecs-queries';
 import { cleanupTeamSources, updateExhaustGlow } from '@/entities/objects/space-ships';
-import { MeshComponent } from '@/entities/rendering/mesh';
 
 import { playerPlane } from '@/features/flight/player-system';
 
@@ -30,7 +29,6 @@ const _aiRollQ = new Quaternion();
 const _aiFwd = new Vector3();
 const _tmpVec = new Vector3();
 const _aiOrbitDir = new Vector3();
-const _aiSubWorldPos = new Vector3();
 
 function updateFighterAI(
   f: FighterQueryResult,
@@ -38,7 +36,6 @@ function updateFighterAI(
   enemyPool: FighterQueryResult[],
   playerPos: Vector3 | null,
   isEnemy: boolean,
-  pPlane: TransformNode,
 ): void {
   const pos = f.transform.position;
   const quat = f.transform.quaternion;
@@ -46,11 +43,11 @@ function updateFighterAI(
   // ── Выбор цели ─────────────────────────────────────────────────────────
   if (!f.ai.target || Math.random() < A.retargetChance) {
     if (isEnemy && Math.random() < A.enemyTargetPlayerChance && playerPos) {
-      f.ai.target = { mesh: { position: playerPos }, name: PLAYER_NAME };
+      f.ai.target = { position: playerPos, name: PLAYER_NAME };
     } else {
       const nearest = findNearestFighter(pos, enemyPool);
       f.ai.target = nearest
-        ? { mesh: { position: nearest.transform.position }, name: nearest.name.name }
+        ? { position: nearest.transform.position, name: nearest.name.name }
         : null;
     }
   }
@@ -60,16 +57,11 @@ function updateFighterAI(
     const aliveSubs = queryAliveSubsystems();
     if (aliveSubs.length > 0) {
       const sub = aliveSubs[0];
-      const parentMesh = world.getComponent(sub.parent.parentId, MeshComponent);
-      if (parentMesh) {
-        _aiSubWorldPos
-          .copyFrom(sub.subsystem.center)
-          .applyMatrix4(parentMesh.mesh.getWorldMatrix());
-        f.ai.target = {
-          mesh: { position: _aiSubWorldPos.clone() },
-          name: `Корабль-${(parentMesh.mesh.metadata?.index ?? 0) + 1}`,
-        };
-      }
+      // transform.position уже содержит мировые координаты (обновлено hierarchy-system)
+      f.ai.target = {
+        position: sub.transform.position.clone(),
+        name: sub.name.name,
+      };
     }
   }
 
@@ -77,7 +69,7 @@ function updateFighterAI(
   if (!target) return;
 
   // ── Навигация ──────────────────────────────────────────────────────────
-  _aiToTarget.copyFrom(target.mesh.position).subtractInPlace(pos);
+  _aiToTarget.copyFrom(target.position).subtractInPlace(pos);
   const dist = _aiToTarget.length();
   const dirToTarget = _aiToTarget.normalize();
 
@@ -146,11 +138,11 @@ function updateFighterAI(
   if (f.weapon.shootTimer <= 0 && dist < A.shootDistance) {
     f.weapon.shootTimer = A.shootTimerBase + Math.random() * A.shootTimerRange;
     shootFromFighter(
-      f.mesh.mesh,
+      f.transform,
       dirToTarget,
       f.team.team as 'ally' | 'enemy',
       f.name.name,
-      pPlane,
+      playerPlane.position,
     );
   }
 
@@ -171,23 +163,18 @@ export const aiSystem: GameSystem = {
     const enemies = allFighters.filter((f) => f.team.team === 'enemy');
 
     for (const a of allies) {
-      updateFighterAI(a, dt, enemies, null, false, playerPlane);
+      updateFighterAI(a, dt, enemies, null, false);
     }
     for (const e of enemies) {
-      updateFighterAI(e, dt, allies, playerPlane.position, true, playerPlane);
+      updateFighterAI(e, dt, allies, playerPlane.position, true);
     }
 
     updateExhaustGlow();
   },
   cleanup() {
-    const fighters = world.query(FighterAIComponent, MeshComponent);
-    for (const {
-      entity,
-      components: [, mesh],
-    } of fighters) {
-      unregisterMeshEntity(mesh.mesh);
-      disposeNode(mesh.mesh);
-      world.destroyEntity(entity);
+    const fighters = world.query(FighterAIComponent);
+    for (const { entity } of fighters) {
+      destroyEntityWithVisuals(entity);
     }
     cleanupTeamSources();
   },

@@ -12,13 +12,12 @@ import { state } from '@/shared/state';
 import type { LockedTarget } from '@/shared/types';
 
 import { CapitalShipComponent } from '@/entities/combat/capital-ship';
-import { SubsystemComponent } from '@/entities/combat/subsystem';
 import {
   queryAliveCapitalShips,
   queryAliveSubsystems,
   queryFightersByTeam,
 } from '@/entities/ecs-queries';
-import { MeshComponent } from '@/entities/rendering/mesh';
+import { TransformComponent } from '@/entities/physics/transform';
 import { HealthComponent } from '@/entities/stats/health';
 import { NameComponent } from '@/entities/stats/name';
 
@@ -44,12 +43,12 @@ function renderCapitalShipMarkers(
   playerPlane: TransformNode,
 ): number {
   for (const cs of queryAliveCapitalShips()) {
-    const shipDistSq = playerPlane.position.distanceToSquared(cs.mesh.mesh.position);
+    const shipDistSq = playerPlane.position.distanceToSquared(cs.transform.position);
     if (shipDistSq > SHIP_RANGE_SQ) continue;
 
     if (shipDistSq > CAPITAL_CLOSE_RANGE_SQ) {
       // Far: single marker at ship center
-      const scr = worldToScreen(cs.mesh.mesh.position, camera, w, h);
+      const scr = worldToScreen(cs.transform.position, camera, w, h);
       if (scr.z >= 1 || scr.x < -20 || scr.x > w + 20 || scr.y < -20 || scr.y > h + 20) continue;
       const el = pool.get(usedCount++);
       el.className = 'target-marker capital';
@@ -57,16 +56,16 @@ function renderCapitalShipMarkers(
       el.style.top = scr.y + 'px';
       const dist3d = Math.sqrt(shipDistSq);
       el.children[1].textContent = Math.floor(dist3d) + 'm';
-      el.children[2].textContent = `Корабль-${cs.mesh.mesh.metadata.index + 1}`;
+      el.children[2].textContent = `Корабль-${cs.capitalShip.shipIndex + 1}`;
       (el.children[0] as HTMLElement).style.width = '28px';
       (el.children[0] as HTMLElement).style.height = '28px';
     } else {
       // Close: individual subsystem markers (ECS query)
+      // transform.position уже содержит мировые координаты (обновлено hierarchy-system)
       const subsystems = queryAliveSubsystems().filter((s) => s.parent.parentId === cs.entity);
       for (const sub of subsystems) {
-        _mrkPos.copyFrom(sub.subsystem.center).applyMatrix4(cs.mesh.mesh.getWorldMatrix());
-        const d = playerPlane.position.distanceTo(_mrkPos);
-        const scr = worldToScreen(_mrkPos, camera, w, h);
+        const d = playerPlane.position.distanceTo(sub.transform.position);
+        const scr = worldToScreen(sub.transform.position, camera, w, h);
         if (scr.z >= 1 || scr.x < -20 || scr.x > w + 20 || scr.y < -20 || scr.y > h + 20) continue;
         const el = pool.get(usedCount++);
         el.className = 'target-marker capital';
@@ -95,16 +94,17 @@ function renderLockedTarget(
   let name: string;
 
   if (lt.kind === 'fighter') {
-    dist3d = playerPlane.position.distanceTo(lt.fighter.mesh.position);
-    _mrkPos.copyFrom(lt.fighter.mesh.position);
+    const fighterTransform = world.getComponent(lt.entityId, TransformComponent);
+    if (!fighterTransform) return usedCount;
+    dist3d = playerPlane.position.distanceTo(fighterTransform.position);
+    _mrkPos.copyFrom(fighterTransform.position);
     name = lt.fighter.name;
   } else {
-    // Подсистема — получаем данные через ECS
-    const subComp = world.getComponent(lt.subsystemEntity, SubsystemComponent);
-    const parentMesh = world.getComponent(lt.parentEntity, MeshComponent);
+    // Подсистема — transform.position уже в мировых координатах (hierarchy-system)
+    const subTransform = world.getComponent(lt.subsystemEntity, TransformComponent);
     const nameComp = world.getComponent(lt.subsystemEntity, NameComponent);
-    if (!subComp || !parentMesh) return usedCount;
-    _mrkPos.copyFrom(subComp.center).applyMatrix4(parentMesh.mesh.getWorldMatrix());
+    if (!subTransform) return usedCount;
+    _mrkPos.copyFrom(subTransform.position);
     dist3d = playerPlane.position.distanceTo(_mrkPos);
     name = nameComp?.name ?? '?';
   }
@@ -230,20 +230,20 @@ export function toggleTargetLock(playerPlane: TransformNode): void {
       bestTarget = {
         kind: 'fighter',
         entityId: e.entity,
-        fighter: { mesh: e.mesh.mesh, name: e.name.name } as any,
+        fighter: { entityId: e.entity, name: e.name.name },
       };
     }
   }
 
   // Screen-pick: capital ship subsystems near cursor (ECS query)
+  // transform.position уже содержит мировые координаты (обновлено hierarchy-system)
   const aliveSubs = queryAliveSubsystems();
   for (const sub of aliveSubs) {
-    const parentMesh = world.getComponent(sub.parent.parentId, MeshComponent);
-    if (!parentMesh) continue;
-    if (playerPlane.position.distanceToSquared(parentMesh.mesh.position) > SHIP_RANGE_SQ) continue;
+    const parentTransform = world.getComponent(sub.parent.parentId, TransformComponent);
+    if (!parentTransform) continue;
+    if (playerPlane.position.distanceToSquared(parentTransform.position) > SHIP_RANGE_SQ) continue;
 
-    _mrkPos.copyFrom(sub.subsystem.center).applyMatrix4(parentMesh.mesh.getWorldMatrix());
-    const scr = worldToScreen(_mrkPos, camera, w, h);
+    const scr = worldToScreen(sub.transform.position, camera, w, h);
     if (scr.z >= 1) continue;
     const dSq = (scr.x - cursorScreenX) ** 2 + (scr.y - cursorScreenY) ** 2;
     if (dSq < pickRadiusSq && dSq < bestScreenDistSq) {
@@ -266,15 +266,12 @@ export function toggleTargetLock(playerPlane: TransformNode): void {
         bestTarget = {
           kind: 'fighter',
           entityId: e.entity,
-          fighter: { mesh: e.mesh.mesh, name: e.name.name } as any,
+          fighter: { entityId: e.entity, name: e.name.name },
         };
       }
     }
     for (const sub of aliveSubs) {
-      const parentMesh = world.getComponent(sub.parent.parentId, MeshComponent);
-      if (!parentMesh) continue;
-      _mrkPos.copyFrom(sub.subsystem.center).applyMatrix4(parentMesh.mesh.getWorldMatrix());
-      const dSq = playerPlane.position.distanceToSquared(_mrkPos);
+      const dSq = playerPlane.position.distanceToSquared(sub.transform.position);
       if (dSq < bestDist3dSq) {
         bestDist3dSq = dSq;
         bestTarget = {

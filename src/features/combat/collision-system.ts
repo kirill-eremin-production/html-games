@@ -1,22 +1,20 @@
 import { COMBAT_CONSTANTS } from '@/shared/config/combat';
-import { Vector3 } from '@/shared/core';
+import type { Vector3 } from '@/shared/core';
 import { world } from '@/shared/ecs/combat-world';
-import { unregisterMeshEntity } from '@/shared/ecs/entity-index';
 import type { GameSystem } from '@/shared/types';
 
 import { ProjectileComponent } from '@/entities/combat/projectile';
 import { SubsystemComponent } from '@/entities/combat/subsystem';
+import { destroyEntityWithVisuals } from '@/entities/ecs-adapters/entity-cleanup';
 import { type SubsystemQueryResult, queryAliveSubsystems } from '@/entities/ecs-queries';
 import { HitboxComponent } from '@/entities/physics/hitbox';
 import { TransformComponent } from '@/entities/physics/transform';
-import { MeshComponent } from '@/entities/rendering/mesh';
 import { DamageBufferComponent } from '@/entities/stats/damage-buffer';
 import { TeamComponent } from '@/entities/stats/team';
 
 import { createExplosion } from './explosions';
 
 const C = COMBAT_CONSTANTS;
-const _hitWorldPos = new Vector3();
 
 // ── Hit-target: общий интерфейс для всех поражаемых сущностей ───────────────
 
@@ -64,17 +62,11 @@ function hitTestSubsystems(
   subsystems: SubsystemQueryResult[],
 ): boolean {
   for (const sub of subsystems) {
-    // Получаем world matrix родительского корабля для трансформации
-    const parentMesh = world.getComponent(sub.parent.parentId, MeshComponent);
-    if (!parentMesh) continue;
-
-    try {
-      _hitWorldPos.copyFrom(sub.subsystem.center).applyMatrix4(parentMesh.mesh.getWorldMatrix());
-    } catch {
-      continue;
-    }
-
-    if (projPos.distanceToSquared(_hitWorldPos) < sub.subsystem.radius * sub.subsystem.radius) {
+    // transform.position уже содержит мировые координаты (обновлено hierarchy-system)
+    if (
+      projPos.distanceToSquared(sub.transform.position) <
+      sub.subsystem.radius * sub.subsystem.radius
+    ) {
       sub.damageBuffer.hits.push({
         amount: projDamage,
         shooterName: projShooterName,
@@ -117,16 +109,11 @@ export const collisionSystem: GameSystem = {
 
     const aliveSubsystems = queryAliveSubsystems();
 
-    const projectiles = world.query(
-      TransformComponent,
-      ProjectileComponent,
-      TeamComponent,
-      MeshComponent,
-    );
+    const projectiles = world.query(TransformComponent, ProjectileComponent, TeamComponent);
 
     for (const {
       entity,
-      components: [transform, proj, team, mesh],
+      components: [transform, proj, team],
     } of projectiles) {
       if (!world.isAlive(entity)) continue;
 
@@ -153,9 +140,7 @@ export const collisionSystem: GameSystem = {
       }
 
       if (hit) {
-        unregisterMeshEntity(mesh.mesh);
-        mesh.mesh.dispose();
-        world.destroyEntity(entity);
+        destroyEntityWithVisuals(entity);
       }
     }
   },

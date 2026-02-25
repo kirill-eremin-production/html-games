@@ -1,23 +1,15 @@
 import { playLaserSound } from '@/shared/audio';
 import { COMBAT_CONSTANTS } from '@/shared/config/combat';
 import { combatConfig } from '@/shared/config/combat-session';
-import {
-  EngineMesh,
-  Vector3,
-  addToScene,
-  disposeNode,
-  isEngineMesh,
-  traverseNode,
-} from '@/shared/core';
+import { EngineMesh, Quaternion, Vector3, isEngineMesh, traverseNode } from '@/shared/core';
 import { world } from '@/shared/ecs/combat-world';
-import { unregisterMeshEntity } from '@/shared/ecs/entity-index';
 import { addDirectionNoise } from '@/shared/lib/math';
 import { parseHexColor, settings } from '@/shared/settings';
 import type { GameSystem } from '@/shared/types';
 
 import { CapitalShipComponent } from '@/entities/combat/capital-ship';
 import { SubsystemComponent } from '@/entities/combat/subsystem';
-import { createCapitalShipEntity } from '@/entities/ecs-adapters';
+import { destroyEntityWithVisuals } from '@/entities/ecs-adapters/entity-cleanup';
 import {
   type CapitalShipQueryResult,
   queryAllCapitalShips,
@@ -25,9 +17,11 @@ import {
   querySubsystemByType,
   querySubsystemsByParent,
 } from '@/entities/ecs-queries';
-import { createCapitalShip } from '@/entities/objects/space-ships/capital-ship/create-capital-ship';
-import { MeshComponent } from '@/entities/rendering/mesh';
+import { TransformComponent } from '@/entities/physics/transform';
+import { ViewComponent } from '@/entities/rendering/view';
+import { VisualComponent } from '@/entities/rendering/visual';
 import { ParentEntityComponent } from '@/entities/stats/parent-entity';
+import { TeamComponent } from '@/entities/stats/team';
 
 import { playerPlane } from '../flight/player-system';
 
@@ -42,20 +36,24 @@ export function spawnCapitalShips(): void {
   const count = settings.counts.capitalShips;
   const hullColor = parseHexColor(settings.colors.capitalHull);
   for (let i = 0; i < count; i++) {
-    const ship = createCapitalShip(i, hullColor);
-    ship.position.copyFrom(SHIP_POSITIONS[i]);
-    ship.lookAt(new Vector3(0, 0, 0));
-    addToScene(ship);
-    createCapitalShipEntity(world, ship, ship.metadata.subsystems, 2 + Math.random() * 3);
+    const id = world.createEntity();
+    world.addComponent(
+      id,
+      new TransformComponent(new Vector3().copyFrom(SHIP_POSITIONS[i]), new Quaternion()),
+    );
+    world.addComponent(id, new VisualComponent('capital-ship', hullColor, 0, String(i)));
+    world.addComponent(id, new CapitalShipComponent(true, 2 + Math.random() * 3, i));
+    world.addComponent(id, new TeamComponent('enemy'));
   }
 }
 
 function updateCapitalShipVisuals(cs: CapitalShipQueryResult, dt: number): void {
   const subsystems = querySubsystemsByParent(cs.entity);
   for (const sub of subsystems) {
-    if (!sub.mesh.mesh) continue;
-    if (sub.health.current <= 0 && sub.mesh.mesh.isEnabled()) {
-      traverseNode(sub.mesh.mesh, (child) => {
+    const subView = world.getComponent(sub.entity, ViewComponent);
+    if (!subView) continue;
+    if (sub.health.current <= 0 && subView.node.isEnabled()) {
+      traverseNode(subView.node, (child) => {
         if (isEngineMesh(child) && (child as EngineMesh).material) {
           (child as EngineMesh).material = destroyedSubMat;
         }
@@ -66,7 +64,8 @@ function updateCapitalShipVisuals(cs: CapitalShipQueryResult, dt: number): void 
   // Вращение корабля, если двигатели живы
   const engines = querySubsystemByType(cs.entity, 'engines');
   if (engines && engines.health.current > 0) {
-    cs.mesh.mesh.rotation.y += C.shipRotationSpeed * dt;
+    const shipView = world.getComponent(cs.entity, ViewComponent);
+    if (shipView) shipView.node.rotation.y += C.shipRotationSpeed * dt;
   }
 }
 
@@ -93,7 +92,7 @@ export function updateCapitalShips(dt: number): void {
         combatConfig.turretFireRateMin +
         Math.random() * (combatConfig.turretFireRateMax - combatConfig.turretFireRateMin);
       _csTargets.length = 0;
-      const shipPos = cs.mesh.mesh.position;
+      const shipPos = cs.transform.position;
       if (shipPos.distanceToSquared(playerPlane.position) < C.turretRangeSq)
         _csTargets.push(playerPlane.position);
       const allies = queryFightersByTeam('ally');
@@ -117,7 +116,7 @@ export function updateCapitalShips(dt: number): void {
           : combatConfig.turretAccuracy;
       addDirectionNoise(_csDir, inaccuracy);
 
-      const shipName = `Корабль-${cs.mesh.mesh.metadata.index + 1}`;
+      const shipName = `Корабль-${cs.capitalShip.shipIndex + 1}`;
       const shots = C.turretBurstMin + Math.floor(Math.random() * C.turretBurstRandomExtra);
       for (let i = 0; i < shots; i++) {
         _csOrigin.set(
@@ -144,24 +143,15 @@ export const capitalShipSystem: GameSystem = {
   },
   cleanup() {
     // Уничтожаем подсистемы (дочерние сущности)
-    const subsystems = world.query(SubsystemComponent, MeshComponent, ParentEntityComponent);
-    for (const {
-      entity,
-      components: [, mesh],
-    } of subsystems) {
-      unregisterMeshEntity(mesh.mesh);
-      world.destroyEntity(entity);
+    const subsystems = world.query(SubsystemComponent, ParentEntityComponent);
+    for (const { entity } of subsystems) {
+      destroyEntityWithVisuals(entity);
     }
 
     // Уничтожаем корабли
-    const ships = world.query(CapitalShipComponent, MeshComponent);
-    for (const {
-      entity,
-      components: [, mesh],
-    } of ships) {
-      unregisterMeshEntity(mesh.mesh);
-      disposeNode(mesh.mesh);
-      world.destroyEntity(entity);
+    const ships = world.query(CapitalShipComponent);
+    for (const { entity } of ships) {
+      destroyEntityWithVisuals(entity);
     }
   },
 };

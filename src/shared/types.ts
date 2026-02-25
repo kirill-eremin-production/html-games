@@ -1,4 +1,3 @@
-import type { TransformNode } from '@/shared/core';
 import type { EntityId } from '@/shared/ecs/types';
 
 // ── Types shared across layers ──────────────────────────────────────────────
@@ -31,8 +30,8 @@ export type FlightModelId = 'combat' | 'exploration';
 
 /** Минимальное описание истребителя (для событий и UI) */
 export interface Fighter {
-  /** 3D-объект истребителя на сцене */
-  mesh: TransformNode;
+  /** ECS-идентификатор сущности */
+  entityId: EntityId;
   /** Уникальное имя (например, «Сокол-3») */
   name: string;
 }

@@ -36,18 +36,24 @@ jest.mock('@/features/combat/explosions', () => ({
 }));
 
 jest.mock('@/shared/ecs/combat-world', () => ({
-  world: { destroyEntity: jest.fn() },
+  world: {
+    destroyEntity: jest.fn(),
+    getComponent: jest.fn(() => null),
+  },
 }));
 
-jest.mock('@/shared/ecs/entity-index', () => ({
-  getEntityByMesh: jest.fn(() => null),
-  unregisterMeshEntity: jest.fn(),
+jest.mock('@/entities/ecs-adapters/entity-cleanup', () => ({
+  destroyEntityWithVisuals: jest.fn(),
+}));
+
+jest.mock('@/shared/refs/player-entity', () => ({
+  playerEntityId: 0,
 }));
 
 const C = COMBAT_CONSTANTS;
 
-function makeFighter(name: string) {
-  return { mesh: { position: new Vector3(0, 0, 0) }, name } as any;
+function makeFighter(name: string, entityId = 42) {
+  return { mesh: { position: new Vector3(0, 0, 0) }, name, entityId } as any;
 }
 
 describe('Damage System', () => {
@@ -61,6 +67,7 @@ describe('Damage System', () => {
     state.totalEnemyKills = 0;
     state.respawnQueue = [];
     state.phase = 1;
+    jest.clearAllMocks();
   });
 
   afterEach(() => {
@@ -128,11 +135,11 @@ describe('Damage System', () => {
     });
 
     it('уничтожает ECS entity жертвы', () => {
-      const { getEntityByMesh } = jest.requireMock('@/shared/ecs/entity-index') as any;
-      const { world: mockWorld } = jest.requireMock('@/shared/ecs/combat-world') as any;
-      getEntityByMesh.mockReturnValue(42);
+      const { destroyEntityWithVisuals } = jest.requireMock(
+        '@/entities/ecs-adapters/entity-cleanup',
+      ) as any;
 
-      const victim = makeFighter('Фантом-1');
+      const victim = makeFighter('Фантом-1', 42);
 
       emit('fighter-killed', {
         victim,
@@ -142,30 +149,15 @@ describe('Damage System', () => {
         isPlayerKill: true,
       });
 
-      expect(getEntityByMesh).toHaveBeenCalledWith(victim.mesh);
-      expect(mockWorld.destroyEntity).toHaveBeenCalledWith(42);
+      expect(destroyEntityWithVisuals).toHaveBeenCalledWith(42);
     });
 
-    it('вызывает getEntityByMesh ДО unregisterMeshEntity (регрессия)', () => {
-      const { getEntityByMesh, unregisterMeshEntity } = jest.requireMock(
-        '@/shared/ecs/entity-index',
+    it('вызывает destroyEntityWithVisuals с entityId жертвы', () => {
+      const { destroyEntityWithVisuals } = jest.requireMock(
+        '@/entities/ecs-adapters/entity-cleanup',
       ) as any;
-      const { world: mockWorld } = jest.requireMock('@/shared/ecs/combat-world') as any;
 
-      // Отслеживаем порядок вызовов
-      const callOrder: string[] = [];
-      getEntityByMesh.mockImplementation(() => {
-        callOrder.push('getEntityByMesh');
-        return 42;
-      });
-      unregisterMeshEntity.mockImplementation(() => {
-        callOrder.push('unregisterMeshEntity');
-      });
-      mockWorld.destroyEntity.mockImplementation(() => {
-        callOrder.push('destroyEntity');
-      });
-
-      const victim = makeFighter('Фантом-1');
+      const victim = makeFighter('Фантом-1', 77);
 
       emit('fighter-killed', {
         victim,
@@ -175,14 +167,7 @@ describe('Damage System', () => {
         isPlayerKill: true,
       });
 
-      // getEntityByMesh ДОЛЖЕН быть вызван до unregisterMeshEntity,
-      // иначе маппинг mesh→entity уже удалён и entityId === null
-      const getIdx = callOrder.indexOf('getEntityByMesh');
-      const unregIdx = callOrder.indexOf('unregisterMeshEntity');
-      expect(getIdx).toBeGreaterThanOrEqual(0);
-      expect(unregIdx).toBeGreaterThanOrEqual(0);
-      expect(getIdx).toBeLessThan(unregIdx);
-      expect(mockWorld.destroyEntity).toHaveBeenCalledWith(42);
+      expect(destroyEntityWithVisuals).toHaveBeenCalledWith(77);
     });
 
     it('добавляет запись в respawnQueue', () => {
@@ -217,11 +202,11 @@ describe('Damage System', () => {
     });
 
     it('уничтожает ECS entity жертвы-союзника', () => {
-      const { getEntityByMesh } = jest.requireMock('@/shared/ecs/entity-index') as any;
-      const { world: mockWorld } = jest.requireMock('@/shared/ecs/combat-world') as any;
-      getEntityByMesh.mockReturnValue(99);
+      const { destroyEntityWithVisuals } = jest.requireMock(
+        '@/entities/ecs-adapters/entity-cleanup',
+      ) as any;
 
-      const victim = makeFighter('Сокол-1');
+      const victim = makeFighter('Сокол-1', 99);
 
       emit('fighter-killed', {
         victim,
@@ -231,8 +216,7 @@ describe('Damage System', () => {
         isPlayerKill: false,
       });
 
-      expect(getEntityByMesh).toHaveBeenCalledWith(victim.mesh);
-      expect(mockWorld.destroyEntity).toHaveBeenCalledWith(99);
+      expect(destroyEntityWithVisuals).toHaveBeenCalledWith(99);
     });
   });
 });

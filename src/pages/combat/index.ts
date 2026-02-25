@@ -23,6 +23,8 @@ import { playerPlane } from '@/features/flight/player-system';
 import { flightCoreSystems, weaponSystems } from '@/features/flight/presets';
 import { setStarfieldVisible } from '@/features/flight/starfield';
 import { hideHUD, showHUD, showMessage } from '@/features/hud/hud';
+import { hierarchySystem } from '@/features/rendering/hierarchy-system';
+import { renderSystem } from '@/features/rendering/render-system';
 
 import { clearExplorationScene, hideExploration } from '@/pages/exploration/scene/index';
 import { updateExplorationScene } from '@/pages/exploration/scene/update';
@@ -40,6 +42,8 @@ function registerCombatSystems(): void {
 
   // Flight core: input → player movement → starfield parallax (0–20)
   scheduler.addMany(flightCoreSystems, 0, 10);
+  // Hierarchy: subsystem world positions (90)
+  scheduler.add(hierarchySystem, 90);
   // Weapons: bullet physics + hit detection, explosions (100–110)
   scheduler.addMany(weaponSystems, 100, 10);
   // Combat AI & entities (200–220)
@@ -52,6 +56,8 @@ function registerCombatSystems(): void {
   scheduler.add(proximityAudioSystem, 400);
   scheduler.add(damageEffectSystem, 410);
   scheduler.add(combatHudSystem, 420);
+  // Render layer: visual lifecycle (500)
+  scheduler.add(renderSystem, 500);
 }
 
 // ── Mode handler ────────────────────────────────────────────────────────────

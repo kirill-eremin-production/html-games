@@ -128,7 +128,7 @@ describe('AI System (ECS)', () => {
       const { aiComp: allyAI } = createFighterECS(0, 0, 0, 'ally');
       const { mesh: enemyMesh } = createFighterECS(50, 0, 0, 'enemy');
 
-      allyAI.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      allyAI.target = { position: enemyMesh.position, name: 'enemy' };
       allyAI.timer = 0;
 
       const origRandom = Math.random;
@@ -145,7 +145,7 @@ describe('AI System (ECS)', () => {
       const { aiComp: allyAI } = createFighterECS(0, 0, 0, 'ally');
       const { mesh: enemyMesh } = createFighterECS(250, 0, 0, 'enemy');
 
-      allyAI.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      allyAI.target = { position: enemyMesh.position, name: 'enemy' };
       allyAI.timer = 0;
 
       const origRandom = Math.random;
@@ -162,7 +162,7 @@ describe('AI System (ECS)', () => {
       const { aiComp: allyAI } = createFighterECS(0, 0, 0, 'ally');
       const { mesh: enemyMesh } = createFighterECS(1000, 0, 0, 'enemy');
 
-      allyAI.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      allyAI.target = { position: enemyMesh.position, name: 'enemy' };
       allyAI.timer = 0;
 
       const origRandom = Math.random;
@@ -181,7 +181,7 @@ describe('AI System (ECS)', () => {
       const { aiComp, weaponComp } = createFighterECS(0, 0, 0, 'ally');
       const { mesh: enemyMesh } = createFighterECS(200, 0, 0, 'enemy');
 
-      aiComp.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      aiComp.target = { position: enemyMesh.position, name: 'enemy' };
       aiComp.timer = 10;
       weaponComp.shootTimer = 0;
 
@@ -199,7 +199,7 @@ describe('AI System (ECS)', () => {
       const { aiComp, weaponComp } = createFighterECS(0, 0, 0, 'ally');
       const { mesh: enemyMesh } = createFighterECS(1000, 0, 0, 'enemy');
 
-      aiComp.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      aiComp.target = { position: enemyMesh.position, name: 'enemy' };
       aiComp.timer = 10;
       weaponComp.shootTimer = 0;
 
@@ -217,7 +217,7 @@ describe('AI System (ECS)', () => {
       const { aiComp, weaponComp } = createFighterECS(0, 0, 0, 'ally');
       const { mesh: enemyMesh } = createFighterECS(200, 0, 0, 'enemy');
 
-      aiComp.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      aiComp.target = { position: enemyMesh.position, name: 'enemy' };
       aiComp.timer = 10;
       weaponComp.shootTimer = 5;
 
@@ -237,7 +237,7 @@ describe('AI System (ECS)', () => {
       const { mesh, aiComp } = createFighterECS(0, 0, 0, 'ally', { speed: 100 });
       const { mesh: enemyMesh } = createFighterECS(200, 0, 0, 'enemy');
 
-      aiComp.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      aiComp.target = { position: enemyMesh.position, name: 'enemy' };
       aiComp.timer = 10;
 
       const startX = mesh.position.x;
@@ -261,7 +261,7 @@ describe('AI System (ECS)', () => {
       });
       const { mesh: enemyMesh } = createFighterECS(200, 0, 0, 'enemy');
 
-      aiComp.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      aiComp.target = { position: enemyMesh.position, name: 'enemy' };
       aiComp.timer = 10;
       healthComp.current = 25; // 50% от max
 

@@ -9,7 +9,6 @@ import { FighterAIComponent } from '@/entities/ai/fighter-ai';
 import { CapitalShipComponent } from '@/entities/combat/capital-ship';
 import { SubsystemComponent } from '@/entities/combat/subsystem';
 import { querySubsystemsByParent } from '@/entities/ecs-queries';
-import { MeshComponent } from '@/entities/rendering/mesh';
 import { DamageBufferComponent } from '@/entities/stats/damage-buffer';
 import { HealthComponent } from '@/entities/stats/health';
 import { NameComponent } from '@/entities/stats/name';
@@ -26,14 +25,13 @@ export const healthSystem: GameSystem = {
     const entities = world.query(
       HealthComponent,
       DamageBufferComponent,
-      MeshComponent,
       TeamComponent,
       NameComponent,
     );
 
     for (const {
       entity,
-      components: [health, buf, mesh, team, name],
+      components: [health, buf, team, name],
     } of entities) {
       if (buf.hits.length === 0) continue;
 
@@ -65,7 +63,7 @@ export const healthSystem: GameSystem = {
             const isPlayerKill = hit.shooterTeam === 'player';
 
             destroyFighter(
-              { mesh: mesh.mesh, name: name.name } as Parameters<typeof destroyFighter>[0],
+              { entityId: entity, name: name.name },
               hit.shooterName || '?',
               hit.shooterTeam,
               victimTeam === 'enemy',

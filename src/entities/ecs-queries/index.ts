@@ -1,4 +1,4 @@
-import type { TransformNode, Vector3 } from '@/shared/core';
+import type { Vector3 } from '@/shared/core';
 import { world } from '@/shared/ecs/combat-world';
 import type { EntityId } from '@/shared/ecs/types';
 
@@ -9,7 +9,6 @@ import { WeaponComponent } from '@/entities/combat/weapon';
 import { TransformComponent } from '@/entities/physics/transform';
 import { VelocityComponent } from '@/entities/physics/velocity';
 import { HealthBarComponent } from '@/entities/rendering/health-bar';
-import { MeshComponent } from '@/entities/rendering/mesh';
 import { DamageBufferComponent } from '@/entities/stats/damage-buffer';
 import { HealthComponent } from '@/entities/stats/health';
 import { NameComponent } from '@/entities/stats/name';
@@ -20,7 +19,6 @@ import { TeamComponent } from '@/entities/stats/team';
 export interface FighterQueryResult {
   entity: EntityId;
   transform: TransformComponent;
-  mesh: MeshComponent;
   health: HealthComponent;
   healthBar: HealthBarComponent;
   velocity: VelocityComponent;
@@ -35,7 +33,6 @@ export interface FighterQueryResult {
 export function queryAllFighters(): FighterQueryResult[] {
   const raw = world.query(
     TransformComponent,
-    MeshComponent,
     HealthComponent,
     HealthBarComponent,
     VelocityComponent,
@@ -49,23 +46,11 @@ export function queryAllFighters(): FighterQueryResult[] {
   const results: FighterQueryResult[] = [];
   for (const {
     entity,
-    components: [
-      transform,
-      mesh,
-      health,
-      healthBar,
-      velocity,
-      weapon,
-      team,
-      ai,
-      name,
-      damageBuffer,
-    ],
+    components: [transform, health, healthBar, velocity, weapon, team, ai, name, damageBuffer],
   } of raw) {
     results.push({
       entity,
       transform,
-      mesh,
       health,
       healthBar,
       velocity,
@@ -109,7 +94,6 @@ export interface FighterMinimalData {
   name: string;
   health: number;
   maxHealth: number;
-  mesh: TransformNode;
 }
 
 // ── Capital Ships ────────────────────────────────────────────────────────────
@@ -118,19 +102,18 @@ export interface FighterMinimalData {
 export interface CapitalShipQueryResult {
   entity: EntityId;
   transform: TransformComponent;
-  mesh: MeshComponent;
   capitalShip: CapitalShipComponent;
 }
 
 /** Запросить все капитальные корабли */
 export function queryAllCapitalShips(): CapitalShipQueryResult[] {
-  const raw = world.query(TransformComponent, MeshComponent, CapitalShipComponent);
+  const raw = world.query(TransformComponent, CapitalShipComponent);
   const results: CapitalShipQueryResult[] = [];
   for (const {
     entity,
-    components: [transform, mesh, capitalShip],
+    components: [transform, capitalShip],
   } of raw) {
-    results.push({ entity, transform, mesh, capitalShip });
+    results.push({ entity, transform, capitalShip });
   }
   return results;
 }
@@ -146,7 +129,6 @@ export function queryAliveCapitalShips(): CapitalShipQueryResult[] {
 export interface SubsystemQueryResult {
   entity: EntityId;
   transform: TransformComponent;
-  mesh: MeshComponent;
   subsystem: SubsystemComponent;
   health: HealthComponent;
   name: NameComponent;
@@ -158,7 +140,6 @@ export interface SubsystemQueryResult {
 export function queryAllSubsystems(): SubsystemQueryResult[] {
   const raw = world.query(
     TransformComponent,
-    MeshComponent,
     SubsystemComponent,
     HealthComponent,
     NameComponent,
@@ -168,9 +149,9 @@ export function queryAllSubsystems(): SubsystemQueryResult[] {
   const results: SubsystemQueryResult[] = [];
   for (const {
     entity,
-    components: [transform, mesh, subsystem, health, name, parent, damageBuffer],
+    components: [transform, subsystem, health, name, parent, damageBuffer],
   } of raw) {
-    results.push({ entity, transform, mesh, subsystem, health, name, parent, damageBuffer });
+    results.push({ entity, transform, subsystem, health, name, parent, damageBuffer });
   }
   return results;
 }
@@ -201,18 +182,12 @@ export function querySubsystemByType(
 
 /** Запросить минимальные данные истребителей для UI */
 export function queryFightersForUI(): FighterMinimalData[] {
-  const raw = world.query(
-    TransformComponent,
-    MeshComponent,
-    TeamComponent,
-    NameComponent,
-    HealthComponent,
-  );
+  const raw = world.query(TransformComponent, TeamComponent, NameComponent, HealthComponent);
 
   const results: FighterMinimalData[] = [];
   for (const {
     entity,
-    components: [transform, mesh, team, name, health],
+    components: [transform, team, name, health],
   } of raw) {
     // Пропускаем игрока и подсистемы кораблей (у них теперь тоже есть TeamComponent)
     if (team.team === 'player') continue;
@@ -224,7 +199,6 @@ export function queryFightersForUI(): FighterMinimalData[] {
       name: name.name,
       health: health.current,
       maxHealth: health.max,
-      mesh: mesh.mesh,
     });
   }
   return results;

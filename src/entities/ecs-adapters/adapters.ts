@@ -131,10 +131,21 @@ export function createCapitalShipEntity(
   w.addComponent(shipId, new TeamComponent('enemy'));
   registerMeshEntity(mesh, shipId);
 
-  // Создаём отдельную ECS-сущность для каждой подсистемы
+  createSubsystemEntities(w, shipId, subsystems, mesh);
+
+  return shipId;
+}
+
+/** Создать ECS-сущности подсистем для капитального корабля. */
+export function createSubsystemEntities(
+  w: World,
+  shipId: EntityId,
+  subsystems: SubsystemRawData[],
+  shipMesh: TransformNode,
+): void {
   for (const sub of subsystems) {
     const subId = w.createEntity();
-    const subMesh = sub.mesh ?? mesh; // fallback на меш корабля если нет меша подсистемы
+    const subMesh = sub.mesh ?? shipMesh; // fallback на меш корабля если нет меша подсистемы
 
     w.addComponent(subId, new TransformComponent(subMesh.position, subMesh.quaternion));
     w.addComponent(subId, new MeshComponent(subMesh));
@@ -146,6 +157,4 @@ export function createCapitalShipEntity(
     w.addComponent(subId, new TeamComponent('enemy'));
     if (sub.mesh) registerMeshEntity(sub.mesh, subId);
   }
-
-  return shipId;
 }

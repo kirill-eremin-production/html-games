@@ -13,6 +13,9 @@ export { VelocityComponent } from '@/entities/physics/velocity';
 // Домен: Rendering
 export { HealthBarComponent } from '@/entities/rendering/health-bar';
 export { MeshComponent } from '@/entities/rendering/mesh';
+export { ViewComponent } from '@/entities/rendering/view';
+export { VisualComponent } from '@/entities/rendering/visual';
+export type { VisualType } from '@/entities/rendering/visual';
 // Домен: Stats
 export { DamageBufferComponent } from '@/entities/stats/damage-buffer';
 export { HealthComponent } from '@/entities/stats/health';
