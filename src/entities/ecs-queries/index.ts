@@ -8,7 +8,6 @@ import { SubsystemComponent, type SubsystemType } from '@/entities/combat/subsys
 import { WeaponComponent } from '@/entities/combat/weapon';
 import { TransformComponent } from '@/entities/physics/transform';
 import { VelocityComponent } from '@/entities/physics/velocity';
-import { HealthBarComponent } from '@/entities/rendering/health-bar';
 import { DamageBufferComponent } from '@/entities/stats/damage-buffer';
 import { HealthComponent } from '@/entities/stats/health';
 import { NameComponent } from '@/entities/stats/name';
@@ -20,7 +19,6 @@ export interface FighterQueryResult {
   entity: EntityId;
   transform: TransformComponent;
   health: HealthComponent;
-  healthBar: HealthBarComponent;
   velocity: VelocityComponent;
   weapon: WeaponComponent;
   team: TeamComponent;
@@ -34,7 +32,6 @@ export function queryAllFighters(): FighterQueryResult[] {
   const raw = world.query(
     TransformComponent,
     HealthComponent,
-    HealthBarComponent,
     VelocityComponent,
     WeaponComponent,
     TeamComponent,
@@ -46,13 +43,12 @@ export function queryAllFighters(): FighterQueryResult[] {
   const results: FighterQueryResult[] = [];
   for (const {
     entity,
-    components: [transform, health, healthBar, velocity, weapon, team, ai, name, damageBuffer],
+    components: [transform, health, velocity, weapon, team, ai, name, damageBuffer],
   } of raw) {
     results.push({
       entity,
       transform,
       health,
-      healthBar,
       velocity,
       weapon,
       team,

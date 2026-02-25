@@ -14,6 +14,7 @@ import {
   queryAllFighters,
 } from '@/entities/ecs-queries';
 import { cleanupTeamSources, updateExhaustGlow } from '@/entities/objects/space-ships';
+import { HealthBarComponent } from '@/entities/rendering/health-bar';
 
 import { playerPlane } from '@/features/flight/player-system';
 
@@ -146,11 +147,14 @@ function updateFighterAI(
     );
   }
 
-  // ── Обновление health bar ─────────────────────────────────────────────
-  f.healthBar.healthBar.lookAt(camera.position);
-  const hpRatio = f.health.current / f.health.max;
-  f.healthBar.healthFill.scaling.x = Math.max(0.01, hpRatio);
-  f.healthBar.healthFill.position.x = -(1 - hpRatio) * 2;
+  // ── Обновление health bar (может отсутствовать до renderSystem) ─────
+  const hb = world.getComponent(f.entity, HealthBarComponent);
+  if (hb) {
+    hb.healthBar.lookAt(camera.position);
+    const hpRatio = f.health.current / f.health.max;
+    hb.healthFill.scaling.x = Math.max(0.01, hpRatio);
+    hb.healthFill.position.x = -(1 - hpRatio) * 2;
+  }
 }
 
 // ── GameSystem ──────────────────────────────────────────────────────────────

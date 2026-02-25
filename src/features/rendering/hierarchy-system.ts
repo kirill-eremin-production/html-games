@@ -1,3 +1,4 @@
+import { Vector3 } from '@/shared/core';
 import { world } from '@/shared/ecs/combat-world';
 import type { GameSystem } from '@/shared/types';
 
@@ -5,6 +6,8 @@ import { SubsystemComponent } from '@/entities/combat/subsystem';
 import { TransformComponent } from '@/entities/physics/transform';
 import { ViewComponent } from '@/entities/rendering/view';
 import { ParentEntityComponent } from '@/entities/stats/parent-entity';
+
+const _tmpVec = new Vector3();
 
 /**
  * HierarchySystem — вычисляет мировые координаты дочерних сущностей.
@@ -26,7 +29,8 @@ export const hierarchySystem: GameSystem = {
       if (!parentView) continue;
 
       // local center → world position через world matrix родителя
-      transform.position.copyFrom(sub.center).applyMatrix4(parentView.node.getWorldMatrix());
+      _tmpVec.copyFrom(sub.center).applyMatrix4(parentView.node.getWorldMatrix());
+      transform.position.copyFrom(_tmpVec);
     }
   },
 };

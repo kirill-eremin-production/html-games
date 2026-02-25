@@ -1,6 +1,7 @@
 import { COMBAT_CONSTANTS } from '@/shared/config/combat';
 import { PLAYER_NAME } from '@/shared/constants';
-import type { EngineMesh, TransformNode, Vector3 } from '@/shared/core';
+import { Quaternion, Vector3 } from '@/shared/core';
+import type { EngineMesh, TransformNode } from '@/shared/core';
 import { registerMeshEntity } from '@/shared/ecs/entity-index';
 import type { EntityId } from '@/shared/ecs/types';
 import type { World } from '@/shared/ecs/world';
@@ -147,7 +148,10 @@ export function createSubsystemEntities(
     const subId = w.createEntity();
     const subMesh = sub.mesh ?? shipMesh; // fallback на меш корабля если нет меша подсистемы
 
-    w.addComponent(subId, new TransformComponent(subMesh.position, subMesh.quaternion));
+    // Подсистемы используют отдельные векторы для TransformComponent,
+    // чтобы hierarchySystem мог записывать мировые координаты
+    // не сдвигая BJS-ноду (которая остаётся дочерней в scene graph).
+    w.addComponent(subId, new TransformComponent(new Vector3(), new Quaternion()));
     w.addComponent(subId, new MeshComponent(subMesh));
     w.addComponent(subId, new SubsystemComponent(sub.type, sub.center, sub.radius));
     w.addComponent(subId, new HealthComponent(sub.health, sub.maxHealth));
