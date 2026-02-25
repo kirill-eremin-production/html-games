@@ -3,13 +3,14 @@ import { combatConfig } from '@/shared/config/combat-session';
 import { PLAYER_CONFIG } from '@/shared/config/player';
 import { Vector3, disposeNode, removeFromScene } from '@/shared/core';
 import { world } from '@/shared/ecs/combat-world';
+import { getEntityByMesh, unregisterMeshEntity } from '@/shared/ecs/entity-index';
 import { emit, off, on } from '@/shared/events';
 import type { EventMap } from '@/shared/events';
 import { state } from '@/shared/state';
 import type { CapitalShip, Fighter, Subsystem } from '@/shared/types';
 import type { GameSystem } from '@/shared/types';
 
-import { findFighterEntity } from '@/entities/ecs-adapters';
+import { queryAllCapitalShips } from '@/entities/ecs-queries';
 
 import { showMessage } from '@/features/hud/hud';
 import { addKillFeedEntry } from '@/features/hud/kill-feed';
@@ -24,16 +25,13 @@ function handleFighterKilled(e: EventMap['fighter-killed']): void {
   const { victim, killerName, killerTeam, victimTeam, isPlayerKill } = e;
 
   createExplosion(victim.mesh.position.clone(), 3);
-  disposeNode(victim.mesh);
+  unregisterMeshEntity(victim.mesh);
 
-  // Remove from ECS world
-  const entityId = findFighterEntity(world, victim);
+  // Уничтожаем ECS entity через EntityIndex (O(1))
+  const entityId = getEntityByMesh(victim.mesh);
   if (entityId !== null) world.destroyEntity(entityId);
 
-  // Remove from state array
-  const arr = victimTeam === 'enemy' ? state.enemies : state.allies;
-  const idx = arr.indexOf(victim);
-  if (idx !== -1) arr.splice(idx, 1);
+  disposeNode(victim.mesh);
 
   addKillFeedEntry(killerName, victim.name, killerTeam, victimTeam);
 
@@ -95,7 +93,7 @@ function handleCapitalShipDestroyed(e: EventMap['capital-ship-destroyed']): void
   state.score += C.capitalShipKillScore;
   showMessage(`КОРАБЛЬ УНИЧТОЖЕН! +${C.capitalShipKillScore}`, 3);
 
-  if (state.phase === 1 && state.capitalShips.every((c) => !c.alive)) {
+  if (state.phase === 1 && queryAllCapitalShips().every((cs) => !cs.capitalShip.alive)) {
     state.phase = 2;
     emit('phase-changed', { phase: 2 });
     setTimeout(() => {

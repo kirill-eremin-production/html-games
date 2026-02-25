@@ -4,11 +4,18 @@ import {
   LOCK_PICK_RADIUS,
 } from '@/shared/constants';
 import { TransformNode, Vector3 } from '@/shared/core';
+import { world } from '@/shared/ecs/combat-world';
 import { camera } from '@/shared/engine';
 import { DomPool } from '@/shared/lib/dom-pool';
 import { clampToScreenEdge, worldToScreen } from '@/shared/lib/screen';
 import { state } from '@/shared/state';
 import type { LockedTarget } from '@/shared/types';
+
+import {
+  capitalShipProxy,
+  queryAliveCapitalShips,
+  queryFightersByTeam,
+} from '@/entities/ecs-queries';
 
 const markersContainer = document.getElementById('target-markers')!;
 const pool = new DomPool(markersContainer, () => {
@@ -31,14 +38,13 @@ function renderCapitalShipMarkers(
   h: number,
   playerPlane: TransformNode,
 ): number {
-  for (const cs of state.capitalShips) {
-    if (!cs.alive) continue;
-    const shipDistSq = playerPlane.position.distanceToSquared(cs.mesh.position);
+  for (const cs of queryAliveCapitalShips()) {
+    const shipDistSq = playerPlane.position.distanceToSquared(cs.mesh.mesh.position);
     if (shipDistSq > SHIP_RANGE_SQ) continue;
 
     if (shipDistSq > CAPITAL_CLOSE_RANGE_SQ) {
       // Far: single marker at ship center
-      const scr = worldToScreen(cs.mesh.position, camera, w, h);
+      const scr = worldToScreen(cs.mesh.mesh.position, camera, w, h);
       if (scr.z >= 1 || scr.x < -20 || scr.x > w + 20 || scr.y < -20 || scr.y > h + 20) continue;
       const el = pool.get(usedCount++);
       el.className = 'target-marker capital';
@@ -46,14 +52,14 @@ function renderCapitalShipMarkers(
       el.style.top = scr.y + 'px';
       const dist3d = Math.sqrt(shipDistSq);
       el.children[1].textContent = Math.floor(dist3d) + 'm';
-      el.children[2].textContent = `Корабль-${cs.mesh.metadata.index + 1}`;
+      el.children[2].textContent = `Корабль-${cs.mesh.mesh.metadata.index + 1}`;
       (el.children[0] as HTMLElement).style.width = '28px';
       (el.children[0] as HTMLElement).style.height = '28px';
     } else {
       // Close: individual subsystem markers
-      for (const sub of cs.subsystems) {
+      for (const sub of cs.capitalShip.subsystems) {
         if (sub.health <= 0) continue;
-        _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.getWorldMatrix());
+        _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.mesh.getWorldMatrix());
         const d = playerPlane.position.distanceTo(_mrkPos);
         const scr = worldToScreen(_mrkPos, camera, w, h);
         if (scr.z >= 1 || scr.x < -20 || scr.x > w + 20 || scr.y < -20 || scr.y > h + 20) continue;
@@ -128,7 +134,7 @@ export function updateTargetMarkers(playerPlane: TransformNode): void {
   if (state.lockedTarget) {
     const lt = state.lockedTarget;
     if (lt.kind === 'fighter') {
-      if (lt.fighter.health <= 0 || !state.enemies.includes(lt.fighter)) {
+      if (!world.isAlive(lt.entityId)) {
         state.lockedTarget = null;
       }
     } else {
@@ -146,14 +152,16 @@ export function updateTargetMarkers(playerPlane: TransformNode): void {
     return;
   }
 
-  // Normal mode: proximity-filtered fighter markers
+  // Normal mode: proximity-filtered fighter markers (ECS query)
   const diag = Math.sqrt(w * w + h * h);
   const proximityThresholdSq = (CURSOR_PROXIMITY_FACTOR * diag) ** 2;
+  const enemies = queryFightersByTeam('enemy');
 
-  for (const e of state.enemies) {
-    const distSq = playerPlane.position.distanceToSquared(e.mesh.position);
+  for (const e of enemies) {
+    const ePos = e.transform.position;
+    const distSq = playerPlane.position.distanceToSquared(ePos);
     if (distSq > ENEMY_RANGE_SQ) continue;
-    const scr = worldToScreen(e.mesh.position, camera, w, h);
+    const scr = worldToScreen(ePos, camera, w, h);
     if (scr.z >= 1 || scr.x < -20 || scr.x > w + 20 || scr.y < -20 || scr.y > h + 20) continue;
 
     // Cursor proximity filter
@@ -167,7 +175,7 @@ export function updateTargetMarkers(playerPlane: TransformNode): void {
     el.style.top = scr.y + 'px';
     const dist3d = Math.sqrt(distSq);
     el.children[1].textContent = Math.floor(dist3d) + 'm';
-    el.children[2].textContent = e.name;
+    el.children[2].textContent = e.name.name;
     const scale = Math.max(0.6, Math.min(1.5, 300 / dist3d));
     (el.children[0] as HTMLElement).style.width = 21 * scale + 'px';
     (el.children[0] as HTMLElement).style.height = 21 * scale + 'px';
@@ -192,35 +200,40 @@ export function toggleTargetLock(playerPlane: TransformNode): void {
   const cursorScreenX = (state.mouseX * 0.5 + 0.5) * w;
   const cursorScreenY = (state.mouseY * 0.5 + 0.5) * h;
   const pickRadiusSq = LOCK_PICK_RADIUS * LOCK_PICK_RADIUS;
+  const enemies = queryFightersByTeam('enemy');
 
   let bestTarget: LockedTarget | null = null;
   let bestScreenDistSq = Infinity;
 
   // Screen-pick: enemies near cursor
-  for (const e of state.enemies) {
-    if (playerPlane.position.distanceToSquared(e.mesh.position) > ENEMY_RANGE_SQ) continue;
-    const scr = worldToScreen(e.mesh.position, camera, w, h);
+  for (const e of enemies) {
+    const ePos = e.transform.position;
+    if (playerPlane.position.distanceToSquared(ePos) > ENEMY_RANGE_SQ) continue;
+    const scr = worldToScreen(ePos, camera, w, h);
     if (scr.z >= 1) continue;
     const dSq = (scr.x - cursorScreenX) ** 2 + (scr.y - cursorScreenY) ** 2;
     if (dSq < pickRadiusSq && dSq < bestScreenDistSq) {
       bestScreenDistSq = dSq;
-      bestTarget = { kind: 'fighter', fighter: e };
+      bestTarget = {
+        kind: 'fighter',
+        entityId: e.entity,
+        fighter: { mesh: e.mesh.mesh, name: e.name.name } as any,
+      };
     }
   }
 
   // Screen-pick: capital ship subsystems near cursor
-  for (const cs of state.capitalShips) {
-    if (!cs.alive) continue;
-    if (playerPlane.position.distanceToSquared(cs.mesh.position) > SHIP_RANGE_SQ) continue;
-    for (const sub of cs.subsystems) {
+  for (const cs of queryAliveCapitalShips()) {
+    if (playerPlane.position.distanceToSquared(cs.mesh.mesh.position) > SHIP_RANGE_SQ) continue;
+    for (const sub of cs.capitalShip.subsystems) {
       if (sub.health <= 0) continue;
-      _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.getWorldMatrix());
+      _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.mesh.getWorldMatrix());
       const scr = worldToScreen(_mrkPos, camera, w, h);
       if (scr.z >= 1) continue;
       const dSq = (scr.x - cursorScreenX) ** 2 + (scr.y - cursorScreenY) ** 2;
       if (dSq < pickRadiusSq && dSq < bestScreenDistSq) {
         bestScreenDistSq = dSq;
-        bestTarget = { kind: 'subsystem', subsystem: sub, ship: cs };
+        bestTarget = { kind: 'subsystem', subsystem: sub, ship: capitalShipProxy(cs) };
       }
     }
   }
@@ -228,22 +241,25 @@ export function toggleTargetLock(playerPlane: TransformNode): void {
   // Fallback: nearest in 3D
   if (!bestTarget) {
     let bestDist3dSq = Infinity;
-    for (const e of state.enemies) {
-      const dSq = playerPlane.position.distanceToSquared(e.mesh.position);
+    for (const e of enemies) {
+      const dSq = playerPlane.position.distanceToSquared(e.transform.position);
       if (dSq < bestDist3dSq) {
         bestDist3dSq = dSq;
-        bestTarget = { kind: 'fighter', fighter: e };
+        bestTarget = {
+          kind: 'fighter',
+          entityId: e.entity,
+          fighter: { mesh: e.mesh.mesh, name: e.name.name } as any,
+        };
       }
     }
-    for (const cs of state.capitalShips) {
-      if (!cs.alive) continue;
-      for (const sub of cs.subsystems) {
+    for (const cs of queryAliveCapitalShips()) {
+      for (const sub of cs.capitalShip.subsystems) {
         if (sub.health <= 0) continue;
-        _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.getWorldMatrix());
+        _mrkPos.copyFrom(sub.center).applyMatrix4(cs.mesh.mesh.getWorldMatrix());
         const dSq = playerPlane.position.distanceToSquared(_mrkPos);
         if (dSq < bestDist3dSq) {
           bestDist3dSq = dSq;
-          bestTarget = { kind: 'subsystem', subsystem: sub, ship: cs };
+          bestTarget = { kind: 'subsystem', subsystem: sub, ship: capitalShipProxy(cs) };
         }
       }
     }

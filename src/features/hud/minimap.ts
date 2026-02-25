@@ -3,6 +3,8 @@ import { TransformNode, Vector3 } from '@/shared/core';
 import { planetMeshes } from '@/shared/refs/exploration-refs';
 import { state } from '@/shared/state';
 
+import { queryAliveCapitalShips, queryAllFighters } from '@/entities/ecs-queries';
+
 const M = UI_CONFIG.minimap;
 const EXPLORATION_SCALE = 0.00006;
 const minimapCanvas = document.getElementById('minimap-canvas') as HTMLCanvasElement;
@@ -95,33 +97,22 @@ function drawCombatMinimap(
 
   drawPlayerDot(cx, cy, playerPlane);
 
-  mCtx.fillStyle = '#00ff66';
-  for (const a of state.allies) {
-    const ex = cx + (a.mesh.position.x - px) * scale;
-    const ey = cy + (a.mesh.position.z - pz) * scale;
-    if (ex > M.padding && ex < M.size - M.padding && ey > M.padding && ey < M.size - M.padding) {
+  const fighters = queryAllFighters();
+  for (const f of fighters) {
+    mCtx.fillStyle = f.team.team === 'ally' ? '#00ff66' : '#ff2200';
+    const fx = cx + (f.transform.position.x - px) * scale;
+    const fy = cy + (f.transform.position.z - pz) * scale;
+    if (fx > M.padding && fx < M.size - M.padding && fy > M.padding && fy < M.size - M.padding) {
       mCtx.beginPath();
-      mCtx.arc(ex, ey, M.dotRadius, 0, TWO_PI);
-      mCtx.fill();
-    }
-  }
-
-  mCtx.fillStyle = '#ff2200';
-  for (const e of state.enemies) {
-    const ex = cx + (e.mesh.position.x - px) * scale;
-    const ey = cy + (e.mesh.position.z - pz) * scale;
-    if (ex > M.padding && ex < M.size - M.padding && ey > M.padding && ey < M.size - M.padding) {
-      mCtx.beginPath();
-      mCtx.arc(ex, ey, M.dotRadius, 0, TWO_PI);
+      mCtx.arc(fx, fy, M.dotRadius, 0, TWO_PI);
       mCtx.fill();
     }
   }
 
   mCtx.fillStyle = '#ff8800';
-  for (const cs of state.capitalShips) {
-    if (!cs.alive) continue;
-    const ex = cx + (cs.mesh.position.x - px) * scale;
-    const ey = cy + (cs.mesh.position.z - pz) * scale;
+  for (const cs of queryAliveCapitalShips()) {
+    const ex = cx + (cs.mesh.mesh.position.x - px) * scale;
+    const ey = cy + (cs.mesh.mesh.position.z - pz) * scale;
     if (ex > M.padding && ex < M.size - M.padding && ey > M.padding && ey < M.size - M.padding) {
       mCtx.fillRect(
         ex - M.capitalShipMarkerSize,

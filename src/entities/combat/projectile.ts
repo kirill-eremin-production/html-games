@@ -4,7 +4,6 @@ import type { Vector3 } from '@/shared/core';
 export class ProjectileComponent {
   constructor(
     public velocity: Vector3,
-    public life: number,
     public damage: number,
     public shooterName: string,
   ) {}

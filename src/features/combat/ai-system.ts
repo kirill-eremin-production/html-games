@@ -2,13 +2,19 @@ import { AI_CONFIG } from '@/shared/config/ai';
 import { PLAYER_NAME } from '@/shared/constants';
 import { Quaternion, TransformNode, Vector3, disposeNode } from '@/shared/core';
 import { world } from '@/shared/ecs/combat-world';
+import { unregisterMeshEntity } from '@/shared/ecs/entity-index';
 import { camera } from '@/shared/engine';
-import { state } from '@/shared/state';
-import type { Fighter } from '@/shared/types';
 import type { GameSystem } from '@/shared/types';
 
-import { findFighterEntity } from '@/entities/ecs-adapters';
+import { FighterAIComponent } from '@/entities/ai/fighter-ai';
+import {
+  type FighterQueryResult,
+  findNearestFighter,
+  queryAliveCapitalShips,
+  queryAllFighters,
+} from '@/entities/ecs-queries';
 import { cleanupTeamSources, updateExhaustGlow } from '@/entities/objects/space-ships';
+import { MeshComponent } from '@/entities/rendering/mesh';
 
 import { playerPlane } from '@/features/flight/player-system';
 
@@ -26,99 +32,89 @@ const _tmpVec = new Vector3();
 const _aiOrbitDir = new Vector3();
 const _aiSubWorldPos = new Vector3();
 
-let _nearestTarget: Fighter | null = null;
-
-function findNearestTarget(pos: Vector3, targets: Fighter[]): Fighter | null {
-  _nearestTarget = null;
-  let bestDistSq = Infinity;
-  for (const t of targets) {
-    const dSq = pos.distanceToSquared(t.mesh.position);
-    if (dSq < bestDistSq) {
-      bestDistSq = dSq;
-      _nearestTarget = t;
-    }
-  }
-  return _nearestTarget;
-}
-
 function updateFighterAI(
-  fighter: Fighter,
+  f: FighterQueryResult,
   dt: number,
-  enemies: Fighter[],
-  shootTeam: 'ally' | 'enemy',
+  enemyPool: FighterQueryResult[],
   playerPos: Vector3 | null,
   isEnemy: boolean,
-  playerPlane: TransformNode,
+  pPlane: TransformNode,
 ): void {
-  if (!fighter.ai.target || Math.random() < A.retargetChance) {
+  const pos = f.transform.position;
+  const quat = f.transform.quaternion;
+
+  // ── Выбор цели ─────────────────────────────────────────────────────────
+  if (!f.ai.target || Math.random() < A.retargetChance) {
     if (isEnemy && Math.random() < A.enemyTargetPlayerChance && playerPos) {
-      fighter.ai.target = { mesh: { position: playerPos }, name: PLAYER_NAME };
+      f.ai.target = { mesh: { position: playerPos }, name: PLAYER_NAME };
     } else {
-      fighter.ai.target = findNearestTarget(fighter.mesh.position, enemies);
+      const nearest = findNearestFighter(pos, enemyPool);
+      f.ai.target = nearest
+        ? { mesh: { position: nearest.transform.position }, name: nearest.name.name }
+        : null;
     }
   }
 
+  // Союзники могут целиться в подсистемы кораблей
   if (!isEnemy && Math.random() < A.allyTargetCapitalChance) {
-    for (const cs of state.capitalShips) {
-      if (!cs.alive) continue;
-      for (const sub of cs.subsystems) {
+    const ships = queryAliveCapitalShips();
+    for (const cs of ships) {
+      for (const sub of cs.capitalShip.subsystems) {
         if (sub.health > 0) {
-          _aiSubWorldPos.copyFrom(sub.center).applyMatrix4(cs.mesh.getWorldMatrix());
-          fighter.ai.target = {
+          _aiSubWorldPos.copyFrom(sub.center).applyMatrix4(cs.mesh.mesh.getWorldMatrix());
+          f.ai.target = {
             mesh: { position: _aiSubWorldPos.clone() },
-            name: `Корабль-${cs.mesh.metadata.index + 1}`,
+            name: `Корабль-${cs.mesh.mesh.metadata.index + 1}`,
           };
           break;
         }
       }
-      if (fighter.ai.target) break;
+      if (f.ai.target) break;
     }
   }
 
-  const target = fighter.ai.target;
+  const target = f.ai.target;
   if (!target) return;
 
-  _aiToTarget.copyFrom(target.mesh.position).subtractInPlace(fighter.mesh.position);
+  // ── Навигация ──────────────────────────────────────────────────────────
+  _aiToTarget.copyFrom(target.mesh.position).subtractInPlace(pos);
   const dist = _aiToTarget.length();
   const dirToTarget = _aiToTarget.normalize();
 
-  fighter.ai.timer -= dt;
-  if (fighter.ai.timer <= 0) {
+  f.ai.timer -= dt;
+  if (f.ai.timer <= 0) {
     if (dist < A.evadeDistance) {
-      fighter.ai.state = 'evade';
-      fighter.ai.evadeDir.copyFrom(dirToTarget).negate();
-      fighter.ai.evadeDir.x += (Math.random() - 0.5) * A.evadeNoiseXZ;
-      fighter.ai.evadeDir.y += (Math.random() - 0.5) * A.evadeNoiseY;
-      fighter.ai.evadeDir.z += (Math.random() - 0.5) * A.evadeNoiseXZ;
-      fighter.ai.evadeDir.normalize();
-      fighter.ai.timer = A.evadeTimerBase + Math.random() * A.evadeTimerRange;
+      f.ai.state = 'evade';
+      f.ai.evadeDir.copyFrom(dirToTarget).negate();
+      f.ai.evadeDir.x += (Math.random() - 0.5) * A.evadeNoiseXZ;
+      f.ai.evadeDir.y += (Math.random() - 0.5) * A.evadeNoiseY;
+      f.ai.evadeDir.z += (Math.random() - 0.5) * A.evadeNoiseXZ;
+      f.ai.evadeDir.normalize();
+      f.ai.timer = A.evadeTimerBase + Math.random() * A.evadeTimerRange;
     } else if (dist > A.chaseDistance) {
-      fighter.ai.state = 'chase';
-      fighter.ai.timer = A.chaseTimer;
+      f.ai.state = 'chase';
+      f.ai.timer = A.chaseTimer;
     } else {
-      fighter.ai.state = 'orbit';
-      fighter.ai.evadeDir
+      f.ai.state = 'orbit';
+      f.ai.evadeDir
         .set(-dirToTarget.z, (Math.random() - 0.5) * A.orbitYNoise, dirToTarget.x)
         .normalize();
-      if (Math.random() < 0.5) fighter.ai.evadeDir.negate();
-      fighter.ai.timer = A.orbitTimerBase + Math.random() * A.orbitTimerRange;
+      if (Math.random() < 0.5) f.ai.evadeDir.negate();
+      f.ai.timer = A.orbitTimerBase + Math.random() * A.orbitTimerRange;
     }
   }
 
   let targetDir: Vector3;
-  switch (fighter.ai.state) {
+  switch (f.ai.state) {
     case 'chase':
       targetDir = dirToTarget;
       break;
     case 'evade':
-      targetDir = fighter.ai.evadeDir;
+      targetDir = f.ai.evadeDir;
       break;
     case 'orbit': {
       const correction = ((dist - A.orbitDistance) / A.orbitDistance) * A.orbitCorrection;
-      _aiOrbitDir
-        .copyFrom(fighter.ai.evadeDir)
-        .addScaledVector(dirToTarget, correction)
-        .normalize();
+      _aiOrbitDir.copyFrom(f.ai.evadeDir).addScaledVector(dirToTarget, correction).normalize();
       targetDir = _aiOrbitDir;
       break;
     }
@@ -126,70 +122,73 @@ function updateFighterAI(
       targetDir = dirToTarget;
   }
 
-  _aiCurrentFwd.set(1, 0, 0).applyQuaternion(fighter.mesh.quaternion);
+  // ── Поворот ────────────────────────────────────────────────────────────
+  _aiCurrentFwd.set(1, 0, 0).applyQuaternion(quat);
   _aiCross.copyFrom(_aiCurrentFwd).cross(targetDir);
   const crossLen = _aiCross.length();
   if (crossLen > 0.001) {
     const angle = Math.asin(Math.min(1, crossLen)) * A.turnRate * dt;
     _aiCross.scaleInPlace(1 / crossLen);
     _aiRotQ.setFromAxisAngle(_aiCross, angle);
-    fighter.mesh.quaternion.premultiply(_aiRotQ);
-    fighter.mesh.quaternion.normalize();
+    quat.premultiply(_aiRotQ);
+    quat.normalize();
   }
 
   _aiRollQ.setFromAxisAngle(_tmpVec.set(1, 0, 0), -_aiCross.y * A.rollRate * dt);
-  fighter.mesh.quaternion.multiply(_aiRollQ);
+  quat.multiply(_aiRollQ);
 
-  _aiFwd.set(1, 0, 0).applyQuaternion(fighter.mesh.quaternion);
-  fighter.mesh.position.addScaledVector(_aiFwd, fighter.speed * dt);
+  // ── Движение ───────────────────────────────────────────────────────────
+  _aiFwd.set(1, 0, 0).applyQuaternion(quat);
+  pos.addScaledVector(_aiFwd, f.velocity.speed * dt);
 
-  fighter.shootTimer -= dt;
-  if (fighter.shootTimer <= 0 && dist < A.shootDistance) {
-    fighter.shootTimer = A.shootTimerBase + Math.random() * A.shootTimerRange;
-    shootFromFighter(fighter.mesh, dirToTarget, shootTeam, fighter.name, playerPlane);
+  // ── Стрельба ───────────────────────────────────────────────────────────
+  f.weapon.shootTimer -= dt;
+  if (f.weapon.shootTimer <= 0 && dist < A.shootDistance) {
+    f.weapon.shootTimer = A.shootTimerBase + Math.random() * A.shootTimerRange;
+    shootFromFighter(
+      f.mesh.mesh,
+      dirToTarget,
+      f.team.team as 'ally' | 'enemy',
+      f.name.name,
+      pPlane,
+    );
   }
 
-  fighter.healthBar.lookAt(camera.position);
-  const hpRatio = fighter.health / fighter.maxHealth;
-  fighter.healthFill.scaling.x = Math.max(0.01, hpRatio);
-  fighter.healthFill.position.x = -(1 - hpRatio) * 2;
+  // ── Обновление health bar ─────────────────────────────────────────────
+  f.healthBar.healthBar.lookAt(camera.position);
+  const hpRatio = f.health.current / f.health.max;
+  f.healthBar.healthFill.scaling.x = Math.max(0.01, hpRatio);
+  f.healthBar.healthFill.position.x = -(1 - hpRatio) * 2;
 }
 
-export function updateAllies(dt: number, playerPlane: TransformNode): void {
-  for (const a of state.allies) {
-    updateFighterAI(a, dt, state.enemies, 'ally', null, false, playerPlane);
-  }
-}
-
-export function updateEnemies(dt: number, playerPlane: TransformNode): void {
-  for (const e of state.enemies) {
-    updateFighterAI(e, dt, state.allies, 'enemy', playerPlane.position, true, playerPlane);
-  }
-}
-
-// ── GameSystem adapter ──────────────────────────────────────────────────────
+// ── GameSystem ──────────────────────────────────────────────────────────────
 
 export const aiSystem: GameSystem = {
   id: 'ai',
   update(dt) {
-    updateAllies(dt, playerPlane);
-    updateEnemies(dt, playerPlane);
-    // Global exhaust pulse (shared material — one update per team)
+    const allFighters = queryAllFighters();
+    const allies = allFighters.filter((f) => f.team.team === 'ally');
+    const enemies = allFighters.filter((f) => f.team.team === 'enemy');
+
+    for (const a of allies) {
+      updateFighterAI(a, dt, enemies, null, false, playerPlane);
+    }
+    for (const e of enemies) {
+      updateFighterAI(e, dt, allies, playerPlane.position, true, playerPlane);
+    }
+
     updateExhaustGlow();
   },
   cleanup() {
-    for (const a of state.allies) {
-      disposeNode(a.mesh);
-      const eid = findFighterEntity(world, a);
-      if (eid !== null) world.destroyEntity(eid);
+    const fighters = world.query(FighterAIComponent, MeshComponent);
+    for (const {
+      entity,
+      components: [, mesh],
+    } of fighters) {
+      unregisterMeshEntity(mesh.mesh);
+      disposeNode(mesh.mesh);
+      world.destroyEntity(entity);
     }
-    for (const e of state.enemies) {
-      disposeNode(e.mesh);
-      const eid = findFighterEntity(world, e);
-      if (eid !== null) world.destroyEntity(eid);
-    }
-    state.allies = [];
-    state.enemies = [];
     cleanupTeamSources();
   },
 };

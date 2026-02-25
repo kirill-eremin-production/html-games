@@ -1,12 +1,18 @@
 import { WEAPON_CONFIG } from '@/shared/config/weapons';
-import { state } from '@/shared/state';
+import { Quaternion } from '@/shared/core/quaternion';
+import { Vector3 } from '@/shared/core/vector3';
+// ── Imports (после моков) ───────────────────────────────────────────────────
+
+import { world } from '@/shared/ecs/combat-world';
+
+import { ProjectileComponent } from '@/entities/combat/projectile';
+import { MeshComponent } from '@/entities/rendering/mesh';
 
 import { cleanupExcessBullets } from '../weapons';
 
-// Мокаем модули, требующие Babylon.js runtime
 jest.mock('@/shared/core', () => {
   const { Vector3 } = jest.requireActual('@/shared/core/vector3');
-  const { Quaternion } = jest.requireActual('@babylonjs/core/Maths/math.vector');
+  const { Quaternion } = jest.requireActual('@/shared/core/quaternion');
   return {
     Vector3,
     Quaternion,
@@ -27,6 +33,16 @@ jest.mock('@/shared/core', () => {
   };
 });
 
+jest.mock('@/shared/ecs/combat-world', () => {
+  const { World } = jest.requireActual('@/shared/ecs/world');
+  return { world: new World(), resetWorld: jest.fn() };
+});
+
+jest.mock('@/shared/ecs/entity-index', () => ({
+  registerMeshEntity: jest.fn(),
+  unregisterMeshEntity: jest.fn(),
+}));
+
 jest.mock('@/shared/audio', () => ({
   playLaserSound: jest.fn(),
 }));
@@ -38,71 +54,66 @@ jest.mock('@/entities/objects/space-ships', () => ({
 
 const W = WEAPON_CONFIG;
 
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function makeMockMesh() {
+  return {
+    position: new Vector3(),
+    quaternion: new Quaternion(),
+    dispose: jest.fn(),
+  } as any;
+}
+
+function createProjectileECS() {
+  const mesh = makeMockMesh();
+  const id = world.createEntity();
+  world.addComponent(id, new ProjectileComponent(new Vector3(1, 0, 0), 10, 'test'));
+  world.addComponent(id, new MeshComponent(mesh));
+  return { id, mesh };
+}
+
+// ── Tests ───────────────────────────────────────────────────────────────────
+
 describe('cleanupExcessBullets', () => {
   beforeEach(() => {
-    state.bullets = [];
-    state.allyBullets = [];
-    state.enemyBullets = [];
+    world.clear();
   });
 
   it('не удаляет, если общее число <= maxBullets', () => {
     for (let i = 0; i < 50; i++) {
-      state.bullets.push({ mesh: { dispose: jest.fn() } } as any);
+      createProjectileECS();
     }
     cleanupExcessBullets();
-    expect(state.bullets.length).toBe(50);
+    expect(world.query(ProjectileComponent, MeshComponent).length).toBe(50);
   });
 
-  it('удаляет старые снаряды из самого длинного массива при превышении maxBullets', () => {
-    // Заполняем больше maxBullets
+  it('удаляет старые снаряды при превышении maxBullets', () => {
     const total = W.maxBullets + 20;
     for (let i = 0; i < total; i++) {
-      state.bullets.push({ mesh: { dispose: jest.fn() } } as any);
+      createProjectileECS();
     }
 
     cleanupExcessBullets();
 
-    // Должно остаться cleanupTarget
-    expect(state.bullets.length).toBe(W.cleanupTarget);
+    expect(world.query(ProjectileComponent, MeshComponent).length).toBe(W.cleanupTarget);
   });
 
   it('при cleanup вызывается dispose на удалённых мешах', () => {
-    const disposeFns: jest.Mock[] = [];
+    const meshes: any[] = [];
     const total = W.maxBullets + 10;
     for (let i = 0; i < total; i++) {
-      const fn = jest.fn();
-      disposeFns.push(fn);
-      state.bullets.push({ mesh: { dispose: fn } } as any);
+      const { mesh } = createProjectileECS();
+      meshes.push(mesh);
     }
 
     cleanupExcessBullets();
 
-    // Первые (total - cleanupTarget) должны быть удалены
     const removeCount = total - W.cleanupTarget;
     for (let i = 0; i < removeCount; i++) {
-      expect(disposeFns[i]).toHaveBeenCalled();
+      expect(meshes[i].dispose).toHaveBeenCalled();
     }
-    // Оставшиеся — нет
     for (let i = removeCount; i < total; i++) {
-      expect(disposeFns[i]).not.toHaveBeenCalled();
+      expect(meshes[i].dispose).not.toHaveBeenCalled();
     }
-  });
-
-  it('удаляет из самого длинного массива', () => {
-    // allyBullets самый длинный
-    for (let i = 0; i < W.maxBullets; i++) {
-      state.allyBullets.push({ mesh: { dispose: jest.fn() } } as any);
-    }
-    // добавляем в enemy, чтобы превысить лимит
-    for (let i = 0; i < 10; i++) {
-      state.enemyBullets.push({ mesh: { dispose: jest.fn() } } as any);
-    }
-
-    cleanupExcessBullets();
-
-    // Удаление из allyBullets (самый длинный)
-    expect(state.allyBullets.length).toBeLessThan(W.maxBullets);
-    // enemy не тронут
-    expect(state.enemyBullets.length).toBe(10);
   });
 });

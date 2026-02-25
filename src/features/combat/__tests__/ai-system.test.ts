@@ -1,10 +1,25 @@
+import { Quaternion } from '@/shared/core/quaternion';
 import { Vector3 } from '@/shared/core/vector3';
-import { state } from '@/shared/state';
-import type { Fighter } from '@/shared/types';
+// ── Imports (после моков) ───────────────────────────────────────────────────
 
-import { updateAllies } from '../ai-system';
+import { world } from '@/shared/ecs/combat-world';
+import { clearEntityIndex, registerMeshEntity } from '@/shared/ecs/entity-index';
 
-// Мокаем зависимости
+import { FighterAIComponent } from '@/entities/ai/fighter-ai';
+import { WeaponComponent } from '@/entities/combat/weapon';
+import { TransformComponent } from '@/entities/physics/transform';
+import { VelocityComponent } from '@/entities/physics/velocity';
+import { HealthBarComponent } from '@/entities/rendering/health-bar';
+import { MeshComponent } from '@/entities/rendering/mesh';
+import { DamageBufferComponent } from '@/entities/stats/damage-buffer';
+import { HealthComponent } from '@/entities/stats/health';
+import { NameComponent } from '@/entities/stats/name';
+import { TeamComponent } from '@/entities/stats/team';
+
+import { aiSystem } from '../ai-system';
+
+// ── Mocks ───────────────────────────────────────────────────────────────────
+
 jest.mock('@/shared/core', () => {
   const { Vector3 } = jest.requireActual('@/shared/core/vector3');
   const { Quaternion } = jest.requireActual('@/shared/core/quaternion');
@@ -15,9 +30,15 @@ jest.mock('@/shared/core', () => {
       position = new Vector3();
       quaternion = new Quaternion();
       setVisibleRecursive = jest.fn();
+      dispose = jest.fn();
     },
     disposeNode: jest.fn(),
   };
+});
+
+jest.mock('@/shared/ecs/combat-world', () => {
+  const { World } = jest.requireActual('@/shared/ecs/world');
+  return { world: new World(), resetWorld: jest.fn() };
 });
 
 jest.mock('@/shared/engine', () => ({
@@ -32,6 +53,7 @@ jest.mock('@/entities/objects/space-ships', () => ({
 const mockShootFromFighter = jest.fn();
 jest.mock('../weapons', () => ({
   shootFromFighter: (...args: any[]) => mockShootFromFighter(...args),
+  cleanupExcessBullets: jest.fn(),
 }));
 
 jest.mock('@/features/flight/player-system', () => {
@@ -46,136 +68,127 @@ jest.mock('@/features/flight/player-system', () => {
   };
 });
 
-function createFighter(x: number, y: number, z: number, overrides?: Partial<Fighter>): Fighter {
-  const { Quaternion } = jest.requireActual('@/shared/core/quaternion');
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function makeMockMesh(x = 0, y = 0, z = 0) {
   return {
-    mesh: {
-      position: new Vector3(x, y, z),
-      quaternion: new Quaternion(),
-    },
-    name: 'test',
-    health: 50,
-    maxHealth: 50,
-    speed: 60,
-    shootTimer: 10,
-    healthBar: { lookAt: jest.fn() },
-    healthFill: { scaling: { x: 1 }, position: { x: 0 } },
-    ai: {
-      state: 'chase' as const,
-      timer: 0,
-      evadeDir: new Vector3(),
-      target: null,
-    },
-    ...overrides,
+    position: new Vector3(x, y, z),
+    quaternion: new Quaternion(),
+    dispose: jest.fn(),
+    setVisibleRecursive: jest.fn(),
+    lookAt: jest.fn(),
+    scaling: { x: 1 },
+    getWorldMatrix: jest.fn(),
   } as any;
 }
 
-describe('AI System', () => {
+function createFighterECS(
+  x: number,
+  y: number,
+  z: number,
+  team: 'ally' | 'enemy' = 'ally',
+  opts: { speed?: number; shootTimer?: number; health?: number } = {},
+) {
+  const mesh = makeMockMesh(x, y, z);
+  const healthBarMesh = { lookAt: jest.fn() } as any;
+  const healthFillMesh = { scaling: { x: 1 }, position: { x: 0 } } as any;
+
+  const id = world.createEntity();
+  const healthComp = new HealthComponent(opts.health ?? 50, opts.health ?? 50);
+  const velocityComp = new VelocityComponent(opts.speed ?? 60);
+  const weaponComp = new WeaponComponent(opts.shootTimer ?? 10);
+  const aiComp = new FighterAIComponent('chase', 0, new Vector3(), null);
+
+  world.addComponent(id, new TransformComponent(mesh.position, mesh.quaternion));
+  world.addComponent(id, new MeshComponent(mesh));
+  world.addComponent(id, healthComp);
+  world.addComponent(id, new HealthBarComponent(healthBarMesh, healthFillMesh));
+  world.addComponent(id, velocityComp);
+  world.addComponent(id, weaponComp);
+  world.addComponent(id, new TeamComponent(team));
+  world.addComponent(id, aiComp);
+  world.addComponent(id, new NameComponent('test'));
+  world.addComponent(id, new DamageBufferComponent());
+  registerMeshEntity(mesh, id);
+
+  return { id, mesh, healthComp, velocityComp, weaponComp, aiComp, healthBarMesh, healthFillMesh };
+}
+
+// ── Tests ───────────────────────────────────────────────────────────────────
+
+describe('AI System (ECS)', () => {
   beforeEach(() => {
-    state.allies = [];
-    state.enemies = [];
-    state.capitalShips = [];
+    world.clear();
+    clearEntityIndex();
     jest.clearAllMocks();
   });
 
   describe('Переключение состояний', () => {
     it('chase → evade при сближении (dist < evadeDistance)', () => {
-      // Ставим союзника далеко и врага близко к нему
-      const ally = createFighter(0, 0, 0);
-      const enemy = createFighter(50, 0, 0); // dist=50 < evadeDistance=100
-      state.allies.push(ally);
-      state.enemies.push(enemy);
+      const { aiComp: allyAI } = createFighterECS(0, 0, 0, 'ally');
+      const { mesh: enemyMesh } = createFighterECS(50, 0, 0, 'enemy');
 
-      // Устанавливаем цель и таймер=0 чтобы сработала смена состояния
-      ally.ai.target = enemy as any;
-      ally.ai.timer = 0;
+      allyAI.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      allyAI.timer = 0;
 
-      // Фиксируем Math.random чтобы не менять цель (retargetChance=0.01)
       const origRandom = Math.random;
-      Math.random = jest.fn(() => 0.5); // > retargetChance → не меняет цель
+      Math.random = jest.fn(() => 0.5);
 
-      updateAllies(0.016, (jest.requireMock('@/features/flight/player-system') as any).playerPlane);
+      aiSystem.update(0.016);
 
       Math.random = origRandom;
 
-      expect(ally.ai.state).toBe('evade');
+      expect(allyAI.state).toBe('evade');
     });
 
     it('chase → orbit на средней дистанции', () => {
-      // Дистанция между evadeDistance и chaseDistance
-      const ally = createFighter(0, 0, 0);
-      const enemy = createFighter(250, 0, 0); // evadeDistance < 250 < chaseDistance
-      state.allies.push(ally);
-      state.enemies.push(enemy);
+      const { aiComp: allyAI } = createFighterECS(0, 0, 0, 'ally');
+      const { mesh: enemyMesh } = createFighterECS(250, 0, 0, 'enemy');
 
-      ally.ai.target = enemy as any;
-      ally.ai.timer = 0;
+      allyAI.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      allyAI.timer = 0;
 
       const origRandom = Math.random;
       Math.random = jest.fn(() => 0.5);
 
-      updateAllies(0.016, (jest.requireMock('@/features/flight/player-system') as any).playerPlane);
+      aiSystem.update(0.016);
 
       Math.random = origRandom;
 
-      expect(ally.ai.state).toBe('orbit');
+      expect(allyAI.state).toBe('orbit');
     });
 
     it('chase при большой дистанции (dist > chaseDistance)', () => {
-      const ally = createFighter(0, 0, 0);
-      const enemy = createFighter(1000, 0, 0); // > chaseDistance=500
-      state.allies.push(ally);
-      state.enemies.push(enemy);
+      const { aiComp: allyAI } = createFighterECS(0, 0, 0, 'ally');
+      const { mesh: enemyMesh } = createFighterECS(1000, 0, 0, 'enemy');
 
-      ally.ai.target = enemy as any;
-      ally.ai.timer = 0;
+      allyAI.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      allyAI.timer = 0;
 
       const origRandom = Math.random;
       Math.random = jest.fn(() => 0.5);
 
-      updateAllies(0.016, (jest.requireMock('@/features/flight/player-system') as any).playerPlane);
+      aiSystem.update(0.016);
 
       Math.random = origRandom;
 
-      expect(ally.ai.state).toBe('chase');
-    });
-  });
-
-  describe('findNearestTarget (через updateAllies)', () => {
-    it('выбирает ближайшего врага как цель', () => {
-      const ally = createFighter(0, 0, 0);
-      const farEnemy = createFighter(500, 0, 0);
-      const nearEnemy = createFighter(100, 0, 0);
-      state.allies.push(ally);
-      state.enemies.push(farEnemy, nearEnemy);
-
-      ally.ai.target = null;
-
-      const origRandom = Math.random;
-      Math.random = jest.fn(() => 0.5); // не переключается на игрока
-      updateAllies(0.016, (jest.requireMock('@/features/flight/player-system') as any).playerPlane);
-      Math.random = origRandom;
-
-      // Цель — ближайший враг
-      expect(ally.ai.target).toBe(nearEnemy);
+      expect(allyAI.state).toBe('chase');
     });
   });
 
   describe('Стрельба', () => {
     it('стреляет когда shootTimer <= 0 и dist < shootDistance', () => {
-      const ally = createFighter(0, 0, 0);
-      const enemy = createFighter(200, 0, 0); // < shootDistance=400
-      state.allies.push(ally);
-      state.enemies.push(enemy);
+      const { aiComp, weaponComp } = createFighterECS(0, 0, 0, 'ally');
+      const { mesh: enemyMesh } = createFighterECS(200, 0, 0, 'enemy');
 
-      ally.ai.target = enemy as any;
-      ally.ai.timer = 10; // не меняем состояние
-      ally.shootTimer = 0; // таймер стрельбы истёк
+      aiComp.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      aiComp.timer = 10;
+      weaponComp.shootTimer = 0;
 
       const origRandom = Math.random;
       Math.random = jest.fn(() => 0.5);
 
-      updateAllies(0.016, (jest.requireMock('@/features/flight/player-system') as any).playerPlane);
+      aiSystem.update(0.016);
 
       Math.random = origRandom;
 
@@ -183,19 +196,17 @@ describe('AI System', () => {
     });
 
     it('НЕ стреляет когда dist > shootDistance', () => {
-      const ally = createFighter(0, 0, 0);
-      const enemy = createFighter(1000, 0, 0); // > shootDistance=400
-      state.allies.push(ally);
-      state.enemies.push(enemy);
+      const { aiComp, weaponComp } = createFighterECS(0, 0, 0, 'ally');
+      const { mesh: enemyMesh } = createFighterECS(1000, 0, 0, 'enemy');
 
-      ally.ai.target = enemy as any;
-      ally.ai.timer = 10;
-      ally.shootTimer = 0;
+      aiComp.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      aiComp.timer = 10;
+      weaponComp.shootTimer = 0;
 
       const origRandom = Math.random;
       Math.random = jest.fn(() => 0.5);
 
-      updateAllies(0.016, (jest.requireMock('@/features/flight/player-system') as any).playerPlane);
+      aiSystem.update(0.016);
 
       Math.random = origRandom;
 
@@ -203,19 +214,17 @@ describe('AI System', () => {
     });
 
     it('НЕ стреляет когда shootTimer > 0', () => {
-      const ally = createFighter(0, 0, 0);
-      const enemy = createFighter(200, 0, 0);
-      state.allies.push(ally);
-      state.enemies.push(enemy);
+      const { aiComp, weaponComp } = createFighterECS(0, 0, 0, 'ally');
+      const { mesh: enemyMesh } = createFighterECS(200, 0, 0, 'enemy');
 
-      ally.ai.target = enemy as any;
-      ally.ai.timer = 10;
-      ally.shootTimer = 5; // таймер не истёк
+      aiComp.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      aiComp.timer = 10;
+      weaponComp.shootTimer = 5;
 
       const origRandom = Math.random;
       Math.random = jest.fn(() => 0.5);
 
-      updateAllies(0.016, (jest.requireMock('@/features/flight/player-system') as any).playerPlane);
+      aiSystem.update(0.016);
 
       Math.random = origRandom;
 
@@ -225,50 +234,45 @@ describe('AI System', () => {
 
   describe('Движение', () => {
     it('истребитель перемещается вперёд каждый кадр', () => {
-      const ally = createFighter(0, 0, 0);
-      const enemy = createFighter(200, 0, 0);
-      state.allies.push(ally);
-      state.enemies.push(enemy);
+      const { mesh, aiComp } = createFighterECS(0, 0, 0, 'ally', { speed: 100 });
+      const { mesh: enemyMesh } = createFighterECS(200, 0, 0, 'enemy');
 
-      ally.ai.target = enemy as any;
-      ally.ai.timer = 10;
-      ally.speed = 100;
+      aiComp.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      aiComp.timer = 10;
 
-      const startX = ally.mesh.position.x;
+      const startX = mesh.position.x;
 
       const origRandom = Math.random;
       Math.random = jest.fn(() => 0.5);
 
-      updateAllies(0.1, (jest.requireMock('@/features/flight/player-system') as any).playerPlane);
+      aiSystem.update(0.1);
 
       Math.random = origRandom;
 
-      // Позиция должна измениться
-      const moved = ally.mesh.position.distanceTo(new Vector3(startX, 0, 0));
+      const moved = mesh.position.distanceTo(new Vector3(startX, 0, 0));
       expect(moved).toBeGreaterThan(0);
     });
   });
 
   describe('Обновление health bar', () => {
     it('обновляет scaling healthFill по соотношению HP', () => {
-      const ally = createFighter(0, 0, 0);
-      const enemy = createFighter(200, 0, 0);
-      state.allies.push(ally);
-      state.enemies.push(enemy);
+      const { aiComp, healthComp, healthFillMesh } = createFighterECS(0, 0, 0, 'ally', {
+        health: 50,
+      });
+      const { mesh: enemyMesh } = createFighterECS(200, 0, 0, 'enemy');
 
-      ally.ai.target = enemy as any;
-      ally.ai.timer = 10;
-      ally.health = 25; // 50% от maxHealth
-      ally.maxHealth = 50;
+      aiComp.target = { mesh: { position: enemyMesh.position }, name: 'enemy' };
+      aiComp.timer = 10;
+      healthComp.current = 25; // 50% от max
 
       const origRandom = Math.random;
       Math.random = jest.fn(() => 0.5);
 
-      updateAllies(0.016, (jest.requireMock('@/features/flight/player-system') as any).playerPlane);
+      aiSystem.update(0.016);
 
       Math.random = origRandom;
 
-      expect(ally.healthFill.scaling.x).toBeCloseTo(0.5, 5);
+      expect(healthFillMesh.scaling.x).toBeCloseTo(0.5, 5);
     });
   });
 });

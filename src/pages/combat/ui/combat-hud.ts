@@ -4,6 +4,8 @@ import { renderer } from '@/shared/engine';
 import { state } from '@/shared/state';
 import type { GameSystem } from '@/shared/types';
 
+import { queryAllFighters } from '@/entities/ecs-queries';
+
 import { updateFlightHUD, updateMessageTimer } from '@/features/combat/common-updates';
 import { playerPlane } from '@/features/flight/player-system';
 import { updateEnemyIndicators } from '@/features/hud/indicators';
@@ -42,12 +44,9 @@ export const damageEffectSystem: GameSystem = {
 
 function updateProximityAudio(): void {
   let minDistSq = Infinity;
-  for (const a of state.allies) {
-    const dSq = playerPlane.position.distanceToSquared(a.mesh.position);
-    if (dSq < minDistSq) minDistSq = dSq;
-  }
-  for (const e of state.enemies) {
-    const dSq = playerPlane.position.distanceToSquared(e.mesh.position);
+  const fighters = queryAllFighters();
+  for (const f of fighters) {
+    const dSq = playerPlane.position.distanceToSquared(f.transform.position);
     if (dSq < minDistSq) minDistSq = dSq;
   }
   updateProximityHum(minDistSq);

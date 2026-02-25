@@ -35,26 +35,19 @@ jest.mock('@/features/combat/explosions', () => ({
   createExplosion: jest.fn(),
 }));
 
+jest.mock('@/shared/ecs/combat-world', () => ({
+  world: { destroyEntity: jest.fn() },
+}));
+
+jest.mock('@/shared/ecs/entity-index', () => ({
+  getEntityByMesh: jest.fn(() => null),
+  unregisterMeshEntity: jest.fn(),
+}));
+
 const C = COMBAT_CONSTANTS;
 
-function makeFighter(name: string, team: 'ally' | 'enemy') {
-  const fighter: any = {
-    mesh: { position: new Vector3(0, 0, 0) },
-    name,
-    health: 50,
-    maxHealth: 50,
-    speed: 60,
-    shootTimer: 1,
-    healthBar: {},
-    healthFill: {},
-    ai: { state: 'chase', timer: 0, evadeDir: new Vector3(), target: null },
-  };
-  if (team === 'ally') {
-    state.allies.push(fighter);
-  } else {
-    state.enemies.push(fighter);
-  }
-  return fighter;
+function makeFighter(name: string) {
+  return { mesh: { position: new Vector3(0, 0, 0) }, name } as any;
 }
 
 describe('Damage System', () => {
@@ -66,9 +59,6 @@ describe('Damage System', () => {
     state.playerHealth = 100;
     state.maxHealth = 100;
     state.totalEnemyKills = 0;
-    state.allies = [];
-    state.enemies = [];
-    state.capitalShips = [];
     state.respawnQueue = [];
     state.phase = 1;
   });
@@ -80,7 +70,7 @@ describe('Damage System', () => {
 
   describe('fighter-killed (player kill of enemy)', () => {
     it('начисляет очки при убийстве врага игроком', () => {
-      const victim = makeFighter('Фантом-1', 'enemy');
+      const victim = makeFighter('Фантом-1');
 
       emit('fighter-killed', {
         victim,
@@ -95,7 +85,7 @@ describe('Damage System', () => {
 
     it('лечит игрока на killHealthBonus от maxHealth', () => {
       state.playerHealth = 50;
-      const victim = makeFighter('Фантом-1', 'enemy');
+      const victim = makeFighter('Фантом-1');
 
       emit('fighter-killed', {
         victim,
@@ -110,7 +100,7 @@ describe('Damage System', () => {
 
     it('здоровье не превышает maxHealth', () => {
       state.playerHealth = 95;
-      const victim = makeFighter('Фантом-1', 'enemy');
+      const victim = makeFighter('Фантом-1');
 
       emit('fighter-killed', {
         victim,
@@ -124,7 +114,7 @@ describe('Damage System', () => {
     });
 
     it('увеличивает totalEnemyKills', () => {
-      const victim = makeFighter('Фантом-1', 'enemy');
+      const victim = makeFighter('Фантом-1');
 
       emit('fighter-killed', {
         victim,
@@ -137,9 +127,12 @@ describe('Damage System', () => {
       expect(state.totalEnemyKills).toBe(1);
     });
 
-    it('удаляет жертву из массива enemies', () => {
-      const victim = makeFighter('Фантом-1', 'enemy');
-      expect(state.enemies).toContain(victim);
+    it('уничтожает ECS entity жертвы', () => {
+      const { getEntityByMesh } = jest.requireMock('@/shared/ecs/entity-index') as any;
+      const { world: mockWorld } = jest.requireMock('@/shared/ecs/combat-world') as any;
+      getEntityByMesh.mockReturnValue(42);
+
+      const victim = makeFighter('Фантом-1');
 
       emit('fighter-killed', {
         victim,
@@ -149,11 +142,12 @@ describe('Damage System', () => {
         isPlayerKill: true,
       });
 
-      expect(state.enemies).not.toContain(victim);
+      expect(getEntityByMesh).toHaveBeenCalledWith(victim.mesh);
+      expect(mockWorld.destroyEntity).toHaveBeenCalledWith(42);
     });
 
     it('добавляет запись в respawnQueue', () => {
-      const victim = makeFighter('Фантом-1', 'enemy');
+      const victim = makeFighter('Фантом-1');
 
       emit('fighter-killed', {
         victim,
@@ -170,7 +164,7 @@ describe('Damage System', () => {
 
   describe('fighter-killed (ally killed by enemy)', () => {
     it('не начисляет очки, если не player kill', () => {
-      const victim = makeFighter('Сокол-1', 'ally');
+      const victim = makeFighter('Сокол-1');
 
       emit('fighter-killed', {
         victim,
@@ -183,8 +177,12 @@ describe('Damage System', () => {
       expect(state.score).toBe(0);
     });
 
-    it('удаляет жертву из массива allies', () => {
-      const victim = makeFighter('Сокол-1', 'ally');
+    it('уничтожает ECS entity жертвы-союзника', () => {
+      const { getEntityByMesh } = jest.requireMock('@/shared/ecs/entity-index') as any;
+      const { world: mockWorld } = jest.requireMock('@/shared/ecs/combat-world') as any;
+      getEntityByMesh.mockReturnValue(99);
+
+      const victim = makeFighter('Сокол-1');
 
       emit('fighter-killed', {
         victim,
@@ -194,7 +192,8 @@ describe('Damage System', () => {
         isPlayerKill: false,
       });
 
-      expect(state.allies).not.toContain(victim);
+      expect(getEntityByMesh).toHaveBeenCalledWith(victim.mesh);
+      expect(mockWorld.destroyEntity).toHaveBeenCalledWith(99);
     });
   });
 });

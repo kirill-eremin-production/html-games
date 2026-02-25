@@ -2,7 +2,11 @@ import { inputSystem } from '@/shared/input';
 import type { GameSystem } from '@/shared/types';
 
 import { bulletSystem } from '@/features/combat/bullet-system';
+import { collisionSystem } from '@/features/combat/collision-system';
 import { explosionSystem } from '@/features/combat/explosions';
+import { healthSystem } from '@/features/combat/health-system';
+import { lifetimeSystem } from '@/features/combat/lifetime-system';
+import { projectileMovementSystem } from '@/features/combat/movement-system';
 import { playerSystem } from '@/features/flight/player-system';
 import { starfieldSystem } from '@/features/flight/starfield';
 
@@ -13,5 +17,16 @@ import { starfieldSystem } from '@/features/flight/starfield';
 /** Core flight: input → player movement → starfield parallax */
 export const flightCoreSystems: GameSystem[] = [inputSystem, playerSystem, starfieldSystem];
 
-/** Weapons: bullet physics + hit detection, particle explosions */
-export const weaponSystems: GameSystem[] = [bulletSystem, explosionSystem];
+/**
+ * Weapons & combat physics:
+ * projectile movement → collision detection → health/damage → lifetime cleanup → explosions
+ * bulletSystem оставлен для cleanup при выходе из боя
+ */
+export const weaponSystems: GameSystem[] = [
+  projectileMovementSystem,
+  collisionSystem,
+  healthSystem,
+  lifetimeSystem,
+  bulletSystem,
+  explosionSystem,
+];

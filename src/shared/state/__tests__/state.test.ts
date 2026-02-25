@@ -88,12 +88,6 @@ describe('createInitialState', () => {
 
   it('создаёт пустые массивы', () => {
     const s = createInitialState();
-    expect(s.bullets).toEqual([]);
-    expect(s.allyBullets).toEqual([]);
-    expect(s.enemyBullets).toEqual([]);
-    expect(s.allies).toEqual([]);
-    expect(s.enemies).toEqual([]);
-    expect(s.capitalShips).toEqual([]);
     expect(s.killFeed).toEqual([]);
     expect(s.respawnQueue).toEqual([]);
   });
@@ -102,6 +96,6 @@ describe('createInitialState', () => {
     const s1 = createInitialState();
     const s2 = createInitialState();
     expect(s1).not.toBe(s2);
-    expect(s1.bullets).not.toBe(s2.bullets);
+    expect(s1.killFeed).not.toBe(s2.killFeed);
   });
 });

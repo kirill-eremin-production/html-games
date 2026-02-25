@@ -5,6 +5,7 @@ import { refs } from '@/shared/refs/app-refs';
 import { parseHexColor, settings } from '@/shared/settings';
 import { resetNameCounters, state } from '@/shared/state';
 
+import { queryAllCapitalShips } from '@/entities/ecs-queries';
 import { createFighter } from '@/entities/objects/space-ships';
 
 import { spawnCapitalShips } from '@/features/combat/capital-ship-system';
@@ -62,8 +63,9 @@ export function spawnCombatEntities(): void {
   for (let i = 0; i < allyCount; i++) spawnAlly(playerPlane.position);
 
   const enemyCount = combatConfig.enemies;
+  const ships = queryAllCapitalShips();
   for (let i = 0; i < enemyCount; i++) {
-    const shipIdx = i % Math.max(1, state.capitalShips.length);
-    spawnEnemy(state.capitalShips[shipIdx].mesh.position);
+    const shipIdx = i % Math.max(1, ships.length);
+    spawnEnemy(ships[shipIdx].mesh.mesh.position);
   }
 }

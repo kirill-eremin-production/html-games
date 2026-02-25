@@ -1,8 +1,1 @@
-export {
-  createCapitalShipEntity,
-  createFighterEntity,
-  createProjectileEntity,
-  findCapitalShipEntity,
-  findFighterEntity,
-  findProjectileEntity,
-} from './adapters';
+export { createCapitalShipEntity, createFighterEntity, createProjectileEntity } from './adapters';

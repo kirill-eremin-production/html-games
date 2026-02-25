@@ -8,6 +8,7 @@ import { nextAllyName, nextEnemyName, state } from '@/shared/state';
 import type { GameSystem } from '@/shared/types';
 
 import { createFighterEntity } from '@/entities/ecs-adapters';
+import { queryAliveCapitalShips } from '@/entities/ecs-queries';
 import { createFighterInstanced } from '@/entities/objects/space-ships';
 
 import { playerPlane } from '@/features/flight/player-system';
@@ -30,7 +31,7 @@ export function spawnAlly(near: Vector3): void {
   const hb = addHealthBar(mesh, 0x00ff44);
   const name = nextAllyName();
 
-  const { fighter } = createFighterEntity(
+  createFighterEntity(
     world,
     mesh,
     name,
@@ -45,7 +46,6 @@ export function spawnAlly(near: Vector3): void {
     hb.fill,
     new Vector3(),
   );
-  state.allies.push(fighter);
 }
 
 export function spawnEnemy(near: Vector3): void {
@@ -63,7 +63,7 @@ export function spawnEnemy(near: Vector3): void {
   const hb = addHealthBar(mesh, 0xff0000);
   const name = nextEnemyName();
 
-  const { fighter } = createFighterEntity(
+  createFighterEntity(
     world,
     mesh,
     name,
@@ -78,7 +78,6 @@ export function spawnEnemy(near: Vector3): void {
     hb.fill,
     new Vector3(),
   );
-  state.enemies.push(fighter);
 }
 
 export function updateRespawnQueue(dt: number): void {
@@ -90,10 +89,10 @@ export function updateRespawnQueue(dt: number): void {
         spawnAlly(playerPlane.position);
       } else {
         let spawnPos = new Vector3(...C.defaultEnemySpawnPos);
-        const livingShips = state.capitalShips.filter((cs) => cs.alive);
+        const livingShips = queryAliveCapitalShips();
         if (livingShips.length > 0) {
           spawnPos =
-            livingShips[Math.floor(Math.random() * livingShips.length)].mesh.position.clone();
+            livingShips[Math.floor(Math.random() * livingShips.length)].mesh.mesh.position.clone();
         }
         spawnEnemy(spawnPos);
       }

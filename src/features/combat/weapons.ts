@@ -10,12 +10,13 @@ import {
   createMesh,
 } from '@/shared/core';
 import { world } from '@/shared/ecs/combat-world';
+import { unregisterMeshEntity } from '@/shared/ecs/entity-index';
 import { addDirectionNoise } from '@/shared/lib/math';
-import { state } from '@/shared/state';
-import type { LaserData } from '@/shared/types';
 
-import { createProjectileEntity, findProjectileEntity } from '@/entities/ecs-adapters';
+import { ProjectileComponent } from '@/entities/combat/projectile';
+import { createProjectileEntity } from '@/entities/ecs-adapters';
 import { GUN_OFFSET_L, GUN_OFFSET_R } from '@/entities/objects/space-ships';
+import { MeshComponent } from '@/entities/rendering/mesh';
 
 const W = WEAPON_CONFIG;
 
@@ -52,12 +53,14 @@ const _laserAxis = new Vector3(1, 0, 0);
 const _laserQuat = new Quaternion();
 const _laserDir = new Vector3();
 
+type BulletTeam = 'player' | 'ally' | 'enemy';
+
 export function createLaser(
   origin: Vector3,
   direction: Vector3,
-  team: LaserData['team'],
+  team: BulletTeam,
   shooterName: string,
-): LaserData {
+): void {
   const isEnemy = team === 'enemy';
   const isPlayer = team === 'player';
   const geo = isEnemy ? laserGeoEnemy : laserGeoAlly;
@@ -75,38 +78,24 @@ export function createLaser(
   const velocity = new Vector3().copyFrom(_laserDir).scaleInPlace(speed);
   const damage = isPlayer ? W.playerDamage : isEnemy ? W.enemyDamage : W.allyDamage;
 
-  const { laser } = createProjectileEntity(
-    world,
-    mesh,
-    velocity,
-    W.laserLife,
-    team,
-    damage,
-    shooterName || '',
-  );
-
-  if (team === 'player') state.bullets.push(laser);
-  else if (team === 'ally') state.allyBullets.push(laser);
-  else state.enemyBullets.push(laser);
-
-  return laser;
+  createProjectileEntity(world, mesh, velocity, W.laserLife, team, damage, shooterName || '');
 }
 
+/** Удаляет самые старые снаряды если превышен лимит */
 export function cleanupExcessBullets(): void {
-  const total = state.bullets.length + state.allyBullets.length + state.enemyBullets.length;
+  const projectiles = world.query(ProjectileComponent, MeshComponent);
+  const total = projectiles.length;
   if (total > W.maxBullets) {
-    const arrays = [state.bullets, state.allyBullets, state.enemyBullets];
-    arrays.sort((a, b) => b.length - a.length);
-    const target = arrays[0];
     const removeCount = total - W.cleanupTarget;
-    const toRemove = Math.min(removeCount, target.length);
-    for (let i = 0; i < toRemove; i++) {
-      const b = target[i];
-      b.mesh.dispose();
-      const entityId = findProjectileEntity(world, b);
-      if (entityId !== null) world.destroyEntity(entityId);
+    for (let i = 0; i < removeCount && i < projectiles.length; i++) {
+      const {
+        entity,
+        components: [, mesh],
+      } = projectiles[i];
+      unregisterMeshEntity(mesh.mesh);
+      mesh.mesh.dispose();
+      world.destroyEntity(entity);
     }
-    target.splice(0, toRemove);
   }
 }
 
@@ -117,7 +106,7 @@ let _fGunToggle = false;
 export function shootFromFighter(
   fighter: TransformNode,
   dirToTarget: Vector3,
-  team: LaserData['team'],
+  team: BulletTeam,
   name: string,
   playerPlane: TransformNode,
 ): void {

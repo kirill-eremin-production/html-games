@@ -1,6 +1,9 @@
-import type { TransformNode } from '@/shared/core';
+import type { Quaternion, Vector3 } from '@/shared/core';
 
-/** 3D-объект сущности на сцене */
+/** Позиция и вращение сущности в мировом пространстве */
 export class TransformComponent {
-  constructor(public mesh: TransformNode) {}
+  constructor(
+    public position: Vector3,
+    public quaternion: Quaternion,
+  ) {}
 }

@@ -2,7 +2,8 @@ import { TransformNode } from '@/shared/core';
 import { camera } from '@/shared/engine';
 import { DomPool } from '@/shared/lib/dom-pool';
 import { clampToScreenEdge, formatDistance, worldToScreen } from '@/shared/lib/screen';
-import { state } from '@/shared/state';
+
+import { queryAliveCapitalShips } from '@/entities/ecs-queries';
 
 const indicatorsContainer = document.getElementById('enemy-indicators')!;
 const pool = new DomPool(indicatorsContainer, () => {
@@ -18,9 +19,9 @@ export function updateEnemyIndicators(playerPlane: TransformNode): void {
   const h = window.innerHeight;
   let usedCount = 0;
 
-  for (const cs of state.capitalShips) {
-    if (!cs.alive) continue;
-    const scr = worldToScreen(cs.mesh.position, camera, w, h);
+  const ships = queryAliveCapitalShips();
+  for (const cs of ships) {
+    const scr = worldToScreen(cs.mesh.mesh.position, camera, w, h);
     const inFront = scr.z < 1;
     const onScreen =
       inFront && scr.x > margin && scr.x < w - margin && scr.y > margin && scr.y < h - margin;
@@ -34,7 +35,7 @@ export function updateEnemyIndicators(playerPlane: TransformNode): void {
     const dy = scr.y - h / 2;
     const angle = Math.atan2(inFront ? dy : -dy, inFront ? dx : -dx);
 
-    const dist3d = playerPlane.position.distanceTo(cs.mesh.position);
+    const dist3d = playerPlane.position.distanceTo(cs.mesh.mesh.position);
     el.style.left = clamped.x + 'px';
     el.style.top = clamped.y + 'px';
     el.style.transform = 'translate(-50%, -50%)';

@@ -1,4 +1,5 @@
 import type { EngineMesh, TransformNode, Vector3 } from '@/shared/core';
+import type { EntityId } from '@/shared/ecs/types';
 
 // ── Types shared across layers ──────────────────────────────────────────────
 
@@ -25,38 +26,12 @@ export interface CombatConfig {
 
 export type FlightModelId = 'combat' | 'exploration';
 
-/** Состояние ИИ истребителя */
-export interface FighterAI {
-  /** Текущее поведение: преследование, уклонение или орбита вокруг цели */
-  state: 'chase' | 'evade' | 'orbit';
-  /** Таймер до смены поведения (сек) */
-  timer: number;
-  /** Направление уклонения */
-  evadeDir: Vector3;
-  /** Текущая цель ИИ (null — цель не выбрана) */
-  target: { mesh: { position: Vector3 }; name: string } | null;
-}
-
-/** Истребитель (союзный или вражеский) */
+/** Минимальное описание истребителя (для событий и UI) */
 export interface Fighter {
   /** 3D-объект истребителя на сцене */
   mesh: TransformNode;
   /** Уникальное имя (например, «Сокол-3») */
   name: string;
-  /** Контейнер полоски здоровья над истребителем */
-  healthBar: TransformNode;
-  /** Заполненная часть полоски здоровья */
-  healthFill: EngineMesh;
-  /** Текущее здоровье */
-  health: number;
-  /** Максимальное здоровье */
-  maxHealth: number;
-  /** Скорость полёта */
-  speed: number;
-  /** Таймер перезарядки стрельбы (сек) */
-  shootTimer: number;
-  /** Состояние ИИ */
-  ai: FighterAI;
 }
 
 /** Подсистема капитального корабля (двигатели, мостик и т.д.) */
@@ -87,22 +62,6 @@ export interface CapitalShip {
   turretTimer: number;
 }
 
-/** Лазерный снаряд */
-export interface LaserData {
-  /** 3D-объект снаряда */
-  mesh: EngineMesh;
-  /** Вектор скорости */
-  velocity: Vector3;
-  /** Оставшееся время жизни (сек) */
-  life: number;
-  /** Команда стрелка */
-  team: 'player' | 'ally' | 'enemy';
-  /** Урон при попадании */
-  damage: number;
-  /** Имя стрелка (для kill-feed) */
-  shooterName: string;
-}
-
 /** Запись в ленте уничтожений */
 export interface KillFeedEntry {
   /** Имя убийцы */
@@ -127,7 +86,7 @@ export interface RespawnEntry {
 
 /** Захваченная цель игрока — истребитель или подсистема корабля */
 export type LockedTarget =
-  | { kind: 'fighter'; fighter: Fighter }
+  | { kind: 'fighter'; entityId: EntityId; fighter: Fighter }
   | { kind: 'subsystem'; subsystem: Subsystem; ship: CapitalShip };
 
 /** Глобальное состояние игры */
@@ -156,18 +115,6 @@ export interface GameState {
   totalEnemyKills: number;
   /** Имя последнего атаковавшего игрока */
   lastAttacker: string;
-  /** Снаряды игрока */
-  bullets: LaserData[];
-  /** Снаряды союзников */
-  allyBullets: LaserData[];
-  /** Снаряды врагов */
-  enemyBullets: LaserData[];
-  /** Союзные истребители */
-  allies: Fighter[];
-  /** Вражеские истребители */
-  enemies: Fighter[];
-  /** Капитальные корабли */
-  capitalShips: CapitalShip[];
   /** Лента уничтожений */
   killFeed: KillFeedEntry[];
   /** Состояние клавиш (нажата/отпущена) */

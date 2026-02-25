@@ -1,156 +1,32 @@
-import { playHitSound } from '@/shared/audio';
-import { COMBAT_CONSTANTS } from '@/shared/config/combat';
-import { PLAYER_CONFIG } from '@/shared/config/player';
-import { Vector3 } from '@/shared/core';
 import { world } from '@/shared/ecs/combat-world';
-import { emit } from '@/shared/events';
-import { state } from '@/shared/state';
-import type { Fighter, LaserData } from '@/shared/types';
+import { unregisterMeshEntity } from '@/shared/ecs/entity-index';
 import type { GameSystem } from '@/shared/types';
 
-import { findProjectileEntity } from '@/entities/ecs-adapters';
+import { ProjectileComponent } from '@/entities/combat/projectile';
+import { MeshComponent } from '@/entities/rendering/mesh';
 
-import { playerPlane } from '@/features/flight/player-system';
-
-import { destroyFighter, destroySubsystem } from './damage-system';
-import { createExplosion } from './explosions';
-import { cleanupExcessBullets } from './weapons';
-
-const C = COMBAT_CONSTANTS;
-
-const _hitWorldPos = new Vector3();
-
-/** Удалить снаряд: dispose mesh + destroy ECS entity */
-function removeBullet(b: LaserData): void {
-  b.mesh.dispose();
-  const entityId = findProjectileEntity(world, b);
-  if (entityId !== null) world.destroyEntity(entityId);
-}
-
-function hitTestFighters(laser: LaserData, fighters: Fighter[], isPlayerLaser: boolean): boolean {
-  for (let j = fighters.length - 1; j >= 0; j--) {
-    const f = fighters[j];
-    if (laser.mesh.position.distanceToSquared(f.mesh.position) < C.fighterHitDistSq) {
-      f.health -= laser.damage;
-      createExplosion(laser.mesh.position.clone(), C.hitExplosionSize);
-
-      if (f.health <= 0) {
-        const killerName = laser.shooterName || '?';
-        const killerTeam =
-          laser.team === 'player' ? 'player' : laser.team === 'ally' ? 'ally' : 'enemy';
-        const isEnemyVictim = fighters === state.enemies;
-        destroyFighter(f, killerName, killerTeam, isEnemyVictim, isPlayerLaser);
-      }
-      return true;
-    }
-  }
-  return false;
-}
-
-function hitTestCapitalShips(laser: LaserData): boolean {
-  for (const cs of state.capitalShips) {
-    if (!cs.alive) continue;
-    for (const sub of cs.subsystems) {
-      if (sub.health <= 0) continue;
-      try {
-        _hitWorldPos.copyFrom(sub.center).applyMatrix4(cs.mesh.getWorldMatrix());
-      } catch (err) {
-        console.error('[bullets] matrixWorld error on capital ship hit-test:', err);
-        continue;
-      }
-      if (laser.mesh.position.distanceToSquared(_hitWorldPos) < sub.radius * sub.radius) {
-        sub.health -= laser.damage;
-        createExplosion(laser.mesh.position.clone(), C.hitCapitalExplosionSize);
-
-        if (sub.health <= 0) {
-          destroySubsystem(sub, cs, laser.shooterName || '?');
-        }
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-export function updateBullets(dt: number): void {
-  const allLaserArrays: {
-    arr: LaserData[];
-    hitEnemies: boolean;
-    hitAllies: boolean;
-    hitPlayer: boolean;
-    isPlayer: boolean;
-  }[] = [
-    { arr: state.bullets, hitEnemies: true, hitAllies: false, hitPlayer: false, isPlayer: true },
-    {
-      arr: state.allyBullets,
-      hitEnemies: true,
-      hitAllies: false,
-      hitPlayer: false,
-      isPlayer: false,
-    },
-    {
-      arr: state.enemyBullets,
-      hitEnemies: false,
-      hitAllies: true,
-      hitPlayer: true,
-      isPlayer: false,
-    },
-  ];
-
-  for (const { arr, hitEnemies, hitAllies, hitPlayer, isPlayer } of allLaserArrays) {
-    for (let i = arr.length - 1; i >= 0; i--) {
-      const b = arr[i];
-      b.mesh.position.addScaledVector(b.velocity, dt);
-      b.life -= dt;
-      if (b.life <= 0) {
-        removeBullet(b);
-        arr.splice(i, 1);
-        continue;
-      }
-
-      let hit = false;
-      if (hitEnemies && !hit) hit = hitTestFighters(b, state.enemies, isPlayer);
-      if (hitAllies && !hit) hit = hitTestFighters(b, state.allies, false);
-
-      if (hitPlayer && !hit && state.invulnTimer <= 0) {
-        if (b.mesh.position.distanceToSquared(playerPlane.position) < C.playerHitDistSq) {
-          state.playerHealth -= b.damage;
-          state.damageFlash = PLAYER_CONFIG.damageFlashDuration;
-          state.noDamageTimer = 0;
-          state.lastAttacker = b.shooterName || '?';
-          createExplosion(b.mesh.position.clone(), C.hitExplosionSize);
-          playHitSound();
-          emit('player-hit', { damage: b.damage, attackerName: b.shooterName || '?' });
-          hit = true;
-        }
-      }
-
-      if ((isPlayer || b.team === 'ally') && !hit) hit = hitTestCapitalShips(b);
-      if (hit) {
-        removeBullet(b);
-        arr.splice(i, 1);
-      }
-    }
-  }
-
-  cleanupExcessBullets();
-}
-
-// ── GameSystem adapter ──────────────────────────────────────────────────────
+/**
+ * Legacy bullet system — теперь только cleanup.
+ * Движение, коллизии и lifetime обрабатываются
+ * projectileMovementSystem, collisionSystem и lifetimeSystem.
+ */
 
 function clearAllBullets(): void {
-  for (const b of state.bullets) removeBullet(b);
-  for (const b of state.allyBullets) removeBullet(b);
-  for (const b of state.enemyBullets) removeBullet(b);
-  state.bullets = [];
-  state.allyBullets = [];
-  state.enemyBullets = [];
+  const projectiles = world.query(ProjectileComponent, MeshComponent);
+  for (const {
+    entity,
+    components: [, mesh],
+  } of projectiles) {
+    unregisterMeshEntity(mesh.mesh);
+    mesh.mesh.dispose();
+    world.destroyEntity(entity);
+  }
 }
 
 export const bulletSystem: GameSystem = {
   id: 'bullets',
-  update(dt) {
-    updateBullets(dt);
+  update() {
+    // Вся логика перенесена в атомарные ECS-системы
   },
   cleanup() {
     clearAllBullets();

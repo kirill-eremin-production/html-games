@@ -1,11 +1,7 @@
-import type { EngineMesh, TransformNode } from '@/shared/core';
-
-/** Здоровье сущности с визуальной полоской */
+/** Здоровье сущности (только данные, без визуалов) */
 export class HealthComponent {
   constructor(
     public current: number,
     public max: number,
-    public healthBar: TransformNode,
-    public healthFill: EngineMesh,
   ) {}
 }

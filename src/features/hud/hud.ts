@@ -2,6 +2,8 @@ import { combatConfig } from '@/shared/config/combat-session';
 import { settings } from '@/shared/settings';
 import { state } from '@/shared/state';
 
+import { queryAllCapitalShips, queryFightersByTeam } from '@/entities/ecs-queries';
+
 import { HUD_TEMPLATES } from './hud-templates';
 
 const hudEl = document.getElementById('hud')! as HTMLElement;
@@ -46,8 +48,8 @@ export function updateHUD(): void {
     healthBarEl.style.background = 'linear-gradient(90deg, #0ff, #088)';
   }
 
-  allyCountEl.textContent = String(state.allies.length);
-  enemyCountEl.textContent = String(state.enemies.length);
+  allyCountEl.textContent = String(queryFightersByTeam('ally').length);
+  enemyCountEl.textContent = String(queryFightersByTeam('enemy').length);
   speedEl.textContent = `SPD: ${Math.floor(state.speed)}`;
 
   const cursorX = (state.mouseX * 0.5 + 0.5) * window.innerWidth;
@@ -55,8 +57,10 @@ export function updateHUD(): void {
   mouseCursorEl.style.left = cursorX + 'px';
   mouseCursorEl.style.top = cursorY + 'px';
 
+  const capitalShips = queryAllCapitalShips();
+
   if (state.phase === 1) {
-    const alive = state.capitalShips.filter((cs) => cs.alive).length;
+    const alive = capitalShips.filter((cs) => cs.capitalShip.alive).length;
     const total = settings.counts.capitalShips;
     objectiveEl.textContent = `Цель: уничтожить корабли [${total - alive}/${total}]`;
   } else {
@@ -65,10 +69,10 @@ export function updateHUD(): void {
 
   if (state.phase === 1) {
     const html = HUD_TEMPLATES.shipStatus(
-      state.capitalShips.map((cs) => ({
-        alive: cs.alive,
-        index: cs.mesh.metadata.index as number,
-        subsystems: cs.subsystems,
+      capitalShips.map((cs) => ({
+        alive: cs.capitalShip.alive,
+        index: cs.mesh.mesh.metadata.index as number,
+        subsystems: cs.capitalShip.subsystems,
       })),
     );
     if (html !== cachedShipHTML) {

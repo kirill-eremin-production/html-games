@@ -10,13 +10,20 @@ import {
   traverseNode,
 } from '@/shared/core';
 import { world } from '@/shared/ecs/combat-world';
+import { unregisterMeshEntity } from '@/shared/ecs/entity-index';
 import { addDirectionNoise } from '@/shared/lib/math';
 import { parseHexColor, settings } from '@/shared/settings';
-import { state } from '@/shared/state';
 import type { GameSystem } from '@/shared/types';
 
-import { createCapitalShipEntity, findCapitalShipEntity } from '@/entities/ecs-adapters';
+import { CapitalShipComponent } from '@/entities/combat/capital-ship';
+import { createCapitalShipEntity } from '@/entities/ecs-adapters';
+import {
+  type CapitalShipQueryResult,
+  queryAllCapitalShips,
+  queryFightersByTeam,
+} from '@/entities/ecs-queries';
 import { createCapitalShip } from '@/entities/objects/space-ships/capital-ship/create-capital-ship';
+import { MeshComponent } from '@/entities/rendering/mesh';
 
 import { playerPlane } from '../flight/player-system';
 
@@ -35,18 +42,12 @@ export function spawnCapitalShips(): void {
     ship.position.copyFrom(SHIP_POSITIONS[i]);
     ship.lookAt(new Vector3(0, 0, 0));
     addToScene(ship);
-    const { capitalShip } = createCapitalShipEntity(
-      world,
-      ship,
-      ship.metadata.subsystems,
-      2 + Math.random() * 3,
-    );
-    state.capitalShips.push(capitalShip);
+    createCapitalShipEntity(world, ship, ship.metadata.subsystems, 2 + Math.random() * 3);
   }
 }
 
-function updateCapitalShipVisuals(cs: (typeof state.capitalShips)[number], dt: number): void {
-  for (const sub of cs.subsystems) {
+function updateCapitalShipVisuals(cs: CapitalShipQueryResult, dt: number): void {
+  for (const sub of cs.capitalShip.subsystems) {
     if (!sub.mesh) continue;
     if (sub.health <= 0 && sub.mesh.isEnabled()) {
       traverseNode(sub.mesh, (child) => {
@@ -56,7 +57,7 @@ function updateCapitalShipVisuals(cs: (typeof state.capitalShips)[number], dt: n
       });
     }
   }
-  if (cs.subsystems[0].health > 0) cs.mesh.rotation.y += C.shipRotationSpeed * dt;
+  if (cs.capitalShip.subsystems[0].health > 0) cs.mesh.mesh.rotation.y += C.shipRotationSpeed * dt;
 }
 
 const _csTargets: Vector3[] = [];
@@ -65,26 +66,28 @@ const _csOrigin = new Vector3();
 const _csShotDir = new Vector3();
 
 export function updateCapitalShips(dt: number): void {
-  for (const cs of state.capitalShips) {
-    if (!cs.alive) continue;
-    const turretSub = cs.subsystems[2];
+  const ships = queryAllCapitalShips();
+  for (const cs of ships) {
+    if (!cs.capitalShip.alive) continue;
+    const turretSub = cs.capitalShip.subsystems[2];
     if (turretSub.health <= 0) {
       updateCapitalShipVisuals(cs, dt);
       continue;
     }
 
-    cs.turretTimer -= dt;
-    if (cs.turretTimer <= 0) {
-      cs.turretTimer =
+    cs.capitalShip.turretTimer -= dt;
+    if (cs.capitalShip.turretTimer <= 0) {
+      cs.capitalShip.turretTimer =
         combatConfig.turretFireRateMin +
         Math.random() * (combatConfig.turretFireRateMax - combatConfig.turretFireRateMin);
       _csTargets.length = 0;
-      const shipPos = cs.mesh.position;
+      const shipPos = cs.mesh.mesh.position;
       if (shipPos.distanceToSquared(playerPlane.position) < C.turretRangeSq)
         _csTargets.push(playerPlane.position);
-      for (const a of state.allies) {
-        if (shipPos.distanceToSquared(a.mesh.position) < C.allyTurretRangeSq)
-          _csTargets.push(a.mesh.position);
+      const allies = queryFightersByTeam('ally');
+      for (const a of allies) {
+        if (shipPos.distanceToSquared(a.transform.position) < C.allyTurretRangeSq)
+          _csTargets.push(a.transform.position);
       }
       if (_csTargets.length === 0) {
         updateCapitalShipVisuals(cs, dt);
@@ -93,14 +96,14 @@ export function updateCapitalShips(dt: number): void {
 
       const tgt = _csTargets[Math.floor(Math.random() * _csTargets.length)];
       _csDir.copyFrom(tgt).subtractInPlace(shipPos).normalize();
-      const bridgeSub = cs.subsystems[1];
+      const bridgeSub = cs.capitalShip.subsystems[1];
       const inaccuracy =
         bridgeSub.health <= 0
           ? combatConfig.turretAccuracy * C.turretInaccuracyMultiplier
           : combatConfig.turretAccuracy;
       addDirectionNoise(_csDir, inaccuracy);
 
-      const shipName = `Корабль-${cs.mesh.metadata.index + 1}`;
+      const shipName = `Корабль-${cs.mesh.mesh.metadata.index + 1}`;
       const shots = C.turretBurstMin + Math.floor(Math.random() * C.turretBurstRandomExtra);
       for (let i = 0; i < shots; i++) {
         _csOrigin.set(
@@ -126,11 +129,14 @@ export const capitalShipSystem: GameSystem = {
     updateCapitalShips(dt);
   },
   cleanup() {
-    for (const cs of state.capitalShips) {
-      disposeNode(cs.mesh);
-      const eid = findCapitalShipEntity(world, cs);
-      if (eid !== null) world.destroyEntity(eid);
+    const ships = world.query(CapitalShipComponent, MeshComponent);
+    for (const {
+      entity,
+      components: [, mesh],
+    } of ships) {
+      unregisterMeshEntity(mesh.mesh);
+      disposeNode(mesh.mesh);
+      world.destroyEntity(entity);
     }
-    state.capitalShips = [];
   },
 };
