@@ -9,11 +9,13 @@ import {
   createCylinderGeometry,
   createMesh,
 } from '@/shared/core';
+import { createProjectileEntity, findProjectileEntity } from '@/shared/ecs/adapters';
+import { world } from '@/shared/ecs/combat-world';
 import { addDirectionNoise } from '@/shared/lib/math';
 import { state } from '@/shared/state';
 import type { LaserData } from '@/shared/types';
 
-import { GUN_OFFSET_L, GUN_OFFSET_R } from '@/entities/fighter';
+import { GUN_OFFSET_L, GUN_OFFSET_R } from '@/entities/objects/space-ships';
 
 const W = WEAPON_CONFIG;
 
@@ -70,20 +72,24 @@ export function createLaser(
   addToScene(mesh);
 
   const speed = isEnemy ? W.enemyLaserSpeed : W.playerLaserSpeed;
-  const data: LaserData = {
+  const velocity = new Vector3().copyFrom(_laserDir).scaleInPlace(speed);
+  const damage = isPlayer ? W.playerDamage : isEnemy ? W.enemyDamage : W.allyDamage;
+
+  const { laser } = createProjectileEntity(
+    world,
     mesh,
-    velocity: new Vector3().copyFrom(_laserDir).scaleInPlace(speed),
-    life: W.laserLife,
+    velocity,
+    W.laserLife,
     team,
-    damage: isPlayer ? W.playerDamage : isEnemy ? W.enemyDamage : W.allyDamage,
-    shooterName: shooterName || '',
-  };
+    damage,
+    shooterName || '',
+  );
 
-  if (team === 'player') state.bullets.push(data);
-  else if (team === 'ally') state.allyBullets.push(data);
-  else state.enemyBullets.push(data);
+  if (team === 'player') state.bullets.push(laser);
+  else if (team === 'ally') state.allyBullets.push(laser);
+  else state.enemyBullets.push(laser);
 
-  return data;
+  return laser;
 }
 
 export function cleanupExcessBullets(): void {
@@ -95,7 +101,10 @@ export function cleanupExcessBullets(): void {
     const removeCount = total - W.cleanupTarget;
     const toRemove = Math.min(removeCount, target.length);
     for (let i = 0; i < toRemove; i++) {
-      target[i].mesh.dispose();
+      const b = target[i];
+      b.mesh.dispose();
+      const entityId = findProjectileEntity(world, b);
+      if (entityId !== null) world.destroyEntity(entityId);
     }
     target.splice(0, toRemove);
   }

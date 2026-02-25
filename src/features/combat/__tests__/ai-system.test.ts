@@ -24,7 +24,7 @@ jest.mock('@/shared/engine', () => ({
   camera: { position: new (jest.requireActual('@/shared/core/vector3').Vector3)() },
 }));
 
-jest.mock('@/entities/fighter', () => ({
+jest.mock('@/entities/objects/space-ships', () => ({
   cleanupTeamSources: jest.fn(),
   updateExhaustGlow: jest.fn(),
 }));

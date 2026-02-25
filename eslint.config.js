@@ -16,6 +16,11 @@ export default [
         { type: 'shared', pattern: 'shared', mode: 'folder' },
       ],
       'boundaries/root-path': 'src',
+      'import/resolver': {
+        typescript: {
+          alwaysTryTypes: true,
+        },
+      },
     },
     rules: {
       'boundaries/element-types': [

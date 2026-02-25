@@ -1,12 +1,14 @@
 import { AI_CONFIG } from '@/shared/config/ai';
 import { PLAYER_NAME } from '@/shared/constants';
 import { Quaternion, TransformNode, Vector3, disposeNode } from '@/shared/core';
+import { findFighterEntity } from '@/shared/ecs/adapters';
+import { world } from '@/shared/ecs/combat-world';
 import { camera } from '@/shared/engine';
 import { state } from '@/shared/state';
 import type { Fighter } from '@/shared/types';
 import type { GameSystem } from '@/shared/types';
 
-import { cleanupTeamSources, updateExhaustGlow } from '@/entities/fighter';
+import { cleanupTeamSources, updateExhaustGlow } from '@/entities/objects/space-ships';
 
 import { playerPlane } from '@/features/flight/player-system';
 
@@ -176,8 +178,16 @@ export const aiSystem: GameSystem = {
     updateExhaustGlow();
   },
   cleanup() {
-    for (const a of state.allies) disposeNode(a.mesh);
-    for (const e of state.enemies) disposeNode(e.mesh);
+    for (const a of state.allies) {
+      disposeNode(a.mesh);
+      const eid = findFighterEntity(world, a);
+      if (eid !== null) world.destroyEntity(eid);
+    }
+    for (const e of state.enemies) {
+      disposeNode(e.mesh);
+      const eid = findFighterEntity(world, e);
+      if (eid !== null) world.destroyEntity(eid);
+    }
     state.allies = [];
     state.enemies = [];
     cleanupTeamSources();

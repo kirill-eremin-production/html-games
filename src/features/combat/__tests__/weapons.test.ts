@@ -31,7 +31,7 @@ jest.mock('@/shared/audio', () => ({
   playLaserSound: jest.fn(),
 }));
 
-jest.mock('@/entities/fighter', () => ({
+jest.mock('@/entities/objects/space-ships', () => ({
   GUN_OFFSET_L: new (jest.requireActual('@/shared/core/vector3').Vector3)(0, 0, -1),
   GUN_OFFSET_R: new (jest.requireActual('@/shared/core/vector3').Vector3)(0, 0, 1),
 }));

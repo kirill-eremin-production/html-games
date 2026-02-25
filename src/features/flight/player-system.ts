@@ -15,7 +15,7 @@ import { actions, aim } from '@/shared/input';
 import { state } from '@/shared/state';
 import type { GameSystem } from '@/shared/types';
 
-import { GUN_OFFSET_L, GUN_OFFSET_R } from '@/entities/fighter';
+import { GUN_OFFSET_L, GUN_OFFSET_R } from '@/entities/objects/space-ships';
 
 import { createExplosion } from '@/features/combat/explosions';
 import { createLaser } from '@/features/combat/weapons';

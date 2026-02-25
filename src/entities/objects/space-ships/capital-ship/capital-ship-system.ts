@@ -1,0 +1,135 @@
+import { playLaserSound } from '@/shared/audio';
+import { COMBAT_CONSTANTS } from '@/shared/config/combat';
+import { combatConfig } from '@/shared/config/combat-session';
+import {
+  EngineMesh,
+  Vector3,
+  addToScene,
+  disposeNode,
+  isEngineMesh,
+  traverseNode,
+} from '@/shared/core';
+import { createCapitalShipEntity, findCapitalShipEntity } from '@/shared/ecs/adapters';
+import { world } from '@/shared/ecs/combat-world';
+import { addDirectionNoise } from '@/shared/lib/math';
+import { parseHexColor, settings } from '@/shared/settings';
+import { state } from '@/shared/state';
+import type { GameSystem } from '@/shared/types';
+
+import { destroyedSubMat } from '@/features/combat/explosions';
+import { createLaser } from '@/features/combat/weapons';
+import { playerPlane } from '@/features/flight/player-system';
+
+import { createCapitalShip } from './create-capital-ship';
+
+const C = COMBAT_CONSTANTS;
+
+const SHIP_POSITIONS = C.shipPositions.map(([x, y, z]) => new Vector3(x, y, z));
+
+export function spawnCapitalShips(): void {
+  const count = settings.counts.capitalShips;
+  const hullColor = parseHexColor(settings.colors.capitalHull);
+  for (let i = 0; i < count; i++) {
+    const ship = createCapitalShip(i, hullColor);
+    ship.position.copyFrom(SHIP_POSITIONS[i]);
+    ship.lookAt(new Vector3(0, 0, 0));
+    addToScene(ship);
+    const { capitalShip } = createCapitalShipEntity(
+      world,
+      ship,
+      ship.metadata.subsystems,
+      2 + Math.random() * 3,
+    );
+    state.capitalShips.push(capitalShip);
+  }
+}
+
+function updateCapitalShipVisuals(cs: (typeof state.capitalShips)[number], dt: number): void {
+  for (const sub of cs.subsystems) {
+    if (!sub.mesh) continue;
+    if (sub.health <= 0 && sub.mesh.isEnabled()) {
+      traverseNode(sub.mesh, (child) => {
+        if (isEngineMesh(child) && (child as EngineMesh).material) {
+          (child as EngineMesh).material = destroyedSubMat;
+        }
+      });
+    }
+  }
+  if (cs.subsystems[0].health > 0) cs.mesh.rotation.y += C.shipRotationSpeed * dt;
+}
+
+const _csTargets: Vector3[] = [];
+const _csDir = new Vector3();
+const _csOrigin = new Vector3();
+const _csShotDir = new Vector3();
+
+export function updateCapitalShips(dt: number): void {
+  for (const cs of state.capitalShips) {
+    if (!cs.alive) continue;
+    const turretSub = cs.subsystems[2];
+    if (turretSub.health <= 0) {
+      updateCapitalShipVisuals(cs, dt);
+      continue;
+    }
+
+    cs.turretTimer -= dt;
+    if (cs.turretTimer <= 0) {
+      cs.turretTimer =
+        combatConfig.turretFireRateMin +
+        Math.random() * (combatConfig.turretFireRateMax - combatConfig.turretFireRateMin);
+      _csTargets.length = 0;
+      const shipPos = cs.mesh.position;
+      if (shipPos.distanceToSquared(playerPlane.position) < C.turretRangeSq)
+        _csTargets.push(playerPlane.position);
+      for (const a of state.allies) {
+        if (shipPos.distanceToSquared(a.mesh.position) < C.allyTurretRangeSq)
+          _csTargets.push(a.mesh.position);
+      }
+      if (_csTargets.length === 0) {
+        updateCapitalShipVisuals(cs, dt);
+        continue;
+      }
+
+      const tgt = _csTargets[Math.floor(Math.random() * _csTargets.length)];
+      _csDir.copyFrom(tgt).subtractInPlace(shipPos).normalize();
+      const bridgeSub = cs.subsystems[1];
+      const inaccuracy =
+        bridgeSub.health <= 0
+          ? combatConfig.turretAccuracy * C.turretInaccuracyMultiplier
+          : combatConfig.turretAccuracy;
+      addDirectionNoise(_csDir, inaccuracy);
+
+      const shipName = `Корабль-${cs.mesh.metadata.index + 1}`;
+      const shots = C.turretBurstMin + Math.floor(Math.random() * C.turretBurstRandomExtra);
+      for (let i = 0; i < shots; i++) {
+        _csOrigin.set(
+          shipPos.x + (Math.random() - 0.5) * C.turretOriginSpreadXZ,
+          shipPos.y + (Math.random() - 0.5) * C.turretOriginSpreadY,
+          shipPos.z + (Math.random() - 0.5) * C.turretOriginSpreadXZ,
+        );
+        _csShotDir.copyFrom(_csDir);
+        addDirectionNoise(_csShotDir, C.turretShotSpread);
+        createLaser(_csOrigin, _csShotDir, 'enemy', shipName);
+      }
+      if (shipPos.distanceToSquared(playerPlane.position) < C.audioRangeSq) playLaserSound(false);
+    }
+    updateCapitalShipVisuals(cs, dt);
+  }
+}
+
+// ── GameSystem adapter ──────────────────────────────────────────────────────
+
+export const capitalShipSystem: GameSystem = {
+  id: 'capital-ships',
+  update(dt) {
+    updateCapitalShips(dt);
+  },
+  cleanup() {
+    for (const cs of state.capitalShips) {
+      disposeNode(cs.mesh);
+      const eid = findCapitalShipEntity(world, cs);
+      if (eid !== null) world.destroyEntity(eid);
+    }
+    state.capitalShips = [];
+  },
+};

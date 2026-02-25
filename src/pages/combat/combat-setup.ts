@@ -1,11 +1,12 @@
 import { combatConfig } from '@/shared/config/combat-session';
+import { resetWorld } from '@/shared/ecs/combat-world';
 import { camera } from '@/shared/engine';
 import { refs } from '@/shared/refs/app-refs';
 import { parseHexColor, settings } from '@/shared/settings';
 import { resetNameCounters, state } from '@/shared/state';
 
-import { spawnCapitalShips } from '@/entities/capital-ship/capital-ship-system';
-import { createFighter } from '@/entities/fighter';
+import { createFighter } from '@/entities/objects/space-ships';
+import { spawnCapitalShips } from '@/entities/objects/space-ships/capital-ship/capital-ship-system';
 
 import { spawnAlly, spawnEnemy } from '@/features/combat/spawner-system';
 import { playerPlane, resetPlayerTransform } from '@/features/flight/player-system';
@@ -13,6 +14,7 @@ import { resetCachedShipHTML } from '@/features/hud/hud';
 import { clearKillFeed } from '@/features/hud/kill-feed';
 
 export function resetCombatState(): void {
+  resetWorld();
   state.killFeed = [];
   state.phase = 1;
   state.score = 0;

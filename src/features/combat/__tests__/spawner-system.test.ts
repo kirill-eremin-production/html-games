@@ -51,7 +51,7 @@ jest.mock('@/shared/settings', () => ({
   parseHexColor: jest.fn(() => 0),
 }));
 
-jest.mock('@/entities/fighter', () => ({
+jest.mock('@/entities/objects/space-ships', () => ({
   createFighterInstanced: jest.fn(() => {
     const { Vector3 } = jest.requireActual('@/shared/core/vector3');
     const { Quaternion } = jest.requireActual('@babylonjs/core/Maths/math.vector');

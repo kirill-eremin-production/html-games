@@ -18,7 +18,7 @@ import { camera } from '@/shared/engine';
 import { scene } from '@/shared/engine';
 import { parseHexColor, settings } from '@/shared/settings';
 
-import { createFighter } from '@/entities/fighter';
+import { createFighter } from '@/entities/objects/space-ships';
 
 import { STAR_SYSTEMS } from '@/features/campaign/data';
 import { campaign } from '@/features/campaign/state';

@@ -2,6 +2,8 @@ import { playHitSound } from '@/shared/audio';
 import { COMBAT_CONSTANTS } from '@/shared/config/combat';
 import { PLAYER_CONFIG } from '@/shared/config/player';
 import { Vector3 } from '@/shared/core';
+import { findProjectileEntity } from '@/shared/ecs/adapters';
+import { world } from '@/shared/ecs/combat-world';
 import { emit } from '@/shared/events';
 import { state } from '@/shared/state';
 import type { Fighter, LaserData } from '@/shared/types';
@@ -16,6 +18,13 @@ import { cleanupExcessBullets } from './weapons';
 const C = COMBAT_CONSTANTS;
 
 const _hitWorldPos = new Vector3();
+
+/** Удалить снаряд: dispose mesh + destroy ECS entity */
+function removeBullet(b: LaserData): void {
+  b.mesh.dispose();
+  const entityId = findProjectileEntity(world, b);
+  if (entityId !== null) world.destroyEntity(entityId);
+}
 
 function hitTestFighters(laser: LaserData, fighters: Fighter[], isPlayerLaser: boolean): boolean {
   for (let j = fighters.length - 1; j >= 0; j--) {
@@ -93,7 +102,7 @@ export function updateBullets(dt: number): void {
       b.mesh.position.addScaledVector(b.velocity, dt);
       b.life -= dt;
       if (b.life <= 0) {
-        b.mesh.dispose();
+        removeBullet(b);
         arr.splice(i, 1);
         continue;
       }
@@ -117,7 +126,7 @@ export function updateBullets(dt: number): void {
 
       if ((isPlayer || b.team === 'ally') && !hit) hit = hitTestCapitalShips(b);
       if (hit) {
-        b.mesh.dispose();
+        removeBullet(b);
         arr.splice(i, 1);
       }
     }
@@ -129,9 +138,9 @@ export function updateBullets(dt: number): void {
 // ── GameSystem adapter ──────────────────────────────────────────────────────
 
 function clearAllBullets(): void {
-  for (const b of state.bullets) b.mesh.dispose();
-  for (const b of state.allyBullets) b.mesh.dispose();
-  for (const b of state.enemyBullets) b.mesh.dispose();
+  for (const b of state.bullets) removeBullet(b);
+  for (const b of state.allyBullets) removeBullet(b);
+  for (const b of state.enemyBullets) removeBullet(b);
   state.bullets = [];
   state.allyBullets = [];
   state.enemyBullets = [];

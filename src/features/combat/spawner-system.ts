@@ -1,12 +1,14 @@
 import { COMBAT_CONSTANTS } from '@/shared/config/combat';
 import { combatConfig } from '@/shared/config/combat-session';
 import { Vector3, addToScene } from '@/shared/core';
+import { createFighterEntity } from '@/shared/ecs/adapters';
+import { world } from '@/shared/ecs/combat-world';
 import { addHealthBar } from '@/shared/model-loader/shared';
 import { parseHexColor, settings } from '@/shared/settings';
 import { nextAllyName, nextEnemyName, state } from '@/shared/state';
 import type { GameSystem } from '@/shared/types';
 
-import { createFighterInstanced } from '@/entities/fighter';
+import { createFighterInstanced } from '@/entities/objects/space-ships';
 
 import { playerPlane } from '@/features/flight/player-system';
 
@@ -27,21 +29,23 @@ export function spawnAlly(near: Vector3): void {
   mesh.quaternion.copyFrom(playerPlane.quaternion);
   const hb = addHealthBar(mesh, 0x00ff44);
   const name = nextAllyName();
-  state.allies.push({
+
+  const { fighter } = createFighterEntity(
+    world,
     mesh,
     name,
-    healthBar: hb.bar,
-    healthFill: hb.fill,
-    health: combatConfig.fighterHP,
-    maxHealth: combatConfig.fighterHP,
-    speed:
-      combatConfig.allySpeedMin +
+    combatConfig.fighterHP,
+    combatConfig.fighterHP,
+    combatConfig.allySpeedMin +
       Math.random() * (combatConfig.allySpeedMax - combatConfig.allySpeedMin),
-    shootTimer:
-      combatConfig.allyFireRateMin +
+    combatConfig.allyFireRateMin +
       Math.random() * (combatConfig.allyFireRateMax - combatConfig.allyFireRateMin),
-    ai: { state: 'chase', timer: 0, evadeDir: new Vector3(), target: null },
-  });
+    'ally',
+    hb.bar,
+    hb.fill,
+    new Vector3(),
+  );
+  state.allies.push(fighter);
 }
 
 export function spawnEnemy(near: Vector3): void {
@@ -58,21 +62,23 @@ export function spawnEnemy(near: Vector3): void {
   mesh.position.copyFrom(near).add(offset);
   const hb = addHealthBar(mesh, 0xff0000);
   const name = nextEnemyName();
-  state.enemies.push({
+
+  const { fighter } = createFighterEntity(
+    world,
     mesh,
     name,
-    healthBar: hb.bar,
-    healthFill: hb.fill,
-    health: combatConfig.fighterHP,
-    maxHealth: combatConfig.fighterHP,
-    speed:
-      combatConfig.enemySpeedMin +
+    combatConfig.fighterHP,
+    combatConfig.fighterHP,
+    combatConfig.enemySpeedMin +
       Math.random() * (combatConfig.enemySpeedMax - combatConfig.enemySpeedMin),
-    shootTimer:
-      combatConfig.enemyFireRateMin +
+    combatConfig.enemyFireRateMin +
       Math.random() * (combatConfig.enemyFireRateMax - combatConfig.enemyFireRateMin),
-    ai: { state: 'chase', timer: 0, evadeDir: new Vector3(), target: null },
-  });
+    'enemy',
+    hb.bar,
+    hb.fill,
+    new Vector3(),
+  );
+  state.enemies.push(fighter);
 }
 
 export function updateRespawnQueue(dt: number): void {

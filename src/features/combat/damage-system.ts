@@ -2,6 +2,8 @@ import { COMBAT_CONSTANTS } from '@/shared/config/combat';
 import { combatConfig } from '@/shared/config/combat-session';
 import { PLAYER_CONFIG } from '@/shared/config/player';
 import { Vector3, disposeNode, removeFromScene } from '@/shared/core';
+import { findFighterEntity } from '@/shared/ecs/adapters';
+import { world } from '@/shared/ecs/combat-world';
 import { emit, off, on } from '@/shared/events';
 import type { EventMap } from '@/shared/events';
 import { state } from '@/shared/state';
@@ -23,7 +25,11 @@ function handleFighterKilled(e: EventMap['fighter-killed']): void {
   createExplosion(victim.mesh.position.clone(), 3);
   disposeNode(victim.mesh);
 
-  // Remove from array
+  // Remove from ECS world
+  const entityId = findFighterEntity(world, victim);
+  if (entityId !== null) world.destroyEntity(entityId);
+
+  // Remove from state array
   const arr = victimTeam === 'enemy' ? state.enemies : state.allies;
   const idx = arr.indexOf(victim);
   if (idx !== -1) arr.splice(idx, 1);

@@ -20,7 +20,7 @@ import { preloadModels } from '@/shared/model-loader';
 import { clock, refs } from '@/shared/refs/app-refs';
 import { parseHexColor, settings } from '@/shared/settings';
 
-import { createFighter } from '@/entities/fighter';
+import { createFighter } from '@/entities/objects/space-ships';
 
 import { playerPlane } from '@/features/flight/player-system';
 import { createStarfield } from '@/features/flight/starfield';

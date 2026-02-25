@@ -13,7 +13,7 @@ import { state } from '@/shared/state';
 import type { CombatModeContext, GameModeHandler, GameSystem } from '@/shared/types';
 import { cleanupSystems, initSystems, updateSystems } from '@/shared/types';
 
-import { capitalShipSystem } from '@/entities/capital-ship/capital-ship-system';
+import { capitalShipSystem } from '@/entities/objects/space-ships/capital-ship/capital-ship-system';
 
 import { aiSystem } from '@/features/combat/ai-system';
 import { damageSystem } from '@/features/combat/damage-system';
