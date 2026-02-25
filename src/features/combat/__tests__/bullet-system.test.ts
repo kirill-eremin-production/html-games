@@ -12,6 +12,7 @@ import { ProjectileComponent } from '@/entities/combat/projectile';
 import { SubsystemComponent } from '@/entities/combat/subsystem';
 import { WeaponComponent } from '@/entities/combat/weapon';
 import { queryFightersForUI } from '@/entities/ecs-queries';
+import { HitboxComponent } from '@/entities/physics/hitbox';
 import { TransformComponent } from '@/entities/physics/transform';
 import { VelocityComponent } from '@/entities/physics/velocity';
 import { HealthBarComponent } from '@/entities/rendering/health-bar';
@@ -21,6 +22,7 @@ import { HealthComponent } from '@/entities/stats/health';
 import { LifetimeComponent } from '@/entities/stats/lifetime';
 import { NameComponent } from '@/entities/stats/name';
 import { ParentEntityComponent } from '@/entities/stats/parent-entity';
+import { PlayerTagComponent } from '@/entities/stats/player-tag';
 import { TeamComponent } from '@/entities/stats/team';
 
 import { collisionSystem } from '../collision-system';
@@ -73,6 +75,12 @@ jest.mock('@/features/flight/player-system', () => {
 
 jest.mock('../damage-system', () => ({
   destroyFighter: jest.fn(),
+}));
+
+jest.mock('@/shared/refs/player-entity', () => ({
+  playerEntityId: 0,
+  setPlayerEntityId: jest.fn(),
+  clearPlayerEntityId: jest.fn(),
 }));
 
 jest.mock('../explosions', () => ({ createExplosion: jest.fn() }));
@@ -142,6 +150,7 @@ function createFighterECS(
   world.addComponent(id, new TeamComponent(team));
   world.addComponent(id, new NameComponent('test'));
   world.addComponent(id, new FighterAIComponent('chase', 0, new Vector3(), null));
+  world.addComponent(id, new HitboxComponent(12 * 12));
   registerMeshEntity(mesh, id);
 
   // Legacy Fighter-proxy для чтения healthComp в тестах
@@ -160,6 +169,29 @@ function createFighterECS(
   return { id, mesh, fighter, healthComp };
 }
 
+function createPlayerECS(x = 0, y = 0, z = 0) {
+  const { playerPlane } = jest.requireMock('@/features/flight/player-system') as any;
+  const playerEntityMock = jest.requireMock('@/shared/refs/player-entity') as any;
+  playerPlane.position.set(x, y, z);
+
+  const id = world.createEntity();
+  world.addComponent(id, new TransformComponent(playerPlane.position, playerPlane.quaternion));
+  world.addComponent(id, new MeshComponent(playerPlane));
+  world.addComponent(id, new NameComponent('Ас'));
+  world.addComponent(id, new HealthComponent(state.maxHealth, state.maxHealth));
+  world.addComponent(id, new VelocityComponent(80));
+  world.addComponent(id, new TeamComponent('player'));
+  world.addComponent(id, new DamageBufferComponent());
+  world.addComponent(id, new HitboxComponent(6 * 6));
+  world.addComponent(id, new PlayerTagComponent());
+  registerMeshEntity(playerPlane, id);
+
+  // Устанавливаем playerEntityId для playerSyncSystem
+  playerEntityMock.playerEntityId = id;
+
+  return id;
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 describe('ECS Bullet Pipeline', () => {
@@ -173,6 +205,11 @@ describe('ECS Bullet Pipeline', () => {
     state.damageFlash = 0;
     state.noDamageTimer = 0;
     state.lastAttacker = '';
+
+    // Сбрасываем playerEntityId
+    const playerEntityMock = jest.requireMock('@/shared/refs/player-entity') as any;
+    playerEntityMock.playerEntityId = 0;
+
     jest.clearAllMocks();
   });
 
@@ -351,29 +388,31 @@ describe('ECS Bullet Pipeline', () => {
 
     describe('Урон игроку', () => {
       it('вражеский снаряд наносит урон игроку', () => {
-        const { playerPlane } = jest.requireMock('@/features/flight/player-system') as any;
-        playerPlane.position.set(0, 0, 0);
         state.invulnTimer = 0;
         state.playerHealth = 100;
+        const playerId = createPlayerECS(0, 0, 0);
 
         createProjectileECS(0, 0, 0, { damage: 25, team: 'enemy' });
 
         collisionSystem.update!(0);
+        healthSystem.update!(0);
 
-        expect(state.playerHealth).toBe(75);
+        const hc = world.getComponent(playerId, HealthComponent)!;
+        expect(hc.current).toBe(75);
       });
 
       it('не наносит урон игроку при invulnTimer > 0', () => {
-        const { playerPlane } = jest.requireMock('@/features/flight/player-system') as any;
-        playerPlane.position.set(0, 0, 0);
         state.invulnTimer = 3;
         state.playerHealth = 100;
+        const playerId = createPlayerECS(0, 0, 0);
 
         createProjectileECS(0, 0, 0, { damage: 25, team: 'enemy' });
 
         collisionSystem.update!(0);
+        healthSystem.update!(0);
 
-        expect(state.playerHealth).toBe(100);
+        const hc = world.getComponent(playerId, HealthComponent)!;
+        expect(hc.current).toBe(100);
       });
     });
   });

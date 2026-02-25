@@ -1,10 +1,13 @@
 import { combatConfig } from '@/shared/config/combat-session';
+import { world } from '@/shared/ecs/combat-world';
 import { resetWorld } from '@/shared/ecs/combat-world';
 import { camera } from '@/shared/engine';
 import { refs } from '@/shared/refs/app-refs';
+import { setPlayerEntityId } from '@/shared/refs/player-entity';
 import { parseHexColor, settings } from '@/shared/settings';
 import { resetNameCounters, state } from '@/shared/state';
 
+import { createPlayerEntity } from '@/entities/ecs-adapters';
 import { queryAllCapitalShips } from '@/entities/ecs-queries';
 import { createFighter } from '@/entities/objects/space-ships';
 
@@ -52,6 +55,16 @@ export function resetCombatState(): void {
     parseHexColor(settings.colors.playerExhaust),
   );
   refs.playerModel.parent = playerPlane;
+
+  // Создаём ECS-сущность игрока
+  const playerId = createPlayerEntity(
+    world,
+    playerPlane,
+    state.maxHealth,
+    state.maxHealth,
+    state.baseSpeed,
+  );
+  setPlayerEntityId(playerId);
 }
 
 export function spawnCombatEntities(): void {

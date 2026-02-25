@@ -7,6 +7,7 @@ export { SubsystemComponent } from '@/entities/combat/subsystem';
 export type { SubsystemType } from '@/entities/combat/subsystem';
 export { WeaponComponent } from '@/entities/combat/weapon';
 // Домен: Physics
+export { HitboxComponent } from '@/entities/physics/hitbox';
 export { TransformComponent } from '@/entities/physics/transform';
 export { VelocityComponent } from '@/entities/physics/velocity';
 // Домен: Rendering
@@ -18,4 +19,5 @@ export { HealthComponent } from '@/entities/stats/health';
 export { LifetimeComponent } from '@/entities/stats/lifetime';
 export { NameComponent } from '@/entities/stats/name';
 export { ParentEntityComponent } from '@/entities/stats/parent-entity';
+export { PlayerTagComponent } from '@/entities/stats/player-tag';
 export { TeamComponent } from '@/entities/stats/team';

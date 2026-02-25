@@ -6,6 +6,7 @@ import { world } from '@/shared/ecs/combat-world';
 import { getEntityByMesh, unregisterMeshEntity } from '@/shared/ecs/entity-index';
 import { emit, off, on } from '@/shared/events';
 import type { EventMap } from '@/shared/events';
+import { playerEntityId } from '@/shared/refs/player-entity';
 import { state } from '@/shared/state';
 import type { Fighter } from '@/shared/types';
 import type { GameSystem } from '@/shared/types';
@@ -13,6 +14,7 @@ import type { GameSystem } from '@/shared/types';
 import { SubsystemComponent } from '@/entities/combat/subsystem';
 import { queryAllCapitalShips } from '@/entities/ecs-queries';
 import { MeshComponent } from '@/entities/rendering/mesh';
+import { HealthComponent } from '@/entities/stats/health';
 
 import { showMessage } from '@/features/hud/hud';
 import { addKillFeedEntry } from '@/features/hud/kill-feed';
@@ -47,6 +49,13 @@ function handleFighterKilled(e: EventMap['fighter-killed']): void {
       state.maxHealth,
       state.playerHealth + state.maxHealth * PLAYER_CONFIG.killHealthBonus,
     );
+
+    // Синхронизируем бонус HP в ECS
+    if (playerEntityId !== 0) {
+      const hc = world.getComponent(playerEntityId, HealthComponent);
+      if (hc) hc.current = state.playerHealth;
+    }
+
     showMessage(`+${C.fighterKillScore} | +10% HP`, 1.5);
   }
 

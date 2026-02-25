@@ -1,3 +1,5 @@
+import { COMBAT_CONSTANTS } from '@/shared/config/combat';
+import { PLAYER_NAME } from '@/shared/constants';
 import type { EngineMesh, TransformNode, Vector3 } from '@/shared/core';
 import { registerMeshEntity } from '@/shared/ecs/entity-index';
 import type { EntityId } from '@/shared/ecs/types';
@@ -9,6 +11,7 @@ import { CapitalShipComponent } from '@/entities/combat/capital-ship';
 import { ProjectileComponent } from '@/entities/combat/projectile';
 import { SubsystemComponent } from '@/entities/combat/subsystem';
 import { WeaponComponent } from '@/entities/combat/weapon';
+import { HitboxComponent } from '@/entities/physics/hitbox';
 import { TransformComponent } from '@/entities/physics/transform';
 import { VelocityComponent } from '@/entities/physics/velocity';
 import { HealthBarComponent } from '@/entities/rendering/health-bar';
@@ -18,6 +21,7 @@ import { HealthComponent } from '@/entities/stats/health';
 import { LifetimeComponent } from '@/entities/stats/lifetime';
 import { NameComponent } from '@/entities/stats/name';
 import { ParentEntityComponent } from '@/entities/stats/parent-entity';
+import { PlayerTagComponent } from '@/entities/stats/player-tag';
 import { TeamComponent } from '@/entities/stats/team';
 
 // ── Fighter ─────────────────────────────────────────────────────────────────
@@ -48,6 +52,33 @@ export function createFighterEntity(
   w.addComponent(id, new TeamComponent(team));
   w.addComponent(id, new FighterAIComponent('chase', 0, evadeDir, null));
   w.addComponent(id, new DamageBufferComponent());
+  w.addComponent(id, new HitboxComponent(COMBAT_CONSTANTS.fighterHitDistSq));
+  registerMeshEntity(mesh, id);
+
+  return id;
+}
+
+// ── Player ──────────────────────────────────────────────────────────────────
+
+/** Создать игрока как ECS-сущность. Возвращает EntityId. */
+export function createPlayerEntity(
+  w: World,
+  mesh: TransformNode,
+  health: number,
+  maxHealth: number,
+  speed: number,
+): EntityId {
+  const id = w.createEntity();
+
+  w.addComponent(id, new TransformComponent(mesh.position, mesh.quaternion));
+  w.addComponent(id, new MeshComponent(mesh));
+  w.addComponent(id, new NameComponent(PLAYER_NAME));
+  w.addComponent(id, new HealthComponent(health, maxHealth));
+  w.addComponent(id, new VelocityComponent(speed));
+  w.addComponent(id, new TeamComponent('player'));
+  w.addComponent(id, new DamageBufferComponent());
+  w.addComponent(id, new HitboxComponent(COMBAT_CONSTANTS.playerHitDistSq));
+  w.addComponent(id, new PlayerTagComponent());
   registerMeshEntity(mesh, id);
 
   return id;

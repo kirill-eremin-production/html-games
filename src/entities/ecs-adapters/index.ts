@@ -1,1 +1,6 @@
-export { createCapitalShipEntity, createFighterEntity, createProjectileEntity } from './adapters';
+export {
+  createCapitalShipEntity,
+  createFighterEntity,
+  createPlayerEntity,
+  createProjectileEntity,
+} from './adapters';

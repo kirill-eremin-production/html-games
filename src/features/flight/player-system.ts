@@ -10,12 +10,16 @@ import {
   getChildByName,
   vec3Unproject,
 } from '@/shared/core';
+import { world } from '@/shared/ecs/combat-world';
 import { camera } from '@/shared/engine';
 import { actions, aim } from '@/shared/input';
+import { playerEntityId } from '@/shared/refs/player-entity';
 import { state } from '@/shared/state';
 import type { GameSystem } from '@/shared/types';
 
 import { GUN_OFFSET_L, GUN_OFFSET_R } from '@/entities/objects/space-ships';
+import { VelocityComponent } from '@/entities/physics/velocity';
+import { HealthComponent } from '@/entities/stats/health';
 
 import { createExplosion } from '@/features/combat/explosions';
 import { createLaser } from '@/features/combat/weapons';
@@ -146,6 +150,17 @@ export function updatePlayer(dt: number): void {
     createLaser(_shootOrigin, _shootDir, 'player', PLAYER_NAME);
     playLaserSound(true);
   }
+
+  // Синхронизируем state → ECS (регенерация, изменение скорости)
+  if (playerEntityId !== 0 && world.isAlive(playerEntityId)) {
+    const hc = world.getComponent(playerEntityId, HealthComponent);
+    if (hc) {
+      hc.current = state.playerHealth;
+      hc.max = state.maxHealth;
+    }
+    const vc = world.getComponent(playerEntityId, VelocityComponent);
+    if (vc) vc.speed = state.speed;
+  }
 }
 
 // ── GameSystem adapter ──────────────────────────────────────────────────────
@@ -154,6 +169,16 @@ export const playerSystem: GameSystem = {
   id: 'player',
   update(dt) {
     updatePlayer(dt);
+  },
+};
+
+/** Синхронизирует ECS HealthComponent → state.playerHealth (запускается после healthSystem) */
+export const playerSyncSystem: GameSystem = {
+  id: 'player-sync',
+  update() {
+    if (playerEntityId === 0 || !world.isAlive(playerEntityId)) return;
+    const hc = world.getComponent(playerEntityId, HealthComponent);
+    if (hc) state.playerHealth = hc.current;
   },
 };
 
@@ -188,4 +213,13 @@ export function playerDeath(): void {
   state.lastAttacker = '';
   camera.position.set(P.combatCamBack, P.combatCamUp, 0);
   camera.setTarget(playerPlane.position);
+
+  // Синхронизируем сброс здоровья в ECS
+  if (playerEntityId !== 0 && world.isAlive(playerEntityId)) {
+    const hc = world.getComponent(playerEntityId, HealthComponent);
+    if (hc) {
+      hc.current = state.maxHealth;
+      hc.max = state.maxHealth;
+    }
+  }
 }

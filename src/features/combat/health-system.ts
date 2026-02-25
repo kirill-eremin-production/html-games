@@ -1,5 +1,8 @@
+import { playHitSound } from '@/shared/audio';
+import { PLAYER_CONFIG } from '@/shared/config/player';
 import { world } from '@/shared/ecs/combat-world';
 import { emit } from '@/shared/events';
+import { state } from '@/shared/state';
 import type { GameSystem } from '@/shared/types';
 
 import { FighterAIComponent } from '@/entities/ai/fighter-ai';
@@ -11,6 +14,7 @@ import { DamageBufferComponent } from '@/entities/stats/damage-buffer';
 import { HealthComponent } from '@/entities/stats/health';
 import { NameComponent } from '@/entities/stats/name';
 import { ParentEntityComponent } from '@/entities/stats/parent-entity';
+import { PlayerTagComponent } from '@/entities/stats/player-tag';
 import { TeamComponent } from '@/entities/stats/team';
 
 import { destroyFighter } from './damage-system';
@@ -32,6 +36,24 @@ export const healthSystem: GameSystem = {
       components: [health, buf, mesh, team, name],
     } of entities) {
       if (buf.hits.length === 0) continue;
+
+      // Игрок: применяем урон с учётом неуязвимости, не уничтожаем сущность
+      if (world.hasComponent(entity, PlayerTagComponent)) {
+        if (state.invulnTimer > 0) {
+          buf.hits.length = 0;
+          continue;
+        }
+        for (const hit of buf.hits) {
+          health.current -= hit.amount;
+          state.damageFlash = PLAYER_CONFIG.damageFlashDuration;
+          state.noDamageTimer = 0;
+          state.lastAttacker = hit.shooterName || '?';
+          playHitSound();
+          emit('player-hit', { damage: hit.amount, attackerName: hit.shooterName || '?' });
+        }
+        buf.hits.length = 0;
+        continue;
+      }
 
       for (const hit of buf.hits) {
         health.current -= hit.amount;

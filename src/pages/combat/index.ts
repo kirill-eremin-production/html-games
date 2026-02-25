@@ -9,7 +9,9 @@ import {
 } from '@/shared/audio';
 import { applyCombatConfig } from '@/shared/config/combat-session';
 import { world } from '@/shared/ecs';
+import { unregisterMeshEntity } from '@/shared/ecs/entity-index';
 import { refs } from '@/shared/refs/app-refs';
+import { clearPlayerEntityId, playerEntityId } from '@/shared/refs/player-entity';
 import { state } from '@/shared/state';
 import type { CombatModeContext, GameModeHandler } from '@/shared/types';
 
@@ -103,6 +105,14 @@ export const combatMode: GameModeHandler = {
     stopProximityHum();
     hideHUD();
     world.scheduler.cleanup();
+
+    // Уничтожаем ECS-сущность игрока
+    if (playerEntityId !== 0) {
+      unregisterMeshEntity(playerPlane);
+      world.destroyEntity(playerEntityId);
+      clearPlayerEntityId();
+    }
+
     // Clean up exploration scene backdrop
     clearExplorationScene();
     hideExploration();

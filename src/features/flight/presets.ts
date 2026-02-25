@@ -7,7 +7,7 @@ import { explosionSystem } from '@/features/combat/explosions';
 import { healthSystem } from '@/features/combat/health-system';
 import { lifetimeSystem } from '@/features/combat/lifetime-system';
 import { projectileMovementSystem } from '@/features/combat/movement-system';
-import { playerSystem } from '@/features/flight/player-system';
+import { playerSyncSystem, playerSystem } from '@/features/flight/player-system';
 import { starfieldSystem } from '@/features/flight/starfield';
 
 // ── Reusable system presets ─────────────────────────────────────────────────
@@ -26,6 +26,7 @@ export const weaponSystems: GameSystem[] = [
   projectileMovementSystem,
   collisionSystem,
   healthSystem,
+  playerSyncSystem,
   lifetimeSystem,
   bulletSystem,
   explosionSystem,
