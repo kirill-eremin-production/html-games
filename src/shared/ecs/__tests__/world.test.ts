@@ -1,3 +1,4 @@
+import { generationOfEntity, indexOfEntity } from '../types';
 import { World } from '../world';
 
 class Position {
@@ -255,6 +256,104 @@ describe('World', () => {
       const results = world.query(Position, Health);
       results[0].components[1].current = 25;
       expect(world.getComponent(id, Health)!.current).toBe(25);
+    });
+  });
+
+  // ── EntityHandle — generations ────────────────────────────────────────
+
+  describe('EntityHandle — generations', () => {
+    it('переиспользует index удалённой сущности', () => {
+      const a = world.createEntity();
+      const aIndex = indexOfEntity(a);
+      world.destroyEntity(a);
+      const b = world.createEntity();
+      // b должен иметь тот же index, но другой generation
+      expect(indexOfEntity(b)).toBe(aIndex);
+      expect(generationOfEntity(b)).toBe(generationOfEntity(a) + 1);
+    });
+
+    it('isAlive возвращает false для stale handle после переиспользования', () => {
+      const a = world.createEntity();
+      world.destroyEntity(a);
+      const b = world.createEntity();
+      expect(world.isAlive(a)).toBe(false);
+      expect(world.isAlive(b)).toBe(true);
+    });
+
+    it('destroyEntity игнорирует stale handle', () => {
+      const a = world.createEntity();
+      world.destroyEntity(a);
+      const b = world.createEntity();
+      world.addComponent(b, new Position(10, 20));
+      // Повторный destroy со старым handle не должен удалить b
+      world.destroyEntity(a);
+      expect(world.isAlive(b)).toBe(true);
+      expect(world.getComponent(b, Position)!.x).toBe(10);
+    });
+
+    it('getComponent возвращает undefined для stale entity', () => {
+      const a = world.createEntity();
+      world.addComponent(a, new Position(1, 2));
+      world.destroyEntity(a);
+      expect(world.getComponent(a, Position)).toBeUndefined();
+    });
+
+    it('query не возвращает stale entities', () => {
+      const a = world.createEntity();
+      world.addComponent(a, new Position(1, 2));
+      world.destroyEntity(a);
+      const results = world.query(Position);
+      expect(results).toHaveLength(0);
+    });
+
+    it('query возвращает актуальные EntityId (с правильной generation)', () => {
+      const a = world.createEntity();
+      world.addComponent(a, new Position(1, 2));
+      world.destroyEntity(a);
+
+      const b = world.createEntity();
+      world.addComponent(b, new Position(3, 4));
+
+      const results = world.query(Position);
+      expect(results).toHaveLength(1);
+      expect(results[0].entity).toBe(b);
+      expect(results[0].entity).not.toBe(a);
+    });
+
+    it('множественное переиспользование увеличивает generation', () => {
+      const a = world.createEntity();
+      const aGen = generationOfEntity(a);
+      world.destroyEntity(a);
+
+      const b = world.createEntity();
+      expect(generationOfEntity(b)).toBe(aGen + 1);
+      world.destroyEntity(b);
+
+      const c = world.createEntity();
+      expect(generationOfEntity(c)).toBe(aGen + 2);
+      expect(indexOfEntity(c)).toBe(indexOfEntity(a));
+    });
+
+    it('grow при большом количестве сущностей', () => {
+      const ids: number[] = [];
+      // Создаём больше сущностей чем initial capacity (1024)
+      for (let i = 0; i < 2000; i++) {
+        ids.push(world.createEntity());
+      }
+      // Все должны быть живы
+      for (const id of ids) {
+        expect(world.isAlive(id)).toBe(true);
+      }
+      // Удаляем половину и проверяем
+      for (let i = 0; i < 1000; i++) {
+        world.destroyEntity(ids[i]);
+      }
+      for (let i = 0; i < 1000; i++) {
+        expect(world.isAlive(ids[i])).toBe(false);
+      }
+      for (let i = 1000; i < 2000; i++) {
+        expect(world.isAlive(ids[i])).toBe(true);
+      }
     });
   });
 });
