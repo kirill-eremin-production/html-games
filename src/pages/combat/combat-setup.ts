@@ -1,22 +1,62 @@
 import { combatConfig } from '@/shared/config/combat-session';
+import { Quaternion, Vector3 } from '@/shared/core';
 import { world } from '@/shared/ecs/combat-world';
 import { resetWorld } from '@/shared/ecs/combat-world';
 import { camera } from '@/shared/engine';
 import { refs } from '@/shared/refs/app-refs';
-import { setPlayerEntityId } from '@/shared/refs/player-entity';
 import { parseHexColor, settings } from '@/shared/settings';
 import { resetNameCounters, state } from '@/shared/state';
 
 import { CapitalShipComponent } from '@/entities/combat/capital-ship';
-import { createPlayerEntity } from '@/entities/ecs-adapters';
 import { createFighter } from '@/entities/objects/space-ships';
 import { TransformComponent } from '@/entities/physics/transform';
+import { VisualComponent } from '@/entities/rendering/visual';
+import { TeamComponent } from '@/entities/stats/team';
 
 import { spawnCapitalShips } from '@/features/combat/capital-ship-system';
-import { spawnAlly, spawnEnemy } from '@/features/combat/spawner-system';
+import { spawnEnemy } from '@/features/combat/spawner-system';
 import { playerPlane, resetPlayerTransform } from '@/features/flight/player-system';
 import { resetCachedShipHTML } from '@/features/hud/hud';
 import { clearKillFeed } from '@/features/hud/kill-feed';
+
+// ── Корабль-носитель ────────────────────────────────────────────────────────
+
+/** Позиция союзного корабля-носителя в мировых координатах */
+const CARRIER_POSITION = new Vector3(-500, 0, -500);
+
+/** Направление «наружу» от ворот ангара (в мировых координатах) */
+const CARRIER_GATE_DIR = new Vector3(1, 0, 1).normalize();
+
+/**
+ * Позиция ворот ангара в мировых координатах.
+ * Игрок и ИИ-истребители вылетают из этой точки.
+ */
+export function getCarrierGatePosition(): Vector3 {
+  return CARRIER_POSITION.clone().addScaledVector(CARRIER_GATE_DIR, 200);
+}
+
+/** Направление вылета из ворот ангара */
+export function getCarrierGateDirection(): Vector3 {
+  return CARRIER_GATE_DIR.clone();
+}
+
+/** Спавнит союзный корабль-носитель (визуал без боевой логики) */
+function spawnAllyCarrier(): void {
+  const id = world.createEntity();
+  world.addComponent(
+    id,
+    new TransformComponent(new Vector3().copyFrom(CARRIER_POSITION), new Quaternion()),
+  );
+  // capital-ship визуал с цветом союзника, variant='carrier' для идентификации
+  world.addComponent(
+    id,
+    new VisualComponent('capital-ship', parseHexColor(settings.colors.allyBody), 0, 'carrier'),
+  );
+  world.addComponent(id, new TeamComponent('ally'));
+  // БЕЗ CapitalShipComponent — не участвует в боевой логике (не стреляет, не разрушается)
+}
+
+// ── Основные функции ────────────────────────────────────────────────────────
 
 export function resetCombatState(): void {
   resetWorld();
@@ -46,6 +86,7 @@ export function resetCombatState(): void {
   clearKillFeed();
 
   resetPlayerTransform();
+  playerPlane.setVisibleRecursive(false); // скрыт до вылета из ангара
   camera.position.set(-10.5, 3.75, 0);
   camera.setTarget(playerPlane.position);
 
@@ -57,25 +98,23 @@ export function resetCombatState(): void {
   );
   refs.playerModel.parent = playerPlane;
 
-  // Создаём ECS-сущность игрока
-  const playerId = createPlayerEntity(
-    world,
-    playerPlane,
-    state.maxHealth,
-    state.maxHealth,
-    state.baseSpeed,
-  );
-  setPlayerEntityId(playerId);
+  // ECS-сущность игрока НЕ создаётся здесь — она создаётся в switchToFlight()
+  // когда игрок садится в истребитель и вылетает из ангара
 }
 
 export function spawnCombatEntities(): void {
+  // Вражеские капитальные корабли
   const csCount = Math.min(combatConfig.capitalShips, 5);
   settings.counts.capitalShips = csCount;
   spawnCapitalShips();
 
-  const allyCount = combatConfig.allies;
-  for (let i = 0; i < allyCount; i++) spawnAlly(playerPlane.position);
+  // Союзный корабль-носитель (визуал в космосе)
+  spawnAllyCarrier();
 
+  // Союзники НЕ спавнятся сразу — они вылетают из ангара через ИИ-пилотов (hangar-ai).
+  // TODO (Этап 9): связать launched пилотов → spawnAlly()
+
+  // Враги
   const enemyCount = combatConfig.enemies;
   const ships = world.query(TransformComponent, CapitalShipComponent);
   for (let i = 0; i < enemyCount; i++) {

@@ -168,6 +168,8 @@ export function updatePlayer(dt: number): void {
 export const playerSystem: GameSystem = {
   id: 'player',
   update(dt) {
+    // В фазе ангара игрок управляется FPS-контроллером, а не полётной физикой
+    if (state.combatPhase === 'hangar') return;
     updatePlayer(dt);
   },
 };
@@ -176,6 +178,7 @@ export const playerSystem: GameSystem = {
 export const playerSyncSystem: GameSystem = {
   id: 'player-sync',
   update() {
+    if (state.combatPhase === 'hangar') return;
     if (playerEntityId === 0 || !world.isAlive(playerEntityId)) return;
     const hc = world.getComponent(playerEntityId, HealthComponent);
     if (hc) state.playerHealth = hc.current;
@@ -189,6 +192,16 @@ export function resetPlayerTransform(x = 0, y = 0, z = 0): void {
   playerRotation.yaw = 0;
   playerRotation.roll = 0;
   playerPlane.setVisibleRecursive(true);
+}
+
+/**
+ * Callback для перехода в ангар (устанавливается извне, из phase-switcher).
+ * Это разрывает циклическую зависимость: player-system (features) → phase-switcher (pages).
+ */
+let onPlayerDeathCallback: (() => void) | null = null;
+
+export function setPlayerDeathCallback(cb: () => void): void {
+  onPlayerDeathCallback = cb;
 }
 
 export function playerDeath(): void {
@@ -205,21 +218,13 @@ export function playerDeath(): void {
   }
 
   showMessage(`СБИТ! Жизней: ${state.lives}`, 2);
-  resetPlayerTransform();
-  state.playerHealth = state.maxHealth;
-  state.speed = state.baseSpeed;
-  state.invulnTimer = P.invulnDuration;
   state.damageFlash = 0;
   state.lastAttacker = '';
-  camera.position.set(P.combatCamBack, P.combatCamUp, 0);
-  camera.setTarget(playerPlane.position);
 
-  // Синхронизируем сброс здоровья в ECS
-  if (playerEntityId !== 0 && world.isAlive(playerEntityId)) {
-    const hc = world.getComponent(playerEntityId, HealthComponent);
-    if (hc) {
-      hc.current = state.maxHealth;
-      hc.max = state.maxHealth;
-    }
+  // Респавн через ангар: switchToHangar() уничтожит ECS-сущность,
+  // скроет истребитель, и запустит FPS-режим в ангаре.
+  // Здоровье восстановится при посадке в новый истребитель (switchToFlight).
+  if (onPlayerDeathCallback) {
+    onPlayerDeathCallback();
   }
 }

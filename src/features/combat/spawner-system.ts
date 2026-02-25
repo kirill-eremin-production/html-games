@@ -22,6 +22,17 @@ import { playerPlane } from '@/features/flight/player-system';
 
 const C = COMBAT_CONSTANTS;
 
+/**
+ * Callback для респавна союзника через ангар (вместо мгновенного spawnAlly).
+ * Устанавливается из pages/combat при наличии фазы ангара.
+ * Если null — используется прямой spawnAlly (fallback).
+ */
+let allyRespawnCallback: (() => void) | null = null;
+
+export function setAllyRespawnCallback(cb: (() => void) | null): void {
+  allyRespawnCallback = cb;
+}
+
 export function spawnAlly(near: Vector3): void {
   const offset = new Vector3(
     (Math.random() - 0.5) * C.allySpawnSpread.x,
@@ -109,7 +120,11 @@ export function updateRespawnQueue(dt: number): void {
     if (state.respawnQueue[i].timer <= 0) {
       const entry = state.respawnQueue.splice(i, 1)[0];
       if (entry.team === 'ally') {
-        spawnAlly(playerPlane.position);
+        if (allyRespawnCallback) {
+          allyRespawnCallback();
+        } else {
+          spawnAlly(playerPlane.position);
+        }
       } else {
         let spawnPos = new Vector3(...C.defaultEnemySpawnPos);
         const livingShips = queryAliveCapitalShips();

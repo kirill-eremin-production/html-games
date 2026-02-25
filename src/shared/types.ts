@@ -28,6 +28,9 @@ export interface CombatConfig {
 
 export type FlightModelId = 'combat' | 'exploration';
 
+/** Фаза внутри боевого режима: ангар (FPS) или полёт */
+export type CombatPhase = 'hangar' | 'flight';
+
 /** Минимальное описание истребителя (для событий и UI) */
 export interface Fighter {
   /** ECS-идентификатор сущности */
@@ -97,6 +100,10 @@ export interface GameState {
   mouseX: number;
   /** Смещение мыши по Y (для управления) */
   mouseY: number;
+  /** Дельта мыши по X за текущий кадр (пиксели, для pointer lock) */
+  mouseDeltaX: number;
+  /** Дельта мыши по Y за текущий кадр (пиксели, для pointer lock) */
+  mouseDeltaY: number;
   /** Активен ли ввод мышью */
   mouseActive: boolean;
   /** Таймер перезарядки стрельбы игрока (сек) */
@@ -117,6 +124,8 @@ export interface GameState {
   hudFrameCounter: number;
   /** Время в режиме исследования (сек) */
   explorationTime: number;
+  /** Текущая фаза боевого режима (ангар или полёт) */
+  combatPhase: CombatPhase;
 }
 
 // ── Game Mode types (from modes/types.ts) ───────────────────────────────────
@@ -142,12 +151,23 @@ export interface StationModeContext {
   onBack?: () => void;
 }
 
+/** Контекст FPS-режима — передаётся из combat mode при делегировании фазы ангара */
+export interface FPSModeContext {
+  /** Callback, вызываемый когда игрок садится в истребитель */
+  onBoarded?: () => void;
+  /** Callback, вызываемый когда ИИ-пилот вылетает из ангара (для создания ECS-истребителя) */
+  onPilotLaunched?: (pilotName: string) => void;
+  /** Количество ИИ-пилотов для автоспавна (по умолчанию 4) */
+  allyCount?: number;
+}
+
 /** Union of all mode contexts — used by the generic registry */
 export type ModeContext =
   | CombatModeContext
   | ExplorationModeContext
   | GalaxyModeContext
-  | StationModeContext;
+  | StationModeContext
+  | FPSModeContext;
 
 /** Generic handler — each mode specifies its own context type */
 export interface GameModeHandler<TCtx = ModeContext> {

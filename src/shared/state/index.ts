@@ -48,6 +48,8 @@ export function createInitialState(): GameState {
     keys: {},
     mouseX: 0,
     mouseY: 0,
+    mouseDeltaX: 0,
+    mouseDeltaY: 0,
     mouseActive: false,
     shootCooldown: 0,
     messageTimer: 0,
@@ -58,6 +60,8 @@ export function createInitialState(): GameState {
     lockedTarget: null,
     hudFrameCounter: 0,
     explorationTime: 0,
+    // Режим именно для игрока. ИИ работает независимо
+    combatPhase: 'hangar',
   };
 }
 

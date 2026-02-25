@@ -29,6 +29,7 @@ import { showSettingsScreen } from '@/features/settings/settings-ui';
 
 import { combatMode } from '@/pages/combat';
 import { explorationMode } from '@/pages/exploration';
+import { fpsMode } from '@/pages/fps';
 import { galaxyMode } from '@/pages/galaxy';
 import { menuMode } from '@/pages/menu';
 import { stationMode } from '@/pages/station';
@@ -54,6 +55,7 @@ async function init(): Promise<void> {
   registerMode('station', stationMode);
   registerMode('exploration', explorationMode);
   registerMode('combat', combatMode);
+  registerMode('fps', fpsMode);
 
   // Load GLTF models before anything else
   await preloadModels();

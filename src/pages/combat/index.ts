@@ -2,8 +2,6 @@ import {
   initAudio,
   isAudioInitialized,
   resumeAudio,
-  startEngineHum,
-  startProximityHum,
   stopEngineHum,
   stopProximityHum,
 } from '@/shared/audio';
@@ -22,7 +20,7 @@ import { spawnerSystem } from '@/features/combat/spawner-system';
 import { playerPlane } from '@/features/flight/player-system';
 import { flightCoreSystems, weaponSystems } from '@/features/flight/presets';
 import { setStarfieldVisible } from '@/features/flight/starfield';
-import { hideHUD, showHUD, showMessage } from '@/features/hud/hud';
+import { hideHUD, showMessage } from '@/features/hud/hud';
 import { hierarchySystem } from '@/features/rendering/hierarchy-system';
 import { renderSystem } from '@/features/rendering/render-system';
 
@@ -31,6 +29,12 @@ import { updateExplorationScene } from '@/pages/exploration/scene/update';
 
 import { checkVictory, playerDeath, setOnCombatEnd } from './combat-outcome';
 import { resetCombatState, spawnCombatEntities } from './combat-setup';
+import {
+  enterHangarPhase,
+  exitHangarPhase,
+  initPhaseSwitcher,
+  updateHangarPhase,
+} from './phase-switcher';
 import { combatHudSystem, damageEffectSystem, proximityAudioSystem } from './ui/combat-hud';
 
 // ── Combat systems registration ──────────────────────────────────────────────
@@ -66,16 +70,22 @@ export const combatMode: GameModeHandler = {
   update(dt: number) {
     if (!state.running || refs.paused) return;
 
-    // All game-logic + UI systems in priority order
+    // ECS мир ВСЕГДА работает — ИИ в космосе не замирают
+    // (playerSystem внутри проверяет combatPhase и пропускает при 'hangar')
     world.update(dt);
 
     // Exploration scene backdrop (animated star system)
     state.explorationTime += dt;
     updateExplorationScene(dt, state.explorationTime);
 
-    // Win/lose checks
-    if (state.playerHealth <= 0) playerDeath();
-    checkVictory();
+    // Ангар работает ВСЕГДА (ИИ-пилоты, респавн слотов, FPS если игрок в ангаре)
+    updateHangarPhase(dt);
+
+    // Win/lose checks (только в фазе полёта)
+    if (state.combatPhase === 'flight') {
+      if (state.playerHealth <= 0) playerDeath();
+      checkVictory();
+    }
 
     if (!state.running) {
       stopEngineHum();
@@ -98,11 +108,13 @@ export const combatMode: GameModeHandler = {
     spawnCombatEntities();
     setStarfieldVisible(true);
 
-    showHUD();
-    startEngineHum();
-    startProximityHum();
+    // Регистрируем callback смерти → ангар
+    initPhaseSwitcher();
+
+    // Начинаем с фазы ангара — игрок появляется в FPS-режиме
     state.running = true;
-    showMessage('В БОЙ!', 2);
+    enterHangarPhase();
+    showMessage('АНГАР — ПОДОЙДИ К ИСТРЕБИТЕЛЮ', 3);
   },
 
   exit() {
@@ -110,6 +122,10 @@ export const combatMode: GameModeHandler = {
     stopEngineHum();
     stopProximityHum();
     hideHUD();
+
+    // Полная очистка ангара (живёт всё время боя)
+    exitHangarPhase();
+
     world.scheduler.cleanup();
 
     // Уничтожаем ECS-сущность игрока

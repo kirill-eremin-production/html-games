@@ -35,6 +35,11 @@ export default [
               from: [['pages', { page: 'combat' }]],
               allow: [['pages', { page: 'exploration' }]],
             },
+            // combat делегирует фазу ангара FPS-режиму
+            {
+              from: [['pages', { page: 'combat' }]],
+              allow: [['pages', { page: 'fps' }]],
+            },
             { from: ['features'], allow: ['features', 'entities', 'shared'] },
             { from: ['entities'], allow: ['entities', 'shared'] },
             { from: ['shared'], allow: ['shared'] },

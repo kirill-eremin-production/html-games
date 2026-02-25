@@ -4,19 +4,28 @@ import type { GameSystem } from '@/shared/types';
 
 import type { Action } from './types';
 
-export type { Action } from './types';
+export type { Action, FlightAction, FPSAction } from './types';
 
 /** Текущая раскладка клавиш */
 let keyMap: Record<string, Action> = { ...defaultKeyMap };
 
 /** Текущее состояние действий (нажато/отпущено) */
 export const actions: Record<Action, boolean> = {
+  // Flight
   thrust: false,
   brake: false,
   boost: false,
   fire: false,
   rollLeft: false,
   rollRight: false,
+  // FPS
+  moveForward: false,
+  moveBack: false,
+  strafeLeft: false,
+  strafeRight: false,
+  interact: false,
+  jump: false,
+  sprint: false,
 };
 
 /** Позиция прицела (нормализованные координаты мыши) */
