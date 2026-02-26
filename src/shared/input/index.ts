@@ -26,6 +26,12 @@ export const actions: Record<Action, boolean> = {
   interact: false,
   jump: false,
   sprint: false,
+  // Builder
+  place: false,
+  remove: false,
+  nextColor: false,
+  prevColor: false,
+  save: false,
 };
 
 /** Позиция прицела (нормализованные координаты мыши) */

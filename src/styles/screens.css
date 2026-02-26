@@ -85,6 +85,26 @@
   box-shadow: 0 0 30px rgba(160, 0, 200, 0.6);
 }
 
+#builder-btn {
+  padding: 15px 40px;
+  font-size: 22px;
+  background: linear-gradient(135deg, #0a6, #086);
+  border: none;
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  pointer-events: all;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+#builder-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 30px rgba(0, 200, 100, 0.6);
+}
+
 /* ── Game Over Screen ────────────────────────────────────────────────────── */
 
 #game-over {

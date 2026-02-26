@@ -27,6 +27,7 @@ import { createStarfield } from '@/features/flight/starfield';
 import { initTouchControls } from '@/features/hud/touch-controls';
 import { showSettingsScreen } from '@/features/settings/settings-ui';
 
+import { builderMode } from '@/pages/builder';
 import { combatMode } from '@/pages/combat';
 import { explorationMode } from '@/pages/exploration';
 import { fpsMode } from '@/pages/fps';
@@ -40,7 +41,7 @@ import { gameLoop } from './game-loop';
 import { setupInputListeners } from './input-listeners';
 import { registerMode } from './mode-registry';
 import { pauseGame, quitBattle, resumeGame } from './pause';
-import { startCampaign, startQuickPlay } from './start';
+import { startBuilder, startCampaign, startQuickPlay } from './start';
 
 /**
  * Инициализирует приложение: регистрирует режимы, загружает ассеты,
@@ -56,6 +57,7 @@ async function init(): Promise<void> {
   registerMode('exploration', explorationMode);
   registerMode('combat', combatMode);
   registerMode('fps', fpsMode);
+  registerMode('builder', builderMode);
 
   // Load GLTF models before anything else
   await preloadModels();
@@ -84,6 +86,7 @@ async function init(): Promise<void> {
   document.getElementById('victory-restart-btn')!.addEventListener('click', startQuickPlay);
   document.getElementById('campaign-btn')!.addEventListener('click', startCampaign);
   document.getElementById('settings-btn')!.addEventListener('click', showSettingsScreen);
+  document.getElementById('builder-btn')!.addEventListener('click', startBuilder);
 
   initTouchControls(pauseGame);
 

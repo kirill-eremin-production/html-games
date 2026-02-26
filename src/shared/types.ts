@@ -161,13 +161,22 @@ export interface FPSModeContext {
   allyCount?: number;
 }
 
+/** Контекст режима конструктора — передаётся при входе в builder mode */
+export interface BuilderModeContext {
+  /** Имя чертежа для загрузки (если не указан — новый чертёж) */
+  blueprintId?: string;
+  /** Callback при выходе из конструктора (ESC) */
+  onExit?: () => void;
+}
+
 /** Union of all mode contexts — used by the generic registry */
 export type ModeContext =
   | CombatModeContext
   | ExplorationModeContext
   | GalaxyModeContext
   | StationModeContext
-  | FPSModeContext;
+  | FPSModeContext
+  | BuilderModeContext;
 
 /** Generic handler — each mode specifies its own context type */
 export interface GameModeHandler<TCtx = ModeContext> {

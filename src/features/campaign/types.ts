@@ -52,4 +52,12 @@ export interface SystemDetail {
   starSize: number;
 }
 
-export type GameMode = 'menu' | 'galaxy' | 'station' | 'combat' | 'result' | 'exploration' | 'fps';
+export type GameMode =
+  | 'menu'
+  | 'galaxy'
+  | 'station'
+  | 'combat'
+  | 'result'
+  | 'exploration'
+  | 'fps'
+  | 'builder';

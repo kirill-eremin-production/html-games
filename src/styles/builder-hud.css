@@ -1,0 +1,228 @@
+/* ── Builder HUD ──────────────────────────────────────────────────────────── */
+
+#builder-hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ── Перекрестие ──────────────────────────────────────────────────────────── */
+
+.builder-crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+/* ── Палитра цветов ──────────────────────────────────────────────────────── */
+
+.builder-palette {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.builder-palette-item {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+
+.builder-palette-item.active {
+  border-color: #fff;
+  transform: scale(1.2);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* ── Подсказки ───────────────────────────────────────────────────────────── */
+
+.builder-hints {
+  position: absolute;
+  bottom: 25px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.builder-hints b {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ── Счётчик блоков ──────────────────────────────────────────────────────── */
+
+.builder-block-count {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  color: #0ff;
+  font-size: 14px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+/* ── Панель сохранения ───────────────────────────────────────────────────── */
+
+.builder-save-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  max-height: 500px;
+  background: rgba(10, 15, 30, 0.95);
+  border: 1px solid rgba(0, 200, 255, 0.3);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  pointer-events: all;
+  overflow-y: auto;
+}
+
+.builder-save-panel h3 {
+  color: #0cf;
+  font-size: 20px;
+  margin: 0;
+  text-align: center;
+  text-shadow: 0 0 12px rgba(0, 200, 255, 0.5);
+}
+
+.builder-save-row {
+  display: flex;
+  gap: 8px;
+}
+
+.builder-name-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+}
+
+.builder-name-input:focus {
+  border-color: #0cf;
+}
+
+.builder-save-btn {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #08f, #06c);
+  border: none;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 13px;
+  transition: transform 0.2s;
+}
+
+.builder-save-btn:hover {
+  transform: scale(1.05);
+}
+
+.builder-blueprint-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.builder-blueprint-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.builder-blueprint-name {
+  flex: 1;
+  color: #ccc;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.builder-load-btn {
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #0a0, #080);
+  border: none;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: transform 0.15s;
+}
+
+.builder-load-btn:hover {
+  transform: scale(1.05);
+}
+
+.builder-del-btn {
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #c33, #911);
+  border: none;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: transform 0.15s;
+}
+
+.builder-del-btn:hover {
+  transform: scale(1.05);
+}
+
+.builder-close-btn {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #aaa;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.builder-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.builder-no-blueprints {
+  color: #666;
+  font-size: 13px;
+  text-align: center;
+  padding: 12px;
+}

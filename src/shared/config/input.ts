@@ -24,5 +24,21 @@ export const fpsKeyMap: Record<string, Action> = {
   ShiftRight: 'sprint',
 };
 
+/** Раскладка клавиш для режима конструктора */
+export const builderKeyMap: Record<string, Action> = {
+  KeyW: 'moveForward',
+  KeyS: 'moveBack',
+  KeyA: 'strafeLeft',
+  KeyD: 'strafeRight',
+  Space: 'jump',
+  ShiftLeft: 'sprint',
+  ShiftRight: 'sprint',
+  MouseLeft: 'place',
+  MouseRight: 'remove',
+  KeyQ: 'prevColor',
+  KeyE: 'nextColor',
+  KeyP: 'save',
+};
+
 /** Раскладка по умолчанию — полётная (используется в меню, exploration и т.д.) */
 export const defaultKeyMap: Record<string, Action> = flightKeyMap;

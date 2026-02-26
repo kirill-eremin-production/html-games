@@ -12,7 +12,7 @@ import { pauseGame } from './pause';
 
 function isActiveMode(): boolean {
   const mode = getCurrentModeName();
-  return mode === 'combat' || mode === 'exploration' || mode === 'fps';
+  return mode === 'combat' || mode === 'exploration' || mode === 'fps' || mode === 'builder';
 }
 
 export function setupInputListeners(): void {
@@ -21,9 +21,15 @@ export function setupInputListeners(): void {
     if (e.code === 'Escape' || e.code === 'KeyP') {
       if (getCurrentModeName() === 'exploration') {
         exitExplorationMode();
-      } else {
-        pauseGame();
+        return;
       }
+      if (getCurrentModeName() === 'builder') {
+        // Builder mode обрабатывает ESC и P самостоятельно через state.keys
+        state.keys[e.code] = true;
+        e.preventDefault();
+        return;
+      }
+      pauseGame();
       return;
     }
     state.keys[e.code] = true;
@@ -52,6 +58,7 @@ export function setupInputListeners(): void {
   window.addEventListener('mousedown', (e) => {
     if (isActiveMode()) {
       if (e.button === 0) state.keys['MouseLeft'] = true;
+      if (e.button === 2) state.keys['MouseRight'] = true;
       if (e.button === 1 && (state.running || getCurrentModeName() === 'exploration')) {
         e.preventDefault();
         toggleTargetLock(playerPlane);
@@ -62,6 +69,12 @@ export function setupInputListeners(): void {
 
   window.addEventListener('mouseup', (e) => {
     if (e.button === 0) state.keys['MouseLeft'] = false;
+    if (e.button === 2) state.keys['MouseRight'] = false;
+  });
+
+  // Отключить контекстное меню (ПКМ) в builder mode
+  window.addEventListener('contextmenu', (e) => {
+    if (getCurrentModeName() === 'builder') e.preventDefault();
   });
 
   window.addEventListener('keydown', () => resumeAudio(), { once: true });

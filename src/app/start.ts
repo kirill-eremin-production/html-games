@@ -17,6 +17,13 @@ export function startQuickPlay(): void {
   switchMode('combat', { combatConfig: DEFAULT_COMBAT_CONFIG });
 }
 
+export function startBuilder(): void {
+  document.documentElement.requestFullscreen?.();
+  switchMode('builder', {
+    onExit: () => switchMode('menu'),
+  });
+}
+
 export function startCampaign(): void {
   (document.getElementById('start-screen')! as HTMLElement).style.display = 'none';
   if (!isAudioInitialized()) initAudio();
