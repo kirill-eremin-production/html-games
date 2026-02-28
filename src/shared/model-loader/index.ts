@@ -11,14 +11,14 @@ import {
   loadModel,
   traverseNode,
 } from '@/shared/core';
-import {
-  canopyMat,
-  createAccentMat,
-  createBodyMat,
-  createExhaustMat,
-  createGlowHaloMat,
-  noseMat,
-} from '@/shared/materials/fighter-materials';
+// import {
+//   canopyMat,
+//   createAccentMat,
+//   createBodyMat,
+//   createExhaustMat,
+//   createGlowHaloMat,
+//   noseMat,
+// } from '@/shared/materials/fighter-materials';
 import type { SubsystemType } from '@/shared/types';
 
 // ─── Templates (populated by preloadModels) ─────────────────────────────────
@@ -28,7 +28,7 @@ let capitalShipTemplate: TransformNode | null = null;
 
 export async function preloadModels(): Promise<void> {
   const [fighter, capitalShip] = await Promise.all([
-    loadModel('./models/fighter.glb'),
+    loadModel('./models/StarfighterTest.glb'),
     loadModel('./models/capital-ship.glb'),
   ]);
   fighterTemplate = fighter;
@@ -66,22 +66,22 @@ export function cloneFighterModel(bodyColor: number, exhaustColor: number): Tran
     if ('setEnabled' in child) (child as TransformNode).setEnabled(true);
   });
 
-  const bodyMat = createBodyMat(bodyColor);
-  const accentMat = createAccentMat(bodyColor);
-  const glowMat = createExhaustMat(exhaustColor);
-  const haloMat = createGlowHaloMat(exhaustColor);
+  // const bodyMat = createBodyMat(bodyColor);
+  // const accentMat = createAccentMat(bodyColor);
+  // const glowMat = createExhaustMat(exhaustColor);
+  // const haloMat = createGlowHaloMat(exhaustColor);
 
-  traverseNode(group, (child) => {
-    if (!isEngineMesh(child)) return;
-    const mesh = child as EngineMesh;
-    const n = mesh.name;
-    if (n.includes('body_')) mesh.material = bodyMat;
-    else if (n.includes('accent_')) mesh.material = accentMat;
-    else if (n.endsWith('nose') || n.endsWith('.nose')) mesh.material = noseMat;
-    else if (n.endsWith('canopy') || n.endsWith('.canopy')) mesh.material = canopyMat;
-    else if (n.endsWith('exhaust') || n.endsWith('exhaust_L')) mesh.material = glowMat;
-    else if (n.endsWith('glow') || n.endsWith('glow_L')) mesh.material = haloMat;
-  });
+  // traverseNode(group, (child) => {
+  //   if (!isEngineMesh(child)) return;
+  //   const mesh = child as EngineMesh;
+  //   const n = mesh.name;
+  //   if (n.includes('body_')) mesh.material = bodyMat;
+  //   else if (n.includes('accent_')) mesh.material = accentMat;
+  //   else if (n.endsWith('nose') || n.endsWith('.nose')) mesh.material = noseMat;
+  //   else if (n.endsWith('canopy') || n.endsWith('.canopy')) mesh.material = canopyMat;
+  //   else if (n.endsWith('exhaust') || n.endsWith('exhaust_L')) mesh.material = glowMat;
+  //   else if (n.endsWith('glow') || n.endsWith('glow_L')) mesh.material = haloMat;
+  // });
 
   group.scaling.setAll(1.5);
   return group;
