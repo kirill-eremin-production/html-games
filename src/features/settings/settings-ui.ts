@@ -27,9 +27,12 @@ import {
   settings,
 } from '@/shared/settings';
 
+import { listBlueprints } from '@/features/builder/builder-storage';
+
 let initialized = false;
 let animationId = 0;
 let screenEl: HTMLDivElement;
+let refreshBlueprintSelect: (() => void) | null = null;
 
 interface PreviewState {
   canvas: HTMLCanvasElement;
@@ -276,6 +279,54 @@ function createPreviewCard(
   return { card, colorContainer };
 }
 
+function buildBlueprintSection(parent: HTMLElement): void {
+  const section = document.createElement('div');
+  section.className = 'settings-section';
+
+  const h2 = document.createElement('h2');
+  h2.textContent = 'МОЙ КОРАБЛЬ';
+  section.appendChild(h2);
+
+  const row = document.createElement('div');
+  row.className = 'slider-row';
+
+  const label = document.createElement('label');
+  label.textContent = 'Чертёж: ';
+
+  const select = document.createElement('select');
+  select.id = 'blueprint-select';
+
+  refreshBlueprintSelect = () => {
+    select.innerHTML = '';
+
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = 'Стандартный истребитель';
+    select.appendChild(defaultOpt);
+
+    for (const name of listBlueprints()) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      select.appendChild(opt);
+    }
+
+    select.value = settings.blueprint.selectedId ?? '';
+  };
+
+  refreshBlueprintSelect();
+
+  select.addEventListener('change', () => {
+    settings.blueprint.selectedId = select.value || null;
+    saveSettings();
+  });
+
+  label.appendChild(select);
+  row.appendChild(label);
+  section.appendChild(row);
+  parent.appendChild(section);
+}
+
 function buildDOM(): void {
   screenEl = document.createElement('div');
   screenEl.id = 'settings-screen';
@@ -345,6 +396,9 @@ function buildDOM(): void {
 
   fighterSection.appendChild(capitalRow);
   content.appendChild(fighterSection);
+
+  // — BLUEPRINT section —
+  buildBlueprintSection(content);
 
   // — COUNTS section —
   const countsSection = document.createElement('div');
@@ -430,6 +484,7 @@ export async function showSettingsScreen(): Promise<void> {
   }
   refreshAllInputs();
   refreshAllPreviews();
+  if (refreshBlueprintSelect) refreshBlueprintSelect();
   screenEl.style.display = 'flex';
   (document.getElementById('start-screen')! as HTMLElement).style.display = 'none';
   animate();

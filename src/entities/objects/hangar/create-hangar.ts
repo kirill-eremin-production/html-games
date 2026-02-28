@@ -6,6 +6,8 @@
  *
  * Масштабируется до 128 истребителей через параметр `slotCount`.
  */
+import { createBlueprintMesh } from '@/shared/blueprint-mesh';
+import { loadBlueprint } from '@/shared/blueprint/blueprint-storage';
 import {
   createMesh,
   createPBRMaterial,
@@ -186,8 +188,17 @@ function placeFightersOnSlots(
   const bodyColor = parseHexColor(settings.colors.allyBody);
   const exhaustColor = parseHexColor(settings.colors.allyExhaust);
 
-  for (const slot of slots) {
-    const fighter = createFighter(bodyColor, exhaustColor);
+  // Загружаем blueprint игрока один раз (слот #0)
+  const selectedId = settings.blueprint.selectedId;
+  const blueprintState = selectedId ? loadBlueprint(selectedId) : null;
+
+  for (let i = 0; i < slots.length; i++) {
+    const slot = slots[i];
+    const fighter =
+      i === 0 && blueprintState
+        ? createBlueprintMesh(blueprintState.blocks)
+        : createFighter(bodyColor, exhaustColor);
+
     fighter.position.set(slot.position.x, slot.position.y + 0.5, slot.position.z);
     // Истребитель смотрит к центру полосы (к ВПП) — поворот на 90° если слева, -90° если справа
     fighter.rotation.y = slot.position.x < 0 ? Math.PI / 2 : -Math.PI / 2;

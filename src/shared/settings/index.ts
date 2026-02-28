@@ -1,6 +1,6 @@
 import type { GameSettings } from './types';
 
-export type { ColorSettings, CountSettings, GameSettings } from './types';
+export type { BlueprintSettings, ColorSettings, CountSettings, GameSettings } from './types';
 
 /** Настройки по умолчанию */
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -17,6 +17,9 @@ export const DEFAULT_SETTINGS: GameSettings = {
     capitalShips: 3,
     allies: 32,
     enemies: 32,
+  },
+  blueprint: {
+    selectedId: null,
   },
 };
 
@@ -47,6 +50,14 @@ export function loadSettings(): void {
           if (typeof parsed.counts[key] === 'number') {
             settings.counts[key] = parsed.counts[key]!;
           }
+        }
+      }
+      if (parsed.blueprint) {
+        if (
+          typeof parsed.blueprint.selectedId === 'string' ||
+          parsed.blueprint.selectedId === null
+        ) {
+          settings.blueprint.selectedId = parsed.blueprint.selectedId;
         }
       }
     }

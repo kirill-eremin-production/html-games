@@ -26,10 +26,18 @@ export interface CountSettings {
   enemies: number;
 }
 
+/** Настройки выбранного чертежа корабля */
+export interface BlueprintSettings {
+  /** Имя выбранного blueprint (null = стандартный истребитель) */
+  selectedId: string | null;
+}
+
 /** Полные игровые настройки */
 export interface GameSettings {
   /** Цвета юнитов */
   colors: ColorSettings;
   /** Количество юнитов */
   counts: CountSettings;
+  /** Чертёж корабля игрока */
+  blueprint: BlueprintSettings;
 }

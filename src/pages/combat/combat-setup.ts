@@ -1,3 +1,4 @@
+import { createBlueprintMesh } from '@/shared/blueprint-mesh';
 import { combatConfig } from '@/shared/config/combat-session';
 import { Quaternion, Vector3 } from '@/shared/core';
 import { world } from '@/shared/ecs/combat-world';
@@ -13,6 +14,7 @@ import { TransformComponent } from '@/entities/physics/transform';
 import { VisualComponent } from '@/entities/rendering/visual';
 import { TeamComponent } from '@/entities/stats/team';
 
+import { loadBlueprint } from '@/features/builder/builder-storage';
 import { spawnCapitalShips } from '@/features/combat/capital-ship-system';
 import { spawnEnemy } from '@/features/combat/spawner-system';
 import { playerPlane, resetPlayerTransform } from '@/features/flight/player-system';
@@ -90,12 +92,18 @@ export function resetCombatState(): void {
   camera.position.set(-10.5, 3.75, 0);
   camera.setTarget(playerPlane.position);
 
-  // Rebuild player model with current settings colors
+  // Rebuild player model: blueprint или стандартный истребитель
   if (refs.playerModel) refs.playerModel.dispose();
-  refs.playerModel = createFighter(
-    parseHexColor(settings.colors.playerBody),
-    parseHexColor(settings.colors.playerExhaust),
-  );
+  const selectedBlueprintId = settings.blueprint.selectedId;
+  const blueprintState = selectedBlueprintId ? loadBlueprint(selectedBlueprintId) : null;
+  if (blueprintState) {
+    refs.playerModel = createBlueprintMesh(blueprintState.blocks);
+  } else {
+    refs.playerModel = createFighter(
+      parseHexColor(settings.colors.playerBody),
+      parseHexColor(settings.colors.playerExhaust),
+    );
+  }
   refs.playerModel.parent = playerPlane;
 
   // ECS-сущность игрока НЕ создаётся здесь — она создаётся в switchToFlight()

@@ -54,8 +54,8 @@ function updateLook(fps: FPSState): void {
 
   if (dx === 0 && dy === 0) return;
 
-  fps.yaw -= dx * MOUSE_SENSITIVITY;
-  fps.pitch -= dy * MOUSE_SENSITIVITY;
+  fps.yaw += dx * MOUSE_SENSITIVITY;
+  fps.pitch += dy * MOUSE_SENSITIVITY;
   fps.pitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, fps.pitch));
 }
 
@@ -66,8 +66,8 @@ function updateMovement(fps: FPSState, dt: number): void {
   const sinYaw = Math.sin(fps.yaw);
   const cosYaw = Math.cos(fps.yaw);
 
-  _forward.set(sinYaw, 0, cosYaw);
-  _right.set(-cosYaw, 0, sinYaw);
+  _forward.set(-sinYaw, 0, cosYaw);
+  _right.set(-cosYaw, 0, -sinYaw);
 
   // Желаемое направление движения
   _wishDir.set(0, 0, 0);
@@ -171,13 +171,18 @@ function updateCamera(fps: FPSState, camera: PerspectiveCamera): void {
   // Позиция камеры = ноги + высота глаз
   camera.position.set(fps.position.x, fps.position.y + PILOT_EYE_HEIGHT, fps.position.z);
 
-  // Направление взгляда из yaw + pitch
-  const cosPitch = Math.cos(fps.pitch);
-  const targetX = fps.position.x + Math.sin(fps.yaw) * cosPitch;
-  const targetY = fps.position.y + PILOT_EYE_HEIGHT + Math.sin(fps.pitch);
-  const targetZ = fps.position.z + Math.cos(fps.yaw) * cosPitch;
+  // Управляем ориентацией через camera.rotation напрямую, минуя setTarget.
+  // setTarget вычисляет rotation через look-at с текущим upVector — это ломает FPS
+  // после полётного режима где upVector был наклонён.
+  // BJS FreeCamera right-handed: rotation.y=π → смотрит по +Z (наш yaw=0)
+  camera.rotation.x = -fps.pitch;
+  camera.rotation.y = Math.PI - fps.yaw;
+  camera.rotation.z = 0;
 
-  camera.setTarget(new Vector3(targetX, targetY, targetZ));
+  // BJS пересчитывает upVector из rotation в _getViewMatrix только при изменении rotation.z.
+  // Принудительно держим upVector вертикальным — иначе при наклонённом upVector от
+  // предыдущего режима горизонт будет кривым.
+  camera.upVector.set(0, 1, 0);
 }
 
 // ── Pointer Lock API ─────────────────────────────────────────────────────────

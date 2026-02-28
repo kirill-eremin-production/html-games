@@ -14,6 +14,7 @@ import { flightKeyMap, fpsKeyMap } from '@/shared/config/input';
 import { addToScene, removeFromScene } from '@/shared/core/factories';
 import { camera } from '@/shared/engine';
 import { actions, setKeyMap, updateActions } from '@/shared/input';
+import { state } from '@/shared/state';
 import type { FPSModeContext, GameModeHandler } from '@/shared/types';
 
 import { SLOT_RESPAWN_TIME, createHangar } from '@/entities/objects/hangar';
@@ -207,6 +208,15 @@ export function resumeFPS(): void {
   fpsState.pitch = 0;
   fpsState.grounded = false;
 
+  // Сбрасываем накопленную дельту мыши (остатки от полётного режима)
+  state.mouseDeltaX = 0;
+  state.mouseDeltaY = 0;
+
+  // Сбрасываем ориентацию камеры: BJS FreeCamera хранит крен в camera.rotation.z
+  // и пересчитывает upVector из него каждый кадр — сброс только upVector недостаточен
+  camera.rotation.set(0, 0, 0);
+  camera.rotationQuaternion = null;
+
   // Переключаем на FPS-раскладку
   setKeyMap(fpsKeyMap);
 
@@ -239,6 +249,13 @@ export const fpsMode: GameModeHandler<FPSModeContext> = {
 
     // Игрок начинает в ангаре
     playerInHangar = true;
+
+    // Сбрасываем накопленную дельту мыши и ориентацию камеры:
+    // BJS FreeCamera хранит крен в camera.rotation.z и пересчитывает upVector из него
+    state.mouseDeltaX = 0;
+    state.mouseDeltaY = 0;
+    camera.rotation.set(0, 0, 0);
+    camera.rotationQuaternion = null;
 
     // Input: переключаем на FPS-раскладку
     setKeyMap(fpsKeyMap);
