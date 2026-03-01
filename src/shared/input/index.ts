@@ -4,7 +4,7 @@ import type { GameSystem } from '@/shared/types';
 
 import type { Action } from './types';
 
-export type { Action, FlightAction, FPSAction } from './types';
+export type { Action, FlightAction, FPSAction, InteriorBuilderAction } from './types';
 
 /** Текущая раскладка клавиш */
 let keyMap: Record<string, Action> = { ...defaultKeyMap };
@@ -32,6 +32,9 @@ export const actions: Record<Action, boolean> = {
   nextColor: false,
   prevColor: false,
   save: false,
+  // Interior Builder
+  nextBlockType: false,
+  prevBlockType: false,
 };
 
 /** Позиция прицела (нормализованные координаты мыши) */

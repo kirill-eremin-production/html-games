@@ -1,0 +1,10 @@
+export { loadInteriorFromJSON } from './interior-scene-renderer';
+export type { InteriorSceneData } from './interior-scene-renderer';
+export { createInteriorAISystem } from './interior-ai-system';
+export { createInteriorHealthSystem } from './interior-health-system';
+export { spawnInteriorEnemies } from './interior-enemy-spawner';
+export type { SpawnedEnemies } from './interior-enemy-spawner';
+export { createWeaponState, fireWeapon, updateWeapon } from './weapon-system';
+export type { InteriorWeaponState } from './weapon-system';
+export { createInteriorCollisionSystem } from './interior-collision-system';
+export { TEST_LEVEL } from './test-level';

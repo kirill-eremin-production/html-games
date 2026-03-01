@@ -58,6 +58,8 @@ export interface SubsystemRawData {
 }
 
 export function cloneFighterModel(bodyColor: number, exhaustColor: number): TransformNode {
+  void bodyColor;
+  void exhaustColor;
   const group = cloneModel(fighterTemplate!);
 
   // Ensure clone is enabled (template is disabled)

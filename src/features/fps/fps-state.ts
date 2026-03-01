@@ -24,3 +24,18 @@ export function createFPSState(spawnPoint: Vector3): FPSState {
     grounded: true,
   };
 }
+
+/**
+ * Единичный вектор направления взгляда из yaw/pitch.
+ *
+ * Единственный источник истины — все модули (стрельба, raycast билдеров)
+ * должны использовать эту функцию вместо самостоятельного вычисления.
+ *
+ * Записывает результат в `out` и возвращает его.
+ */
+export function getViewDirection(fps: FPSState, out: Vector3): Vector3 {
+  const cosPitch = Math.cos(fps.pitch);
+  return out
+    .set(-Math.sin(fps.yaw) * cosPitch, -Math.sin(fps.pitch), Math.cos(fps.yaw) * cosPitch)
+    .normalize();
+}

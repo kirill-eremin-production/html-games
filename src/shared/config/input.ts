@@ -40,5 +40,35 @@ export const builderKeyMap: Record<string, Action> = {
   KeyP: 'save',
 };
 
+/** Раскладка клавиш для редактора интерьеров */
+export const interiorBuilderKeyMap: Record<string, Action> = {
+  KeyW: 'moveForward',
+  KeyS: 'moveBack',
+  KeyA: 'strafeLeft',
+  KeyD: 'strafeRight',
+  Space: 'jump',
+  ShiftLeft: 'sprint',
+  ShiftRight: 'sprint',
+  MouseLeft: 'place',
+  MouseRight: 'remove',
+  KeyQ: 'prevColor',
+  KeyE: 'nextColor',
+  KeyT: 'nextBlockType',
+  KeyG: 'prevBlockType',
+  KeyP: 'save',
+};
+
+/** Раскладка клавиш для FPS-боя в интерьере */
+export const interiorFpsKeyMap: Record<string, Action> = {
+  KeyW: 'moveForward',
+  KeyS: 'moveBack',
+  KeyA: 'strafeLeft',
+  KeyD: 'strafeRight',
+  Space: 'jump',
+  ShiftLeft: 'sprint',
+  ShiftRight: 'sprint',
+  MouseLeft: 'fire',
+};
+
 /** Раскладка по умолчанию — полётная (используется в меню, exploration и т.д.) */
 export const defaultKeyMap: Record<string, Action> = flightKeyMap;

@@ -169,6 +169,22 @@ export interface BuilderModeContext {
   onExit?: () => void;
 }
 
+/** Контекст режима редактора интерьеров */
+export interface InteriorBuilderModeContext {
+  /** Callback при выходе из редактора (ESC) */
+  onExit?: () => void;
+}
+
+/** Контекст режима FPS-боя в интерьере */
+export interface InteriorSceneModeContext {
+  /** JSON уровня (захардкоженный или загруженный) */
+  levelJSON?: import('@/shared/interior/types').InteriorLevelJSON;
+  /** Callback по завершению миссии */
+  onComplete?: (victory: boolean) => void;
+  /** Callback при выходе (ESC) */
+  onExit?: () => void;
+}
+
 /** Union of all mode contexts — used by the generic registry */
 export type ModeContext =
   | CombatModeContext
@@ -176,7 +192,9 @@ export type ModeContext =
   | GalaxyModeContext
   | StationModeContext
   | FPSModeContext
-  | BuilderModeContext;
+  | BuilderModeContext
+  | InteriorBuilderModeContext
+  | InteriorSceneModeContext;
 
 /** Generic handler — each mode specifies its own context type */
 export interface GameModeHandler<TCtx = ModeContext> {

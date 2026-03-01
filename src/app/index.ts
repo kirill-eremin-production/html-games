@@ -32,6 +32,8 @@ import { combatMode } from '@/pages/combat';
 import { explorationMode } from '@/pages/exploration';
 import { fpsMode } from '@/pages/fps';
 import { galaxyMode } from '@/pages/galaxy';
+import { interiorBuilderMode } from '@/pages/interior-builder';
+import { interiorSceneMode } from '@/pages/interior-scene';
 import { menuMode } from '@/pages/menu';
 import { stationMode } from '@/pages/station';
 
@@ -41,7 +43,13 @@ import { gameLoop } from './game-loop';
 import { setupInputListeners } from './input-listeners';
 import { registerMode } from './mode-registry';
 import { pauseGame, quitBattle, resumeGame } from './pause';
-import { startBuilder, startCampaign, startQuickPlay } from './start';
+import {
+  startBuilder,
+  startCampaign,
+  startInteriorBuilder,
+  startInteriorScene,
+  startQuickPlay,
+} from './start';
 
 /**
  * Инициализирует приложение: регистрирует режимы, загружает ассеты,
@@ -58,6 +66,8 @@ async function init(): Promise<void> {
   registerMode('combat', combatMode);
   registerMode('fps', fpsMode);
   registerMode('builder', builderMode);
+  registerMode('interior-builder', interiorBuilderMode);
+  registerMode('interior-scene', interiorSceneMode);
 
   // Load GLTF models before anything else
   await preloadModels();
@@ -87,6 +97,8 @@ async function init(): Promise<void> {
   document.getElementById('campaign-btn')!.addEventListener('click', startCampaign);
   document.getElementById('settings-btn')!.addEventListener('click', showSettingsScreen);
   document.getElementById('builder-btn')!.addEventListener('click', startBuilder);
+  document.getElementById('interior-builder-btn')!.addEventListener('click', startInteriorBuilder);
+  document.getElementById('interior-play-btn')!.addEventListener('click', startInteriorScene);
 
   initTouchControls(pauseGame);
 

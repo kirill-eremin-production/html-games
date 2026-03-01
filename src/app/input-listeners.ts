@@ -12,7 +12,14 @@ import { pauseGame } from './pause';
 
 function isActiveMode(): boolean {
   const mode = getCurrentModeName();
-  return mode === 'combat' || mode === 'exploration' || mode === 'fps' || mode === 'builder';
+  return (
+    mode === 'combat' ||
+    mode === 'exploration' ||
+    mode === 'fps' ||
+    mode === 'builder' ||
+    mode === 'interior-builder' ||
+    mode === 'interior-scene'
+  );
 }
 
 export function setupInputListeners(): void {
@@ -23,8 +30,13 @@ export function setupInputListeners(): void {
         exitExplorationMode();
         return;
       }
-      if (getCurrentModeName() === 'builder') {
-        // Builder mode обрабатывает ESC и P самостоятельно через state.keys
+      const currentMode = getCurrentModeName();
+      if (
+        currentMode === 'builder' ||
+        currentMode === 'interior-builder' ||
+        currentMode === 'interior-scene'
+      ) {
+        // Эти режимы обрабатывают ESC и P самостоятельно через state.keys
         state.keys[e.code] = true;
         e.preventDefault();
         return;
@@ -63,6 +75,14 @@ export function setupInputListeners(): void {
         e.preventDefault();
         toggleTargetLock(playerPlane);
       }
+      // Авто-захват pointer lock при клике в FPS-режимах
+      const m = getCurrentModeName();
+      if (
+        !document.pointerLockElement &&
+        (m === 'fps' || m === 'builder' || m === 'interior-builder' || m === 'interior-scene')
+      ) {
+        document.body.requestPointerLock();
+      }
     }
     resumeAudio();
   });
@@ -74,7 +94,8 @@ export function setupInputListeners(): void {
 
   // Отключить контекстное меню (ПКМ) в builder mode
   window.addEventListener('contextmenu', (e) => {
-    if (getCurrentModeName() === 'builder') e.preventDefault();
+    const m = getCurrentModeName();
+    if (m === 'builder' || m === 'interior-builder') e.preventDefault();
   });
 
   window.addEventListener('keydown', () => resumeAudio(), { once: true });

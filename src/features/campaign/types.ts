@@ -60,4 +60,6 @@ export type GameMode =
   | 'result'
   | 'exploration'
   | 'fps'
-  | 'builder';
+  | 'builder'
+  | 'interior-builder'
+  | 'interior-scene';

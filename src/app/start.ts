@@ -24,6 +24,21 @@ export function startBuilder(): void {
   });
 }
 
+export function startInteriorBuilder(): void {
+  document.documentElement.requestFullscreen?.();
+  switchMode('interior-builder', {
+    onExit: () => switchMode('menu'),
+  });
+}
+
+export function startInteriorScene(): void {
+  document.documentElement.requestFullscreen?.();
+  switchMode('interior-scene', {
+    onComplete: () => switchMode('menu'),
+    onExit: () => switchMode('menu'),
+  });
+}
+
 export function startCampaign(): void {
   (document.getElementById('start-screen')! as HTMLElement).style.display = 'none';
   if (!isAudioInitialized()) initAudio();

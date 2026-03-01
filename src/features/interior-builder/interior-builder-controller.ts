@@ -1,43 +1,38 @@
 /**
- * Контроллер конструктора: DDA raycast, размещение / удаление блоков.
+ * Контроллер редактора интерьеров: DDA raycast, размещение / удаление блоков, cycling типов.
  *
- * DDA (Digital Differential Analyzer) — алгоритм Amanatides & Woo
- * для быстрого прохода луча по воксельной сетке.
- * Определяет позицию блока и грань входа (нормаль) за O(дальность).
+ * Адаптация builder-controller для InteriorBuilderState.
+ * DDA (Amanatides & Woo) для прохода луча по воксельной сетке.
  */
 import { Vector3 } from '@/shared/core/vector3';
+import {
+  BLOCK_SIZE,
+  GRID_SIZE,
+  hasInteriorBlock,
+  inBounds,
+  removeInteriorBlock,
+  setInteriorBlock,
+} from '@/shared/interior';
+import type { InteriorBlockType, InteriorBuilderState } from '@/shared/interior';
+import { INTERIOR_BLOCK_TYPES } from '@/shared/interior';
 
 import { PILOT_EYE_HEIGHT } from '@/entities/objects/hangar';
 
 import { getViewDirection } from '@/features/fps';
 import type { FPSState } from '@/features/fps';
 
-import {
-  BLOCK_SIZE,
-  type BuilderState,
-  GRID_SIZE,
-  hasBlock,
-  inBounds,
-  removeBlock,
-  setBlock,
-} from './builder-state';
-
 // ── Константы ───────────────────────────────────────────────────────────────
 
-/** Максимальная дальность raycast в блоках */
 const MAX_REACH = 20;
-/** Минимальный интервал между действиями place/remove (сек) */
 const ACTION_COOLDOWN = 0.15;
 const _dir = new Vector3();
 
 // ── Результат raycast ───────────────────────────────────────────────────────
 
-export interface RaycastHit {
-  /** Координаты блока, в который попал луч */
+interface RaycastHit {
   blockX: number;
   blockY: number;
   blockZ: number;
-  /** Нормаль грани входа (для размещения: newPos = block + normal) */
   normalX: number;
   normalY: number;
   normalZ: number;
@@ -45,12 +40,8 @@ export interface RaycastHit {
 
 // ── DDA Voxel Traversal ─────────────────────────────────────────────────────
 
-/**
- * Пустить луч из позиции камеры в направлении взгляда.
- * Возвращает первый занятый блок и нормаль грани входа, или null.
- */
-export function voxelRaycast(
-  state: BuilderState,
+function voxelRaycast(
+  state: InteriorBuilderState,
   eyeX: number,
   eyeY: number,
   eyeZ: number,
@@ -58,66 +49,34 @@ export function voxelRaycast(
   dirY: number,
   dirZ: number,
 ): RaycastHit | null {
-  // Текущая позиция в блочных координатах
   let x = Math.floor(eyeX / BLOCK_SIZE);
   let y = Math.floor(eyeY / BLOCK_SIZE);
   let z = Math.floor(eyeZ / BLOCK_SIZE);
 
-  // Направление шага (+1 или -1)
   const stepX = dirX >= 0 ? 1 : -1;
   const stepY = dirY >= 0 ? 1 : -1;
   const stepZ = dirZ >= 0 ? 1 : -1;
 
-  // Расстояние вдоль луча до следующей границы вокселя по каждой оси
   const tDeltaX = dirX !== 0 ? Math.abs(BLOCK_SIZE / dirX) : Infinity;
   const tDeltaY = dirY !== 0 ? Math.abs(BLOCK_SIZE / dirY) : Infinity;
   const tDeltaZ = dirZ !== 0 ? Math.abs(BLOCK_SIZE / dirZ) : Infinity;
 
-  // Начальные расстояния до первой границы
-  let tMaxX: number;
-  let tMaxY: number;
-  let tMaxZ: number;
+  let tMaxX =
+    dirX !== 0 ? ((dirX > 0 ? (x + 1) * BLOCK_SIZE : x * BLOCK_SIZE) - eyeX) / dirX : Infinity;
+  let tMaxY =
+    dirY !== 0 ? ((dirY > 0 ? (y + 1) * BLOCK_SIZE : y * BLOCK_SIZE) - eyeY) / dirY : Infinity;
+  let tMaxZ =
+    dirZ !== 0 ? ((dirZ > 0 ? (z + 1) * BLOCK_SIZE : z * BLOCK_SIZE) - eyeZ) / dirZ : Infinity;
 
-  if (dirX !== 0) {
-    const boundary = dirX > 0 ? (x + 1) * BLOCK_SIZE : x * BLOCK_SIZE;
-    tMaxX = (boundary - eyeX) / dirX;
-  } else {
-    tMaxX = Infinity;
-  }
-
-  if (dirY !== 0) {
-    const boundary = dirY > 0 ? (y + 1) * BLOCK_SIZE : y * BLOCK_SIZE;
-    tMaxY = (boundary - eyeY) / dirY;
-  } else {
-    tMaxY = Infinity;
-  }
-
-  if (dirZ !== 0) {
-    const boundary = dirZ > 0 ? (z + 1) * BLOCK_SIZE : z * BLOCK_SIZE;
-    tMaxZ = (boundary - eyeZ) / dirZ;
-  } else {
-    tMaxZ = Infinity;
-  }
-
-  // Последняя пересечённая нормаль
   let nx = 0;
   let ny = 0;
   let nz = 0;
 
   for (let i = 0; i < MAX_REACH * 3; i++) {
-    // Проверяем текущий воксель (пропускаем начальный, если в нём стоим)
-    if (i > 0 && hasBlock(state, x, y, z)) {
-      return {
-        blockX: x,
-        blockY: y,
-        blockZ: z,
-        normalX: nx,
-        normalY: ny,
-        normalZ: nz,
-      };
+    if (i > 0 && hasInteriorBlock(state, x, y, z)) {
+      return { blockX: x, blockY: y, blockZ: z, normalX: nx, normalY: ny, normalZ: nz };
     }
 
-    // Шагаем по оси с наименьшим tMax
     if (tMaxX < tMaxY) {
       if (tMaxX < tMaxZ) {
         x += stepX;
@@ -148,7 +107,6 @@ export function voxelRaycast(
       }
     }
 
-    // Прерываем если вышли слишком далеко от сетки
     if (x < -1 || x > GRID_SIZE || y < -1 || y > GRID_SIZE || z < -1 || z > GRID_SIZE) {
       break;
     }
@@ -157,11 +115,7 @@ export function voxelRaycast(
   return null;
 }
 
-/**
- * Raycast на пол (y=0) для размещения первого блока.
- * Возвращает координаты блока на полу, или null если луч не попадает.
- */
-export function floorRaycast(
+function floorRaycast(
   eyeX: number,
   eyeY: number,
   eyeZ: number,
@@ -169,85 +123,80 @@ export function floorRaycast(
   dirY: number,
   dirZ: number,
 ): { x: number; y: number; z: number } | null {
-  // Луч должен смотреть вниз
   if (dirY >= 0) return null;
-
-  // Пересечение с плоскостью y = 0
   const t = -eyeY / dirY;
   if (t < 0 || t > MAX_REACH * BLOCK_SIZE) return null;
-
   const hitX = eyeX + dirX * t;
   const hitZ = eyeZ + dirZ * t;
-
   const bx = Math.floor(hitX / BLOCK_SIZE);
   const bz = Math.floor(hitZ / BLOCK_SIZE);
-
   if (!inBounds(bx, 0, bz)) return null;
   return { x: bx, y: 0, z: bz };
 }
 
 // ── Контроллер ──────────────────────────────────────────────────────────────
 
-export interface BuilderControllerState {
-  /** Таймер кулдауна между действиями */
+export interface InteriorBuilderControllerState {
   cooldown: number;
-  /** Предыдущее состояние кнопок (для edge detection) */
   prevPlace: boolean;
   prevRemove: boolean;
   prevNextColor: boolean;
   prevPrevColor: boolean;
+  prevNextType: boolean;
+  prevPrevType: boolean;
 }
 
-export function createControllerState(): BuilderControllerState {
+export function createInteriorControllerState(): InteriorBuilderControllerState {
   return {
     cooldown: 0,
     prevPlace: false,
     prevRemove: false,
     prevNextColor: false,
     prevPrevColor: false,
+    prevNextType: false,
+    prevPrevType: false,
   };
 }
 
-/** Результат обновления контроллера за кадр */
-export interface ControllerResult {
-  /** Координаты ghost preview (null = не показывать) */
+export interface InteriorControllerResult {
   ghostX: number | null;
   ghostY: number | null;
   ghostZ: number | null;
-  /** Индекс цвета изменился? */
   colorChanged: boolean;
-  /** Был ли размещён или удалён блок? Если да, индекс затронутого цвета. */
-  changedColorIdx: number | null;
-  /** Нужно показать панель сохранения? */
-  showSavePanel: boolean;
+  typeChanged: boolean;
+  /** Ключ типа+цвета, который нужно пересобрать (или null) */
+  rebuildKey: string | null;
+  showExportPanel: boolean;
 }
 
-/**
- * Обновить контроллер конструктора за один кадр.
- *
- * Выполняет raycast, обрабатывает ввод (place/remove/color), возвращает результат.
- */
-export function updateBuilderController(
+/** Получить индекс текущего типа блока */
+function getTypeIndex(type: InteriorBlockType): number {
+  return INTERIOR_BLOCK_TYPES.findIndex((t) => t.type === type);
+}
+
+export function updateInteriorBuilderController(
   dt: number,
   fps: FPSState,
-  builderState: BuilderState,
-  ctrl: BuilderControllerState,
+  builderState: InteriorBuilderState,
+  ctrl: InteriorBuilderControllerState,
   placeAction: boolean,
   removeAction: boolean,
   nextColorAction: boolean,
   prevColorAction: boolean,
-  saveAction: boolean,
-): ControllerResult {
-  const result: ControllerResult = {
+  nextTypeAction: boolean,
+  prevTypeAction: boolean,
+  exportAction: boolean,
+): InteriorControllerResult {
+  const result: InteriorControllerResult = {
     ghostX: null,
     ghostY: null,
     ghostZ: null,
     colorChanged: false,
-    changedColorIdx: null,
-    showSavePanel: false,
+    typeChanged: false,
+    rebuildKey: null,
+    showExportPanel: false,
   };
 
-  // Обновить кулдаун
   if (ctrl.cooldown > 0) ctrl.cooldown -= dt;
 
   getViewDirection(fps, _dir);
@@ -255,7 +204,6 @@ export function updateBuilderController(
   const dirY = _dir.y;
   const dirZ = _dir.z;
 
-  // Позиция глаз
   const eyeX = fps.position.x;
   const eyeY = fps.position.y + PILOT_EYE_HEIGHT;
   const eyeZ = fps.position.z;
@@ -264,7 +212,6 @@ export function updateBuilderController(
   const hit = voxelRaycast(builderState, eyeX, eyeY, eyeZ, dirX, dirY, dirZ);
 
   if (hit) {
-    // Ghost preview — позиция нового блока (block + normal)
     const gx = hit.blockX + hit.normalX;
     const gy = hit.blockY + hit.normalY;
     const gz = hit.blockZ + hit.normalZ;
@@ -275,52 +222,60 @@ export function updateBuilderController(
       result.ghostZ = gz;
     }
 
-    // Place (edge trigger + cooldown)
+    // Place
     if (placeAction && !ctrl.prevPlace && ctrl.cooldown <= 0) {
       if (result.ghostX !== null && result.ghostY !== null && result.ghostZ !== null) {
         if (
-          setBlock(
+          setInteriorBlock(
             builderState,
             result.ghostX,
             result.ghostY,
             result.ghostZ,
+            builderState.currentBlockType,
             builderState.currentColor,
           )
         ) {
-          result.changedColorIdx = builderState.currentColor;
+          result.rebuildKey = `${builderState.currentBlockType}_${builderState.currentColor}`;
           ctrl.cooldown = ACTION_COOLDOWN;
         }
       }
     }
 
-    // Remove (edge trigger + cooldown)
+    // Remove
     if (removeAction && !ctrl.prevRemove && ctrl.cooldown <= 0) {
-      const removedColor = builderState.blocks.get(`${hit.blockX},${hit.blockY},${hit.blockZ}`);
-      if (removedColor !== undefined) {
-        removeBlock(builderState, hit.blockX, hit.blockY, hit.blockZ);
-        result.changedColorIdx = removedColor;
+      const removed = removeInteriorBlock(builderState, hit.blockX, hit.blockY, hit.blockZ);
+      if (removed) {
+        result.rebuildKey = `${removed.type}_${removed.colorIdx}`;
         ctrl.cooldown = ACTION_COOLDOWN;
       }
     }
   } else {
-    // Нет блока под прицелом — пробуем пол для первого блока
+    // Пол
     const floor = floorRaycast(eyeX, eyeY, eyeZ, dirX, dirY, dirZ);
     if (floor) {
       result.ghostX = floor.x;
       result.ghostY = floor.y;
       result.ghostZ = floor.z;
 
-      // Place на пол
       if (placeAction && !ctrl.prevPlace && ctrl.cooldown <= 0) {
-        if (setBlock(builderState, floor.x, floor.y, floor.z, builderState.currentColor)) {
-          result.changedColorIdx = builderState.currentColor;
+        if (
+          setInteriorBlock(
+            builderState,
+            floor.x,
+            floor.y,
+            floor.z,
+            builderState.currentBlockType,
+            builderState.currentColor,
+          )
+        ) {
+          result.rebuildKey = `${builderState.currentBlockType}_${builderState.currentColor}`;
           ctrl.cooldown = ACTION_COOLDOWN;
         }
       }
     }
   }
 
-  // Color switch (edge trigger)
+  // Color switch
   if (nextColorAction && !ctrl.prevNextColor) {
     builderState.currentColor = (builderState.currentColor + 1) % 12;
     result.colorChanged = true;
@@ -330,16 +285,32 @@ export function updateBuilderController(
     result.colorChanged = true;
   }
 
-  // Save panel (edge trigger)
-  if (saveAction) {
-    result.showSavePanel = true;
+  // Block type switch
+  if (nextTypeAction && !ctrl.prevNextType) {
+    const idx = getTypeIndex(builderState.currentBlockType);
+    const nextIdx = (idx + 1) % INTERIOR_BLOCK_TYPES.length;
+    builderState.currentBlockType = INTERIOR_BLOCK_TYPES[nextIdx].type;
+    result.typeChanged = true;
+  }
+  if (prevTypeAction && !ctrl.prevPrevType) {
+    const idx = getTypeIndex(builderState.currentBlockType);
+    const prevIdx = (idx + INTERIOR_BLOCK_TYPES.length - 1) % INTERIOR_BLOCK_TYPES.length;
+    builderState.currentBlockType = INTERIOR_BLOCK_TYPES[prevIdx].type;
+    result.typeChanged = true;
   }
 
-  // Запоминаем предыдущее состояние кнопок
+  // Export panel
+  if (exportAction) {
+    result.showExportPanel = true;
+  }
+
+  // Save prev state
   ctrl.prevPlace = placeAction;
   ctrl.prevRemove = removeAction;
   ctrl.prevNextColor = nextColorAction;
   ctrl.prevPrevColor = prevColorAction;
+  ctrl.prevNextType = nextTypeAction;
+  ctrl.prevPrevType = prevTypeAction;
 
   return result;
 }
