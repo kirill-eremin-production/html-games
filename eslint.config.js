@@ -15,7 +15,7 @@ export default [
         { type: 'entities', pattern: 'entities/*', mode: 'folder', capture: ['entity'] },
         { type: 'shared', pattern: 'shared', mode: 'folder' },
       ],
-      'boundaries/root-path': 'src',
+      'boundaries/root-path': 'src/space-combat',
       'import/resolver': {
         typescript: {
           alwaysTryTypes: true,

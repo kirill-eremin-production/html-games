@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+/* ══ Game keyframes ══ */
+@keyframes sf {
+  0% { transform: translateY(-10px) translateX(0) }
+  50% { transform: translateY(50vh) translateX(15px) }
+  100% { transform: translateY(105vh) translateX(-8px) }
+}
+@keyframes sb {
+  0% { box-shadow: 0 0 0 0 rgba(100,170,220,.5) }
+  100% { box-shadow: 0 0 0 12px rgba(100,170,220,0) }
+}
+@keyframes ps {
+  0% { transform: scale(.6); opacity: 0 }
+  60% { transform: scale(1.08) }
+  100% { transform: scale(1); opacity: 1 }
+}
+@keyframes su {
+  0% { transform: translateY(100%); opacity: 0 }
+  100% { transform: translateY(0); opacity: 1 }
+}
+@keyframes cd {
+  0% { transform: translateY(-16px) scale(.6); opacity: 0 }
+  60% { transform: translateY(2px) scale(1.05) }
+  100% { transform: translateY(0) scale(1); opacity: 1 }
+}
+@keyframes sk {
+  0%, 100% { transform: translateX(0) }
+  25% { transform: translateX(-6px) }
+  75% { transform: translateX(6px) }
+}
+@keyframes pl {
+  0%, 100% { opacity: .3 }
+  50% { opacity: 1 }
+}
+@keyframes fu {
+  0% { opacity: 0; transform: scale(.8) translateY(16px) }
+  15% { opacity: 1; transform: scale(1) }
+  80% { opacity: 1 }
+  100% { opacity: 0; transform: translateY(-24px) }
+}
+@keyframes wi {
+  0% { transform: translateX(-20px); opacity: 0 }
+  100% { transform: translateX(0); opacity: 1 }
+}
+@keyframes bg {
+  0%, 100% { filter: brightness(1) }
+  50% { filter: brightness(1.4) }
+}
+@keyframes fi {
+  0% { opacity: 0 }
+  100% { opacity: 1 }
+}
+@keyframes ti {
+  0% { opacity: 0; transform: translateY(6px) }
+  100% { opacity: 1; transform: translateY(0) }
+}
+@keyframes sb2 {
+  0% { opacity: 0; transform: translateY(12px) }
+  10% { opacity: 1; transform: translateY(0) }
+  90% { opacity: 1 }
+  100% { opacity: 0 }
+}
+@keyframes vg {
+  0% { text-shadow: 0 0 8px #4a90c000 }
+  50% { text-shadow: 0 0 24px #4a90c0aa }
+  100% { text-shadow: 0 0 8px #4a90c000 }
+}
+@keyframes wp {
+  0%, 100% { opacity: .5 }
+  50% { opacity: 1 }
+}
+
+/* ══ Tap helpers ══ */
+.tap {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  cursor: pointer;
+  transition: transform .1s ease;
+}
+.tap:active:not(:disabled):not(.done) {
+  transform: scale(.92);
+  transition: transform .05s ease;
+}
+
+/* ══ Modal ══ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4,8,16,.8);
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.modal-body {
+  background: linear-gradient(180deg,#0e1424,#080c18);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: auto;
+  padding: 16px 14px 28px;
+  animation: su .3s ease;
+  border-top: 1px solid #1a2a3a;
+}
+
+/* ══ Scrollbar ══ */
+::-webkit-scrollbar { width: 0; height: 0 }
+
+/* ══ Select ══ */
+* { user-select: none; -webkit-user-select: none }

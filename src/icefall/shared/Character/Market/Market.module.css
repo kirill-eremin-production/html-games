@@ -1,0 +1,56 @@
+.wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.layer.visible {
+  opacity: 1;
+}
+
+.figure {
+  margin-top: 65%;
+  width: 70%;
+  max-width: 300px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+}
+
+.placeholder {
+  margin-top: 25%;
+  width: 40%;
+  height: 60%;
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: rgba(128, 40, 40, 0.7);
+}
+
+/* Stage 1: far away */
+.s1 .figure,
+.s1 .placeholder {
+  transform: scale(0.3) translate(-75%, -70%);
+}
+
+/* Stage 2: at the door */
+.s2 .figure,
+.s2 .placeholder {
+  transform: scale(0.6) translate(-20%, -20%);
+  clip-path: polygon(0 0, 100% 0, 100% 83%, 0 77%);
+}
+
+/* Stage 3: at the counter */
+.s3 .figure,
+.s3 .placeholder {
+  transform: scale(1.1);
+  clip-path: polygon(0 0, 100% 0, 100% 59%, 0 53%);
+}
