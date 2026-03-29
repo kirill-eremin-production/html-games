@@ -8,6 +8,7 @@ import { SettlementPage, UpgradesPage, WarehousePage } from './components/SidePa
 import { Snow } from './components/Snow';
 import { StatusBar } from './components/StatusBar';
 import { VictoryScreen } from './components/VictoryScreen';
+import { Fullscreen } from './shared/Fullscreen';
 import { Soundtrack } from './shared/Soundtrack';
 import { useGameState } from './use-game-state';
 
@@ -23,9 +24,10 @@ export default function Game() {
   const g = useGameState();
 
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden bg-gradient-to-br from-[#080c14] via-[#0a1020] to-[#0c0e18] font-serif text-[#c0c8d8]">
+    <div className="relative flex h-dvh flex-col overflow-hidden bg-gradient-to-br from-[#080c14] via-[#0a1020] to-[#0c0e18] font-serif text-[#c0c8d8]">
       <Snow />
       <Soundtrack tracks={TRACKS} />
+      <Fullscreen />
 
       {g.phase === 'intro' && (
         <IntroScreen
