@@ -45,12 +45,10 @@
 .s2 .figure,
 .s2 .placeholder {
   transform: scale(0.6) translate(-20%, -20%);
-  clip-path: polygon(0 0, 100% 0, 100% 83%, 0 77%);
 }
 
 /* Stage 3: at the counter */
 .s3 .figure,
 .s3 .placeholder {
   transform: scale(1.1);
-  clip-path: polygon(0 0, 100% 0, 100% 59%, 0 53%);
 }

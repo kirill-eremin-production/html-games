@@ -33,7 +33,7 @@ export function makeCust(
   scanLvl: number,
   vipLvl: number,
 ): ActiveCust {
-  let pool = CUSTS.filter((c) => c.tier <= maxTier);
+  let pool = CUSTS.slice(0, 4).filter((c) => c.tier <= maxTier);
   if (vipLvl > 0) {
     const extra = [];
     for (let i = 0; i < vipLvl; i++) {
@@ -42,8 +42,7 @@ export function makeCust(
     }
     pool = [...pool, ...extra];
   }
-  // DEBUG: always Прасковья
-  const t = CUSTS[0]; // pool[Math.floor(Math.random() * pool.length)];
+  const t = pool[Math.floor(Math.random() * pool.length)];
   const prodPool = PRODS.filter((p) => p.tier <= t.tier);
   const avail = prodPool.filter((p) => {
     const s = inv[p.id];

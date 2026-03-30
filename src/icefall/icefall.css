@@ -112,3 +112,12 @@
 
 /* ══ Select ══ */
 * { user-select: none; -webkit-user-select: none }
+
+/* ══ 9:16 game area ══ */
+.game-area {
+  container-type: size;
+}
+.game-panel {
+  width: min(100cqw, calc(100cqh * 9 / 16));
+  height: min(100cqh, calc(100cqw * 16 / 9));
+}

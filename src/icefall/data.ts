@@ -147,9 +147,9 @@ export const PRODS: Product[] = [
 
 export const CUSTS: Customer[] = [
   { name: "Прасковья", em: "👵", tier: 1, items: [2, 3], tip: 0, pat: 40, desc: "Травница", portrait: 'https://storage.yandexcloud.net/k-ai-public/icefall-market/backgrounds/proskovia.png' },
-  { name: "Каторжник Фёдор", em: "⛓️", tier: 1, items: [1, 2], tip: 0, pat: 25, desc: "Бежал с этапа" },
-  { name: "Матушка Агафья", em: "🧶", tier: 1, items: [2, 4], tip: 2, pat: 45, desc: "С тремя детьми" },
-  { name: "Юнга Тимофей", em: "👦", tier: 1, items: [1, 2], tip: 0, pat: 30, desc: "С парохода" },
+  { name: "Каторжник Фёдор", em: "⛓️", tier: 1, items: [1, 2], tip: 0, pat: 25, desc: "Бежал с этапа", portrait: "https://storage.yandexcloud.net/k-ai-public/icefall-market/characters/convict-fyodor.webp" },
+  { name: "Матушка Агафья", em: "🧶", tier: 1, items: [2, 4], tip: 2, pat: 45, desc: "С тремя детьми", portrait: "https://storage.yandexcloud.net/k-ai-public/icefall-market/characters/mother-agafya.webp" },
+  { name: "Юнга Тимофей", em: "👦", tier: 1, items: [1, 2], tip: 0, pat: 30, desc: "С парохода", portrait: "https://storage.yandexcloud.net/k-ai-public/icefall-market/characters/cabin-boy-timofey.webp" },
   { name: "Инженер Краузе", em: "🔧", tier: 2, items: [3, 5], tip: 3, pat: 30, desc: "Чинит локомотивы" },
   { name: "Охотник Дерсу", em: "🏹", tier: 2, items: [3, 5], tip: 1, pat: 25, desc: "Таёжный следопыт" },
   { name: "Доктор Вернер", em: "🩺", tier: 2, items: [2, 4], tip: 4, pat: 35, desc: "Лечит кого может" },

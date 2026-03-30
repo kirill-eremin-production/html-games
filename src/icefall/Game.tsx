@@ -2,7 +2,7 @@ import { BottomNav } from './components/BottomNav';
 import { InfoModal } from './components/InfoModal';
 import { IntroScreen } from './components/IntroScreen';
 import { ProductModal } from './components/ProductModal';
-import { RegisterPanel } from './components/RegisterPanel';
+import { RegisterPage } from './pages/register';
 import { ResultPopup } from './components/ResultPopup';
 import { SettlementPage, UpgradesPage, WarehousePage } from './components/SidePanel';
 import { Snow } from './components/Snow';
@@ -13,7 +13,9 @@ import { Soundtrack } from './shared/Soundtrack';
 import { useGameState } from './use-game-state';
 
 const SHOP_BG =
-  'https://storage.yandexcloud.net/k-ai-public/icefall-market/backgrounds/market-1.jpeg';
+  'https://storage.yandexcloud.net/k-ai-public/icefall-market/backgrounds/market-0.webp';
+const SHOP_FG =
+  'https://storage.yandexcloud.net/k-ai-public/icefall-market/backgrounds/market-1.webp';
 
 const TRACKS = [
   'https://storage.yandexcloud.net/k-ai-public/icefall-market/music/frozen-mechanism.mp3',
@@ -57,52 +59,56 @@ export default function Game() {
             onInfoModal={g.setInfoModal}
           />
 
-          {/* Page content */}
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {g.tab === 'register' && (
-              <RegisterPanel
-                dayPhase={g.dayPhase}
-                day={g.day}
-                dayServed={g.dayServed}
-                dayMissed={g.dayMissed}
-                dayEarned={g.dayEarned}
-                warmth={g.warmth}
-                cust={g.cust}
-                custIdx={g.custIdx}
-                maxCustPerDay={g.maxCustPerDay}
-                totalStock={g.totalStock}
-                changeGiven={g.changeGiven}
-                changeNeeded={g.changeNeeded}
-                changeStack={g.changeStack}
-                patProg={g.patProg}
-                shakeCash={g.shakeCash}
-                beepItems={g.beepItems}
-                fled={g.fled}
-                shopBg={SHOP_BG}
-                onNextDay={g.nextDay}
-                onSetDayPhase={g.setDayPhase}
-                onTapItem={g.tapItem}
-                onTapDenom={g.tapDenom}
-              />
-            )}
+          {/* Page content — centering container */}
+          <div className="game-area flex min-h-0 flex-1 items-center justify-center overflow-hidden">
+            {/* 9:16 game panel */}
+            <div className="game-panel relative flex flex-col overflow-hidden">
+              {g.tab === 'register' && (
+                <RegisterPage
+                  dayPhase={g.dayPhase}
+                  day={g.day}
+                  dayServed={g.dayServed}
+                  dayMissed={g.dayMissed}
+                  dayEarned={g.dayEarned}
+                  warmth={g.warmth}
+                  cust={g.cust}
+                  custIdx={g.custIdx}
+                  maxCustPerDay={g.maxCustPerDay}
+                  totalStock={g.totalStock}
+                  changeGiven={g.changeGiven}
+                  changeNeeded={g.changeNeeded}
+                  changeStack={g.changeStack}
+                  patProg={g.patProg}
+                  shakeCash={g.shakeCash}
+                  beepItems={g.beepItems}
+                  fled={g.fled}
+                  shopBg={SHOP_BG}
+                  shopFg={SHOP_FG}
+                  onNextDay={g.nextDay}
+                  onSetDayPhase={g.setDayPhase}
+                  onTapItem={g.tapItem}
+                  onTapDenom={g.tapDenom}
+                />
+              )}
 
-            {g.tab === 'warehouse' && (
-              <WarehousePage prods={g.allProds} inv={g.inv} onProdModal={g.setProdModal} />
-            )}
+              {g.tab === 'warehouse' && (
+                <WarehousePage prods={g.allProds} inv={g.inv} onProdModal={g.setProdModal} />
+              )}
 
-            {g.tab === 'settlement' && (
-              <SettlementPage
-                nextProj={g.nextProj}
-                money={g.money}
-                built={g.built}
-                storyLog={g.storyLog}
-                onBuildProj={g.buildProj}
-              />
-            )}
+              {g.tab === 'settlement' && (
+                <SettlementPage
+                  nextProj={g.nextProj}
+                  money={g.money}
+                  built={g.built}
+                  storyLog={g.storyLog}
+                  onBuildProj={g.buildProj}
+                />
+              )}
 
-            {g.tab === 'upgrades' && (
-              <UpgradesPage money={g.money} upg={g.upg} upgCost={g.upgCost} onBuyUpg={g.buyUpg} />
-            )}
+              {g.tab === 'upgrades' && (
+                <UpgradesPage money={g.money} upg={g.upg} upgCost={g.upgCost} onBuyUpg={g.buyUpg} />
+              )}
+            </div>
           </div>
 
           <BottomNav active={g.tab} onChange={g.setTab} />
