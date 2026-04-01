@@ -9,6 +9,7 @@ import { Snow } from './components/Snow';
 import { StatusBar } from './components/StatusBar';
 import { VictoryScreen } from './components/VictoryScreen';
 import { Fullscreen } from './shared/Fullscreen';
+import { MerchantModal } from './shared/MerchantModal';
 import { Soundtrack } from './shared/Soundtrack';
 import { useGameState } from './use-game-state';
 
@@ -72,6 +73,7 @@ export default function Game() {
                   dayEarned={g.dayEarned}
                   warmth={g.warmth}
                   cust={g.cust}
+                  inv={g.inv}
                   custIdx={g.custIdx}
                   maxCustPerDay={g.maxCustPerDay}
                   totalStock={g.totalStock}
@@ -82,17 +84,26 @@ export default function Game() {
                   shakeCash={g.shakeCash}
                   beepItems={g.beepItems}
                   fled={g.fled}
+                  merchantVisiting={g.merchantStock !== null}
+                  nextDayIsMerchant={g.nextDayIsMerchant}
                   shopBg={SHOP_BG}
                   shopFg={SHOP_FG}
                   onNextDay={g.nextDay}
                   onSetDayPhase={g.setDayPhase}
                   onTapItem={g.tapItem}
+                  onSkipItem={g.skipItem}
                   onTapDenom={g.tapDenom}
+                  onOpenMerchant={g.openMerchantModal}
                 />
               )}
 
               {g.tab === 'warehouse' && (
-                <WarehousePage prods={g.allProds} inv={g.inv} onProdModal={g.setProdModal} />
+                <WarehousePage
+                  prods={g.allProds}
+                  inv={g.inv}
+                  daysUntilMerchant={g.daysUntilMerchant}
+                  onProdModal={g.setProdModal}
+                />
               )}
 
               {g.tab === 'settlement' && (
@@ -111,17 +122,27 @@ export default function Game() {
             </div>
           </div>
 
-          <BottomNav active={g.tab} onChange={g.setTab} />
+          <BottomNav active={g.tab} isMerchantDay={g.isMerchantDay} onChange={g.setTab} />
+
+          {g.showMerchantModal && g.merchantStock && (
+            <MerchantModal
+              stock={g.merchantStock}
+              inv={g.inv}
+              money={g.money}
+              wsMult={g.wsMult}
+              onBuyStock={g.buyStock}
+              onDismiss={g.dismissMerchant}
+            />
+          )}
 
           {g.prodModal && (
             <ProductModal
               product={g.prodModal}
               inv={g.inv}
-              money={g.money}
               wsMult={g.wsMult}
+              daysUntilMerchant={g.daysUntilMerchant}
               onClose={() => g.setProdModal(null)}
               onSetPrice={g.setPrice}
-              onBuyStock={g.buyStock}
             />
           )}
 

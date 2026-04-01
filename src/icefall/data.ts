@@ -159,6 +159,15 @@ export const CUSTS: Customer[] = [
   { name: "Поручик Ржевский", em: "⚔️", tier: 3, items: [2, 4], tip: 12, pat: 18, desc: "Гусар" },
 ];
 
+/* ══════════ MERCHANT ══════════ */
+
+export const MERCHANT = {
+  name: "Обозник Савелий",
+  em: "🐴",
+  portrait: "https://storage.yandexcloud.net/k-ai-public/icefall-market/characters/merchant-savely.webp",
+  desc: "Привозит припасы из-за перевала",
+} as const;
+
 /* ══════════ UPGRADES ══════════ */
 
 export const UPGRADES: Upgrade[] = [
@@ -209,6 +218,11 @@ export const INTRO_TEXTS = [
   "Где-то в тундре — Большой Котёл, древняя машина. Он сломан.",
   "У вас палатка, товар и 200 рублей.\nВсё остальное — в ваших руках.",
 ];
+
+/* ══════════ MERCHANT ══════════ */
+
+export const MERCHANT_INTERVAL = 3; // every 3 days
+export const MERCHANT_STOCK_RATIO = 0.6; // carries ~60% of available products
 
 /* ══════════ INITIAL STOCK ══════════ */
 

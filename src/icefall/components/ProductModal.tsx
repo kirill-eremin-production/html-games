@@ -1,19 +1,18 @@
 import { Minus, Plus, X } from "lucide-react";
 import type { Inventory, Product } from "../data";
-import { FUEL, TIER_COLORS, TIER_NAMES } from "../data";
+import { FUEL, MERCHANT, TIER_COLORS, TIER_NAMES } from "../data";
 import { fS, fmt, priceLabel } from "../helpers";
 
 interface Props {
   product: Product;
   inv: Inventory;
-  money: number;
   wsMult: number;
+  daysUntilMerchant: number;
   onClose: () => void;
   onSetPrice: (pid: string, delta: number) => void;
-  onBuyStock: (prod: Product, qty: number) => void;
 }
 
-export function ProductModal({ product: p, inv, money, wsMult, onClose, onSetPrice, onBuyStock }: Props) {
+export function ProductModal({ product: p, inv, wsMult, daysUntilMerchant, onClose, onSetPrice }: Props) {
   const s = inv[p.id] || { stock: 0, price: p.fair };
   const wsCost = Math.round(p.ws * wsMult);
   const margin = s.price > 0 ? Math.round(((s.price - wsCost) / wsCost) * 100) : 0;
@@ -73,30 +72,13 @@ export function ProductModal({ product: p, inv, money, wsMult, onClose, onSetPri
           </div>
         </div>
 
-        {/* Buy */}
-        <div className="mb-1 text-[9px] tracking-wider text-[#2a4a5a]">ЗАКУПИТЬ</div>
-        <div className="grid grid-cols-4 gap-1">
-          {[1, 5, 10, 25].map((q) => {
-            const cost = wsCost * q;
-            const can = money >= cost;
-            return (
-              <button
-                key={q}
-                className="tap rounded-lg border border-transparent py-2 font-[inherit] text-xs font-bold disabled:cursor-default disabled:opacity-20"
-                disabled={!can}
-                onClick={() => onBuyStock(p, q)}
-                style={{
-                  background: can ? "rgba(70,144,192,.06)" : "transparent",
-                  color: can ? "#70b0d8" : "#0a1520",
-                  borderColor: can ? "#4a90c018" : "transparent",
-                }}
-              >
-                +{q}
-                <br />
-                <span className="text-[9px] opacity-60">{fmt(cost)}</span>
-              </button>
-            );
-          })}
+        {/* Merchant info */}
+        <div className="rounded-lg border border-[#1a2a3a] bg-[rgba(10,16,32,.4)] py-2 text-center">
+          <div className="text-[10px] text-[#3a5a7a]">
+            {MERCHANT.em} Закупка у обозника · {daysUntilMerchant === 0
+              ? "сегодня в городе"
+              : `вернётся через ${daysUntilMerchant} ${daysUntilMerchant === 1 ? "день" : "дня"}`}
+          </div>
         </div>
       </div>
     </div>

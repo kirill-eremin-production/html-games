@@ -11,6 +11,7 @@ import {
   type UpgLevels,
   DENOMS,
   EVENTS,
+  MERCHANT_INTERVAL,
   PRODS,
   PROJECTS,
   UPGRADES,
@@ -18,6 +19,7 @@ import {
 } from "./data";
 import {
   calcWarmthBonus,
+  generateMerchantStock,
   initInv,
   makeCust,
   pickPay,
@@ -61,6 +63,8 @@ export interface GameState {
   missedItems: Product[];
   infoModal: "warmth" | "pop" | null;
   fled: boolean;
+  merchantStock: string[] | null;
+  showMerchantModal: boolean;
 
   // Derived
   maxTier: number;
@@ -78,6 +82,9 @@ export interface GameState {
   hasFullAuto: boolean;
   roundLvl: number;
   tipMult: number;
+  isMerchantDay: boolean;
+  daysUntilMerchant: number;
+  nextDayIsMerchant: boolean;
 
   // Actions
   setPhase: (p: "intro" | "game" | "victory") => void;
@@ -86,11 +93,14 @@ export interface GameState {
   setInfoModal: (m: "warmth" | "pop" | null) => void;
   setProdModal: (p: Product | null) => void;
   tapItem: (item: CustItem) => void;
+  skipItem: (item: CustItem) => void;
   tapDenom: (d: Denomination) => void;
   buyStock: (prod: Product, qty: number) => void;
   setPrice: (pid: string, delta: number) => void;
   buyUpg: (u: (typeof UPGRADES)[number]) => void;
   buildProj: (p: Project) => void;
+  openMerchantModal: () => void;
+  dismissMerchant: () => void;
   nextDay: () => void;
   setDayPhase: (p: "shop" | "summary") => void;
   upgCost: (u: (typeof UPGRADES)[number]) => number;
@@ -133,6 +143,10 @@ export function useGameState(): GameState {
   const [missedItems, setMissedItems] = useState<Product[]>([]);
   const [infoModal, setInfoModal] = useState<"warmth" | "pop" | null>(null);
   const [fled, setFled] = useState(false);
+  const [merchantStock, setMerchantStock] = useState<string[] | null>(() =>
+    generateMerchantStock(1),
+  );
+  const [showMerchantModal, setShowMerchantModal] = useState(false);
 
   // Derived values
   const maxTier = 1 + (upg.tent2 > 0 ? 1 : 0) + (upg.tent3 > 0 ? 1 : 0);
@@ -157,6 +171,9 @@ export function useGameState(): GameState {
   const nextProj = PROJECTS.find((p) => !built.includes(p.id));
   const changeNeeded = cust ? cust.payWith - cust.total : 0;
   const patProg = cust ? cust.patLeft / cust.patience : 0;
+  const isMerchantDay = (day - 1) % MERCHANT_INTERVAL === 0;
+  const daysUntilMerchant = (MERCHANT_INTERVAL - ((day - 1) % MERCHANT_INTERVAL)) % MERCHANT_INTERVAL;
+  const nextDayIsMerchant = day % MERCHANT_INTERVAL === 0;
 
   // ── Warmth decay ──
   useEffect(() => {
@@ -258,13 +275,13 @@ export function useGameState(): GameState {
     setChangeStack([]);
   }, [custIdx, maxCustPerDay, inv, maxTier, upg.scales, upg.vip, roundLvl]);
 
-  // ── Auto-spawn ──
+  // ── Auto-spawn (blocked while merchant is visiting) ──
   useEffect(() => {
-    if (phase === "game" && dayPhase === "shop" && !cust && custIdx < maxCustPerDay) {
+    if (phase === "game" && dayPhase === "shop" && !cust && custIdx < maxCustPerDay && !merchantStock) {
       const t = setTimeout(spawnNext, 800);
       return () => clearTimeout(t);
     }
-  }, [phase, dayPhase, cust, custIdx, maxCustPerDay, spawnNext]);
+  }, [phase, dayPhase, cust, custIdx, maxCustPerDay, spawnNext, merchantStock]);
 
   // ── Auto-scan ──
   useEffect(() => {
@@ -388,6 +405,36 @@ export function useGameState(): GameState {
     [cust, completeSale],
   );
 
+  const skipItem = useCallback(
+    (item: CustItem) => {
+      if (!cust || cust.phase !== "scan" || cust.scanned.includes(item.uid)) return;
+      setCust((c) => {
+        if (!c) return c;
+        const ns = [...c.scanned, item.uid];
+        const newTotal = Math.max(0, c.total - item.rp);
+
+        if (ns.length >= c.items.length) {
+          if (newTotal <= 0) {
+            // All items out of stock — customer leaves
+            setTimeout(() => {
+              setCust(null);
+              setCustIdx((i) => i + 1);
+            }, 1500);
+            return { ...c, scanned: ns, total: 0, payWith: 0, phase: "empty" as const };
+          }
+          const pw = pickPay(newTotal);
+          if (pw - newTotal <= 0) {
+            setTimeout(() => completeSale({ ...c, total: newTotal, payWith: pw, scanned: ns }), 400);
+            return { ...c, scanned: ns, total: newTotal, payWith: pw, phase: "exact" as const };
+          }
+          return { ...c, scanned: ns, total: newTotal, payWith: pw, phase: "change" as const };
+        }
+        return { ...c, scanned: ns, total: newTotal };
+      });
+    },
+    [cust, completeSale],
+  );
+
   const tapDenom = useCallback(
     (d: Denomination) => {
       if (!cust || cust.phase !== "change") return;
@@ -407,6 +454,7 @@ export function useGameState(): GameState {
 
   const buyStock = useCallback(
     (prod: Product, qty: number) => {
+      if (!merchantStock?.includes(prod.id)) return;
       const cost = Math.round(prod.ws * wsMult) * qty;
       if (money < cost) return;
       setMoney((m) => m - cost);
@@ -415,7 +463,7 @@ export function useGameState(): GameState {
         [prod.id]: { ...prev[prod.id], stock: prev[prod.id].stock + qty },
       }));
     },
-    [money, wsMult],
+    [money, wsMult, merchantStock],
   );
 
   const setPriceAction = useCallback(
@@ -462,13 +510,20 @@ export function useGameState(): GameState {
   );
 
   const nextDayAction = useCallback(() => {
-    setDay((d) => d + 1);
+    const newDay = day + 1;
+    setDay(newDay);
     setDayPhase("shop");
     setCustIdx(0);
     setDayServed(0);
     setDayEarned(0);
     setDayMissed(0);
     setCust(null);
+    // Merchant arrives every MERCHANT_INTERVAL days (days 1, 4, 7, ...)
+    if ((newDay - 1) % MERCHANT_INTERVAL === 0) {
+      setMerchantStock(generateMerchantStock(maxTier));
+    } else {
+      setMerchantStock(null);
+    }
     setPopulation((pop) => {
       if (warmth > 55 && pop < popCap && Math.random() < 0.3) return pop + 1;
       if (warmth < 25 && !hasInfirmary && pop > 5) return pop - 1;
@@ -485,7 +540,16 @@ export function useGameState(): GameState {
         setEventMult(1);
       }, 12000);
     }
-  }, [warmth, popCap, hasInfirmary, earned]);
+  }, [day, warmth, popCap, hasInfirmary, earned, maxTier]);
+
+  const openMerchantModal = useCallback(() => {
+    setShowMerchantModal(true);
+  }, []);
+
+  const dismissMerchant = useCallback(() => {
+    setShowMerchantModal(false);
+    setMerchantStock(null);
+  }, []);
 
   return {
     phase,
@@ -522,6 +586,8 @@ export function useGameState(): GameState {
     missedItems,
     infoModal,
     fled,
+    merchantStock,
+    showMerchantModal,
     // Derived
     maxTier,
     maxCustPerDay,
@@ -538,6 +604,9 @@ export function useGameState(): GameState {
     hasFullAuto,
     roundLvl,
     tipMult,
+    isMerchantDay,
+    daysUntilMerchant,
+    nextDayIsMerchant,
     // Actions
     setPhase,
     setIntroStep,
@@ -545,11 +614,14 @@ export function useGameState(): GameState {
     setInfoModal,
     setProdModal,
     tapItem,
+    skipItem,
     tapDenom,
     buyStock,
     setPrice: setPriceAction,
     buyUpg,
     buildProj,
+    openMerchantModal,
+    dismissMerchant,
     nextDay: nextDayAction,
     setDayPhase,
     upgCost,

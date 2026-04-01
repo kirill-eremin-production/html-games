@@ -1,10 +1,12 @@
-import type { ActiveCust, CustItem, Denomination } from "../../data";
-import { DENOMS, FUEL, WARMTH_BONUS, TIER_COLORS, TIER_NAMES } from "../../data";
+import type { ActiveCust, CustItem, Denomination, Inventory } from "../../data";
+import { DENOMS, TIER_COLORS, TIER_NAMES } from "../../data";
 import { fS, fmt } from "../../helpers";
+import { ItemCard } from "../../shared/ItemCard";
 import { MarketLabel } from "../../shared/Character/MarketLabel";
 
 interface Props {
   cust: ActiveCust;
+  inv: Inventory;
   changeGiven: number;
   changeNeeded: number;
   changeStack: (Denomination & { id: number })[];
@@ -13,11 +15,13 @@ interface Props {
   beepItems: string[];
   fled: boolean;
   onTapItem: (item: CustItem) => void;
+  onSkipItem: (item: CustItem) => void;
   onTapDenom: (d: Denomination) => void;
 }
 
 export function CustomerService({
   cust,
+  inv,
   changeGiven,
   changeNeeded,
   changeStack,
@@ -26,8 +30,12 @@ export function CustomerService({
   beepItems,
   fled,
   onTapItem,
+  onSkipItem,
   onTapDenom,
 }: Props) {
+  const currentItem = cust.phase === "scan"
+    ? cust.items.find((it) => !cust.scanned.includes(it.uid))
+    : null;
   return (
     <>
       {/* ═══ CUSTOMER ZONE — upper half, "across the counter" ═══ */}
@@ -88,60 +96,14 @@ export function CustomerService({
       {/* ═══ COUNTER SURFACE — lower half, items & change ═══ */}
       <div className="relative z-[2] flex flex-1 flex-col justify-end overflow-hidden">
         {/* Scan phase — items laid on counter */}
-        {cust.phase === "scan" && (
-          <div className="overflow-auto px-2 pt-3 pb-1">
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] gap-1.5">
-              {cust.items.map((item) => {
-                const done = cust.scanned.includes(item.uid);
-                const hp = done ? 1 : item.hits / item.need;
-                const isB = beepItems.includes(item.uid);
-                return (
-                  <div
-                    key={item.uid}
-                    className={`tap relative rounded-lg px-1 pt-1.5 pb-1 text-center ${done ? "done" : ""}`}
-                    onClick={() => onTapItem(item)}
-                    style={{
-                      background: done
-                        ? "rgba(70,140,200,.05)"
-                        : "rgba(30,22,14,.75)",
-                      border: done
-                        ? "1.5px solid #1a3050"
-                        : isB
-                          ? "1.5px solid #4a90c0"
-                          : "1.5px solid rgba(60,44,28,.4)",
-                      opacity: done ? 0.3 : 1,
-                      animation: isB ? "sb .4s ease" : undefined,
-                      boxShadow: !done ? "0 2px 6px rgba(0,0,0,.3)" : undefined,
-                    }}
-                  >
-                    <div className="text-xl">{item.i}</div>
-                    <div className="mt-px truncate text-[8px] font-bold text-[#c0b090]">{item.n}</div>
-                    <div className="text-[10px] font-bold" style={{ color: done ? "#1a3050" : "#d4a830" }}>
-                      {fS(item.rp)}
-                    </div>
-                    {FUEL.has(item.id) && !done && (
-                      <div className="text-[7px] text-[#c07030]">🔥+{WARMTH_BONUS[item.id]}°</div>
-                    )}
-                    {!done && (
-                      <div className="mt-0.5 h-0.5 rounded-sm bg-[rgba(10,8,4,.5)]">
-                        <div
-                          className="h-full rounded-sm transition-[width] duration-100"
-                          style={{
-                            width: `${hp * 100}%`,
-                            background: hp > 0 ? "linear-gradient(90deg,#c07030,#4a90c0)" : "transparent",
-                            animation: hp > 0 && hp < 1 ? "bg .8s infinite" : undefined,
-                          }}
-                        />
-                      </div>
-                    )}
-                    {done && (
-                      <div className="absolute top-px right-1 text-[10px] text-[#4a90c0]">✓</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        {cust.phase === "scan" && currentItem && (
+          <ItemCard
+            item={currentItem}
+            beep={beepItems.includes(currentItem.uid)}
+            inStock={(inv[currentItem.id]?.stock ?? 0) > 0}
+            onTap={() => onTapItem(currentItem)}
+            onSkip={() => onSkipItem(currentItem)}
+          />
         )}
 
         {/* Change phase */}

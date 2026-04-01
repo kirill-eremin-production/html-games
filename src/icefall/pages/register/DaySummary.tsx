@@ -1,3 +1,4 @@
+import { MERCHANT } from "../../data";
 import { fmt } from "../../helpers";
 
 interface Props {
@@ -6,10 +7,11 @@ interface Props {
   dayMissed: number;
   dayEarned: number;
   warmth: number;
+  nextDayIsMerchant: boolean;
   onNextDay: () => void;
 }
 
-export function DaySummary({ day, dayServed, dayMissed, dayEarned, warmth, onNextDay }: Props) {
+export function DaySummary({ day, dayServed, dayMissed, dayEarned, warmth, nextDayIsMerchant, onNextDay }: Props) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-2 p-4">
       <div className="rounded-2xl border border-[#2a1e14] bg-[rgba(10,8,4,.85)] px-8 py-6 text-center backdrop-blur-sm">
@@ -21,6 +23,11 @@ export function DaySummary({ day, dayServed, dayMissed, dayEarned, warmth, onNex
         {warmth < 30 && (
           <div className="mt-2 text-center text-[11px] text-[#c06040]">
             ⚠️ Температура низкая! Продавайте топливо
+          </div>
+        )}
+        {nextDayIsMerchant && (
+          <div className="mt-2 text-center text-[11px] text-[#80c080]">
+            {MERCHANT.em} Завтра приезжает обозник!
           </div>
         )}
         <button

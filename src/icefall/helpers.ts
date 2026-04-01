@@ -7,6 +7,7 @@ import {
   PRODS,
   INITIAL_STOCK,
   WARMTH_BONUS,
+  MERCHANT_STOCK_RATIO,
 } from "./data";
 
 export const fmt = (n: number) => Math.floor(n).toLocaleString("ru") + " руб.";
@@ -129,6 +130,13 @@ export function priceColor(ratio: number): string {
   if (ratio > 1.4) return "#c05040";
   if (ratio > 1.15) return "#c09040";
   return "#5a9a7a";
+}
+
+export function generateMerchantStock(maxTier: number): string[] {
+  const pool = PRODS.filter((p) => p.tier <= maxTier);
+  const count = Math.max(3, Math.ceil(pool.length * MERCHANT_STOCK_RATIO));
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count).map((p) => p.id);
 }
 
 export function priceLabel(ratio: number): { color: string; text: string } {

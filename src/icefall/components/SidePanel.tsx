@@ -1,6 +1,6 @@
 import { Lock } from "lucide-react";
 import type { Inventory, Product, Project, Upgrade, UpgLevels } from "../data";
-import { FUEL, PROJECTS, TIER_COLORS, UPGRADES } from "../data";
+import { FUEL, MERCHANT, PROJECTS, TIER_COLORS, UPGRADES } from "../data";
 import { fS, fmt, priceColor } from "../helpers";
 
 /* ── Warehouse ── */
@@ -8,14 +8,25 @@ import { fS, fmt, priceColor } from "../helpers";
 export function WarehousePage({
   prods,
   inv,
+  daysUntilMerchant,
   onProdModal,
 }: {
   prods: Product[];
   inv: Inventory;
+  daysUntilMerchant: number;
   onProdModal: (p: Product) => void;
 }) {
   return (
     <div className="flex-1 overflow-auto p-1.5">
+      {daysUntilMerchant > 0 && (
+        <div className="mb-1.5 rounded-lg border border-[#1a2a3a] bg-[rgba(10,16,32,.5)] px-2.5 py-1.5 text-center">
+          <div className="text-[10px] text-[#3a5a7a]">
+            {MERCHANT.em} Обозник вернётся через {daysUntilMerchant}{" "}
+            {daysUntilMerchant === 1 ? "день" : "дня"}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-3 gap-1">
         {prods.map((p) => {
           const s = inv[p.id] || { stock: 0, price: p.fair };
